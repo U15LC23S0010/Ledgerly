@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# FastAPI uploads
+app/uploads/
+
+# Database / local files
+*.db
+*.sqlite
+*.sqlite3
+
+# VS Code
+.vscode/
+
+# Node / React
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python build files
+build/
+dist/
+*.egg-info/
