@@ -1,0 +1,512 @@
+/* =========================================================
+   LEDGERFLOW AI — SIDEBAR
+========================================================= */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+
+  display: flex;
+  flex-direction: column;
+
+  width: 230px;
+  height: 100vh;
+  min-height: 100vh;
+
+  padding: 16px 12px 12px;
+
+  background: #111827;
+  color: #ffffff;
+
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+
+  overflow: hidden;
+
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+
+/* =========================================================
+   BRAND
+========================================================= */
+
+.sidebar-brand {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin: 0;
+  padding: 4px 6px 18px;
+
+  border: 0;
+  background: transparent;
+
+  color: inherit;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.sidebar-brand:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.7);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+
+/* =========================================================
+   BRAND ORB
+========================================================= */
+
+.brand-orb {
+  flex: 0 0 36px;
+
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: linear-gradient(
+    135deg,
+    #4f46e5,
+    #2563eb
+  );
+
+  box-shadow:
+    0 6px 16px rgba(37, 99, 235, 0.28);
+}
+
+.brand-orb span {
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 900;
+
+  letter-spacing: -0.5px;
+}
+
+
+/* =========================================================
+   BRAND TEXT
+========================================================= */
+
+.brand-copy {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-copy strong {
+  color: #ffffff;
+
+  font-size: 14px;
+  line-height: 1.2;
+
+  font-weight: 800;
+
+  white-space: nowrap;
+}
+
+.brand-copy strong em {
+  margin-left: 3px;
+
+  color: #60a5fa;
+
+  font-style: normal;
+}
+
+.brand-copy small {
+  margin-top: 3px;
+
+  color: #64748b;
+
+  font-size: 7px;
+  line-height: 1;
+
+  font-weight: 800;
+
+  letter-spacing: 1px;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+.sidebar-nav {
+  flex: 1 1 auto;
+
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 15px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding: 0 2px 10px;
+}
+
+
+/* =========================================================
+   NAV SECTION
+========================================================= */
+
+.nav-section {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+
+/* =========================================================
+   SECTION TITLE
+========================================================= */
+
+.nav-section-title {
+  padding: 5px 9px 6px;
+
+  color: #64748b;
+
+  font-size: 8px;
+  line-height: 1;
+
+  font-weight: 800;
+
+  letter-spacing: 1.2px;
+}
+
+
+/* =========================================================
+   NAV ITEM
+========================================================= */
+
+.nav-item {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+  min-height: 36px;
+
+  padding: 8px 9px;
+
+  gap: 10px;
+
+  border-radius: 8px;
+
+  color: #94a3b8;
+
+  text-decoration: none;
+
+  font-size: 11px;
+  font-weight: 650;
+
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+
+/* =========================================================
+   ICON
+========================================================= */
+
+.nav-icon {
+  flex: 0 0 auto;
+
+  width: 16px;
+  height: 16px;
+
+  stroke-width: 2;
+}
+
+
+/* =========================================================
+   LABEL
+========================================================= */
+
+.nav-label {
+  min-width: 0;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   HOVER
+========================================================= */
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+
+  color: #e2e8f0;
+}
+
+
+/* =========================================================
+   ACTIVE
+========================================================= */
+
+.nav-item.active {
+  background: #2563eb;
+
+  color: #ffffff;
+
+  box-shadow:
+    0 5px 14px rgba(37, 99, 235, 0.20);
+}
+
+.nav-item.active:hover {
+  background: #2563eb;
+
+  color: #ffffff;
+}
+
+
+/* =========================================================
+   BADGE
+========================================================= */
+
+.nav-badge {
+  margin-left: auto;
+
+  flex: 0 0 auto;
+
+  padding: 3px 6px;
+
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.12);
+
+  color: #93c5fd;
+
+  font-size: 7px;
+
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   BOTTOM
+========================================================= */
+
+.sidebar-bottom {
+  flex: 0 0 auto;
+
+  margin-top: 6px;
+
+  padding-top: 9px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+.settings-link {
+  margin-bottom: 8px;
+}
+
+
+/* =========================================================
+   USER AREA
+========================================================= */
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+
+  min-width: 0;
+
+  gap: 9px;
+
+  padding: 9px 7px;
+
+  border-radius: 9px;
+
+  background: rgba(255, 255, 255, 0.035);
+}
+
+
+/* =========================================================
+   AVATAR
+========================================================= */
+
+.avatar {
+  flex: 0 0 30px;
+
+  width: 30px;
+  height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 9px;
+
+  background: #2563eb;
+
+  color: #ffffff;
+
+  font-size: 9px;
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   USER COPY
+========================================================= */
+
+.user-copy {
+  min-width: 0;
+
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.user-copy strong {
+  overflow: hidden;
+
+  color: #e2e8f0;
+
+  font-size: 10px;
+  font-weight: 750;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-copy span {
+  margin-top: 2px;
+
+  overflow: hidden;
+
+  color: #64748b;
+
+  font-size: 8px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+.logout-button {
+  flex: 0 0 auto;
+
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 7px;
+
+  background: transparent;
+
+  color: #64748b;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.logout-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.logout-button:hover {
+  background: rgba(239, 68, 68, 0.12);
+
+  color: #f87171;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 3px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+
+  border-radius: 999px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1000px) {
+  .sidebar {
+    width: 230px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 760px) {
+  .sidebar {
+    width: 230px;
+  }
+
+  .app-main {
+    margin-left: 230px;
+  }
+}

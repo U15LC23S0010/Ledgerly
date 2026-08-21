@@ -1,6 +1,8 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.database import Base, engine
+
 
 # =========================================================
 # ROUTERS
@@ -8,7 +10,6 @@ from app.db.database import Base, engine
 
 from app.api.v1.endpoints.auth import router as auth_router
 from app.api.v1.endpoints.expenses import router as expenses_router
-from app.api.v1.endpoints.recurring_expenses import router as recurring_expenses_router
 from app.api.v1.endpoints.analytics import router as analytics_router
 from app.api.v1.endpoints.admin import router as admin_router
 from app.api.v1.endpoints.budget import router as budget_router
@@ -16,7 +17,12 @@ from app.api.v1.endpoints.auto_expense import router as auto_expense_router
 from app.api.v1.endpoints.dashboard import router as dashboard_router
 from app.api.v1.endpoints.categories import router as category_router
 from app.api.v1.endpoints.insights import router as insights_router
-
+from app.api.v1.endpoints.accounts import router as accounts_router
+from app.api.v1.endpoints.customers import router as customers_router
+from app.api.v1.endpoints.transactions import router as transactions_router
+from app.api.v1.endpoints.invoices import router as invoices_router
+from app.api.v1.endpoints.vendors import router as vendors_router
+from app.api.v1.endpoints.reports import router as reports_router
 
 # =========================================================
 # MODELS
@@ -26,8 +32,14 @@ from app.models.user import User
 from app.models.expense import Expense
 from app.models.budget import Budget
 from app.models.category import Category
-from app.models.recurring_expense import RecurringExpense
 from app.models.refresh_token import RefreshToken
+from app.models.account import Account
+from app.models.transaction import Transaction
+from app.models.customer import Customer
+from app.models.invoice import Invoice
+from app.models.invoice_item import InvoiceItem
+from app.models.vendor import Vendor
+from app.models.otp import OTPVerification
 
 
 # =========================================================
@@ -35,9 +47,25 @@ from app.models.refresh_token import RefreshToken
 # =========================================================
 
 app = FastAPI(
-    title="LedgerFlow AI",
-    description="AI Powered Expense Tracking Backend API",
+    title="Ledgerly - Smart Bookkeeping",
+    description="Smart bookkeeping and financial management platform.",
     version="1.0.0"
+)
+
+
+# =========================================================
+# CORS
+# =========================================================
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -131,21 +159,73 @@ app.include_router(
 
 app.include_router(
     auto_expense_router,
-    prefix="/api/v1/auto-expense",
+    prefix="/api/v1",
     tags=["Auto Expense"]
 )
 
 
 # =========================================================
-# RECURRING EXPENSE APIs
+# ACCOUNTS APIs
 # =========================================================
 
 app.include_router(
-    recurring_expenses_router,
-    prefix="/api/v1/recurring-expenses",
-    tags=["Recurring Expenses"]
+    accounts_router,
+    prefix="/api/v1",
+    tags=["Bookkeeping"]
 )
 
+
+# =========================================================
+# TRANSACTIONS APIs
+# =========================================================
+
+app.include_router(
+    transactions_router,
+    prefix="/api/v1",
+    tags=["Transactions"]
+)
+
+
+# =========================================================
+# CUSTOMERS APIs
+# =========================================================
+
+app.include_router(
+    customers_router,
+    prefix="/api/v1/customers",
+    tags=["Customers"]
+)
+
+
+# =========================================================
+# VENDORS APIs
+# =========================================================
+
+app.include_router(
+    vendors_router,
+    prefix="/api/v1"
+)
+
+
+# =========================================================
+# INVOICES APIs
+# =========================================================
+
+app.include_router(
+    invoices_router,
+    prefix="/api/v1/invoices",
+    tags=["Invoices"]
+)
+
+# =========================================================
+# REPORTS APIs
+# =========================================================
+
+app.include_router(
+    reports_router,
+    prefix="/api/v1",
+    tags=["Reports"]
+)
 
 # =========================================================
 # ADMIN APIs

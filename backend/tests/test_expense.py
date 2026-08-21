@@ -64,7 +64,7 @@ def create_test_expense():
 
     data = response.json()
 
-    assert data["message"] == "Expense Added Successfully"
+    assert data["message"] == "Expense added successfully"
     assert "expense" in data
 
     return data["expense"]["id"]
@@ -171,7 +171,7 @@ def test_update_expense():
 
     data = response.json()
 
-    assert data["message"] == "Expense Updated Successfully"
+    assert data["message"] == "Expense updated successfully"
     assert data["expense"]["title"] == "Updated Pytest Expense"
     assert data["expense"]["amount"] == 500.0
 
@@ -187,7 +187,7 @@ def test_delete_expense():
     assert response.status_code == 200
 
     assert response.json()["message"] == (
-        "Expense Deleted Successfully"
+        "Expense deleted successfully"
     )
 
 

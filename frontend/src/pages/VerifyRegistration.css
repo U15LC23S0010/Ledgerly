@@ -1,0 +1,769 @@
+
+/* =========================================================
+   LEDGERLY — VERIFY REGISTRATION
+   ========================================================= */
+
+/* =========================================================
+   PAGE
+   ========================================================= */
+
+.verify-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  box-sizing: border-box;
+
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(16, 185, 129, 0.08),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(59, 130, 246, 0.06),
+      transparent 30%
+    ),
+    #f7f9fc;
+
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+
+/* =========================================================
+   CARD
+   ========================================================= */
+
+.verify-card {
+  width: 100%;
+  max-width: 470px;
+  box-sizing: border-box;
+
+  padding: 42px 40px 34px;
+
+  background: #ffffff;
+
+  border: 1px solid #e7ebf0;
+  border-radius: 20px;
+
+  box-shadow:
+    0 24px 60px rgba(15, 23, 42, 0.08),
+    0 4px 14px rgba(15, 23, 42, 0.04);
+
+  position: relative;
+}
+
+
+/* =========================================================
+   BRAND
+   ========================================================= */
+
+.verify-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+
+  margin-bottom: 30px;
+}
+
+.verify-logo {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 11px;
+
+  background: #111827;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+
+  box-shadow:
+    0 6px 14px rgba(17, 24, 39, 0.18);
+}
+
+.verify-brand strong {
+  display: block;
+
+  color: #111827;
+
+  font-size: 19px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.verify-brand small {
+  display: block;
+
+  margin-top: 3px;
+
+  color: #8a94a3;
+
+  font-size: 8px;
+  line-height: 1;
+
+  font-weight: 700;
+  letter-spacing: 1.35px;
+}
+
+
+/* =========================================================
+   VERIFICATION ICON
+   ========================================================= */
+
+.verify-icon {
+  width: 58px;
+  height: 58px;
+
+  margin: 0 auto 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #ecfdf5;
+  color: #059669;
+
+  border: 1px solid #d1fae5;
+}
+
+.verify-icon svg {
+  width: 27px;
+  height: 27px;
+  stroke-width: 2;
+}
+
+.verify-icon.error-icon {
+  background: #fff7ed;
+  color: #ea580c;
+  border-color: #fed7aa;
+}
+
+
+/* =========================================================
+   HEADING
+   ========================================================= */
+
+.verify-heading {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.verify-heading > span {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #059669;
+
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+}
+
+.verify-heading h1 {
+  margin: 0;
+
+  color: #111827;
+
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 800;
+
+  letter-spacing: -0.7px;
+}
+
+.verify-heading p {
+  margin: 12px 0 5px;
+
+  color: #667085;
+
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.verify-email {
+  display: block;
+
+  color: #111827;
+
+  font-size: 14px;
+  line-height: 1.5;
+
+  font-weight: 700;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* =========================================================
+   ALERTS
+   ========================================================= */
+
+.verify-alert {
+  width: 100%;
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+
+  padding: 12px 13px;
+
+  margin-bottom: 18px;
+
+  border-radius: 10px;
+
+  font-size: 13px;
+  line-height: 1.5;
+
+  font-weight: 500;
+}
+
+.verify-alert.error {
+  background: #fff5f5;
+  color: #b42318;
+  border: 1px solid #fecdca;
+}
+
+.verify-alert.success {
+  background: #ecfdf3;
+  color: #027a48;
+  border: 1px solid #abefc6;
+}
+
+.verify-alert > span:first-child {
+  flex-shrink: 0;
+  font-size: 15px;
+}
+
+.verify-alert svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.verify-form {
+  width: 100%;
+}
+
+.verify-form label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #344054;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.verify-form input {
+  width: 100%;
+  height: 58px;
+
+  box-sizing: border-box;
+
+  padding: 0 18px;
+
+  border: 1.5px solid #d0d5dd;
+  border-radius: 11px;
+
+  outline: none;
+
+  background: #ffffff;
+  color: #101828;
+
+  font-family: inherit;
+
+  font-size: 25px;
+  font-weight: 700;
+
+  letter-spacing: 8px;
+  text-align: center;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.verify-form input::placeholder {
+  color: #c5cad3;
+  opacity: 1;
+}
+
+.verify-form input:focus {
+  border-color: #10b981;
+
+  box-shadow:
+    0 0 0 4px rgba(16, 185, 129, 0.11);
+}
+
+.verify-form input:disabled {
+  cursor: not-allowed;
+  background: #f8fafc;
+  opacity: 0.75;
+}
+
+
+/* =========================================================
+   OTP HINT
+   ========================================================= */
+
+.otp-hint {
+  margin: 9px 2px 20px;
+
+  color: #98a2b3;
+
+  font-size: 11.5px;
+  line-height: 1.55;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   PRIMARY BUTTON
+   ========================================================= */
+
+.verify-primary-button {
+  width: 100%;
+  min-height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  padding: 12px 18px;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: #111827;
+  color: #ffffff;
+
+  font-family: inherit;
+
+  font-size: 13.5px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.verify-primary-button:hover:not(:disabled) {
+  background: #1f2937;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 8px 18px rgba(17, 24, 39, 0.16);
+}
+
+.verify-primary-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.verify-primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+
+/* =========================================================
+   SPINNER
+   ========================================================= */
+
+.verify-spinner {
+  width: 16px;
+  height: 16px;
+
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+
+  border-radius: 50%;
+
+  animation: verify-spin 0.75s linear infinite;
+}
+
+@keyframes verify-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   RESEND SECTION
+   ========================================================= */
+
+.resend-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
+
+  margin-top: 20px;
+
+  color: #667085;
+
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.resend-section button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  padding: 0;
+
+  border: 0;
+  background: transparent;
+
+  color: #059669;
+
+  font-family: inherit;
+
+  font-size: 12.5px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.resend-section button:hover:not(:disabled) {
+  color: #047857;
+  text-decoration: underline;
+}
+
+.resend-section button:disabled {
+  color: #98a2b3;
+  cursor: not-allowed;
+}
+
+.resend-section svg {
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   RESEND SPINNER
+   ========================================================= */
+
+.resend-spinning {
+  animation: resend-spin 0.8s linear infinite;
+}
+
+@keyframes resend-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   BACK BUTTON
+   ========================================================= */
+
+.verify-back-button {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  margin-top: 22px;
+  padding: 10px;
+
+  border: 0;
+
+  background: transparent;
+
+  color: #667085;
+
+  font-family: inherit;
+
+  font-size: 12.5px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    background 0.18s ease;
+}
+
+.verify-back-button:hover:not(:disabled) {
+  color: #111827;
+}
+
+.verify-back-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+
+/* =========================================================
+   SECURITY MESSAGE
+   ========================================================= */
+
+.verify-security {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7px;
+
+  margin-top: 22px;
+  padding-top: 18px;
+
+  border-top: 1px solid #eef0f3;
+
+  color: #98a2b3;
+
+  font-size: 10.5px;
+  line-height: 1.5;
+
+  text-align: center;
+}
+
+.verify-security svg {
+  flex-shrink: 0;
+
+  margin-top: 1px;
+
+  color: #10b981;
+}
+
+
+/* =========================================================
+   BACK LINK
+   ========================================================= */
+
+.verify-back-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-top: 20px;
+}
+
+.verify-back-link a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  color: #667085;
+
+  font-size: 12.5px;
+  font-weight: 600;
+
+  text-decoration: none;
+
+  transition: color 0.18s ease;
+}
+
+.verify-back-link a:hover {
+  color: #111827;
+}
+
+.verify-back-link svg {
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   SESSION EXPIRED HEADING
+   ========================================================= */
+
+.verify-card
+  .error-icon
+  + .verify-heading {
+  margin-bottom: 20px;
+}
+
+.verify-card
+  .error-icon
+  + .verify-heading
+  > span {
+  color: #ea580c;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 600px) {
+  .verify-page {
+    padding: 24px 16px;
+    align-items: center;
+  }
+
+  .verify-card {
+    max-width: 440px;
+
+    padding: 34px 28px 28px;
+
+    border-radius: 17px;
+  }
+
+  .verify-heading h1 {
+    font-size: 25px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 420px) {
+  .verify-page {
+    min-height: 100svh;
+    padding: 18px 12px;
+  }
+
+  .verify-card {
+    padding: 28px 20px 24px;
+
+    border-radius: 15px;
+  }
+
+  .verify-brand {
+    margin-bottom: 25px;
+  }
+
+  .verify-logo {
+    width: 38px;
+    height: 38px;
+
+    border-radius: 10px;
+  }
+
+  .verify-brand strong {
+    font-size: 17px;
+  }
+
+  .verify-icon {
+    width: 52px;
+    height: 52px;
+
+    margin-bottom: 18px;
+  }
+
+  .verify-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .verify-heading h1 {
+    font-size: 23px;
+  }
+
+  .verify-heading p {
+    font-size: 13px;
+  }
+
+  .verify-email {
+    font-size: 13px;
+  }
+
+  .verify-form input {
+    height: 54px;
+
+    font-size: 22px;
+    letter-spacing: 6px;
+  }
+
+  .verify-primary-button {
+    min-height: 46px;
+
+    font-size: 12.5px;
+  }
+
+  .resend-section {
+    font-size: 11.5px;
+  }
+
+  .resend-section button {
+    font-size: 11.5px;
+  }
+
+  .verify-security {
+    font-size: 10px;
+  }
+}
+
+
+/* =========================================================
+   VERY SMALL DEVICES
+   ========================================================= */
+
+@media (max-width: 330px) {
+  .verify-card {
+    padding: 24px 16px 20px;
+  }
+
+  .verify-heading h1 {
+    font-size: 21px;
+  }
+
+  .verify-form input {
+    letter-spacing: 4px;
+    font-size: 20px;
+  }
+
+  .verify-primary-button {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .verify-primary-button,
+  .verify-form input,
+  .verify-back-button,
+  .verify-back-link a {
+    transition: none;
+  }
+
+  .verify-spinner,
+  .resend-spinning {
+    animation: none;
+  }
+}

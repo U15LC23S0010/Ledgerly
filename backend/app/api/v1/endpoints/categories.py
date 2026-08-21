@@ -1,4 +1,6 @@
+
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -6,19 +8,45 @@ from app.db.session import get_db
 from app.models.category import Category
 from app.schemas.category import (
     CategoryCreate,
-    CategoryResponse
+    CategoryResponse,
 )
 
 from app.core.dependencies import (
     get_current_user,
-    get_current_admin
+    get_current_admin,
 )
 
 
 router = APIRouter(
     prefix="/categories",
-    tags=["Categories"]
+    tags=["Categories"],
 )
+
+
+# =========================================================
+# HELPER
+# =========================================================
+
+def normalize_category_name(name: str) -> str:
+    """
+    Clean and validate category name.
+    """
+
+    value = (name or "").strip()
+
+    if not value:
+        raise HTTPException(
+            status_code=400,
+            detail="Category name cannot be empty",
+        )
+
+    if len(value) > 100:
+        raise HTTPException(
+            status_code=400,
+            detail="Category name cannot exceed 100 characters",
+        )
+
+    return value
 
 
 # =========================================================
@@ -28,31 +56,53 @@ router = APIRouter(
 
 @router.post(
     "/",
-    response_model=CategoryResponse
+    response_model=CategoryResponse,
 )
 def create_category(
     category: CategoryCreate,
     db: Session = Depends(get_db),
-    current_admin=Depends(get_current_admin)
+    current_admin=Depends(get_current_admin),
 ):
-    # Check duplicate category
-    existing_category = db.query(Category).filter(
-        Category.name.ilike(category.name)
-    ).first()
+    name = normalize_category_name(category.name)
+
+    # -----------------------------------------------------
+    # CHECK DUPLICATE
+    # -----------------------------------------------------
+
+    existing_category = (
+        db.query(Category)
+        .filter(
+            Category.name.ilike(name)
+        )
+        .first()
+    )
 
     if existing_category:
         raise HTTPException(
             status_code=400,
-            detail="Category already exists"
+            detail="Category already exists",
         )
 
+    # -----------------------------------------------------
+    # CREATE
+    # -----------------------------------------------------
+
     new_category = Category(
-        name=category.name
+        name=name,
     )
 
-    db.add(new_category)
-    db.commit()
-    db.refresh(new_category)
+    try:
+        db.add(new_category)
+        db.commit()
+        db.refresh(new_category)
+
+    except IntegrityError:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=400,
+            detail="Category already exists",
+        )
 
     return new_category
 
@@ -64,15 +114,21 @@ def create_category(
 
 @router.get(
     "/",
-    response_model=list[CategoryResponse]
+    response_model=list[CategoryResponse],
 )
 def get_categories(
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
-    return db.query(Category).order_by(
-        Category.name.asc()
-    ).all()
+    categories = (
+        db.query(Category)
+        .order_by(
+            Category.name.asc()
+        )
+        .all()
+    )
+
+    return categories
 
 
 # =========================================================
@@ -82,21 +138,25 @@ def get_categories(
 
 @router.get(
     "/{category_id}",
-    response_model=CategoryResponse
+    response_model=CategoryResponse,
 )
 def get_category(
     category_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
-    category = db.query(Category).filter(
-        Category.id == category_id
-    ).first()
+    category = (
+        db.query(Category)
+        .filter(
+            Category.id == category_id
+        )
+        .first()
+    )
 
     if not category:
         raise HTTPException(
             status_code=404,
-            detail="Category not found"
+            detail="Category not found",
         )
 
     return category
@@ -109,40 +169,76 @@ def get_category(
 
 @router.put(
     "/{category_id}",
-    response_model=CategoryResponse
+    response_model=CategoryResponse,
 )
 def update_category(
     category_id: int,
     category_data: CategoryCreate,
     db: Session = Depends(get_db),
-    current_admin=Depends(get_current_admin)
+    current_admin=Depends(get_current_admin),
 ):
-    category = db.query(Category).filter(
-        Category.id == category_id
-    ).first()
+    # -----------------------------------------------------
+    # FIND CATEGORY
+    # -----------------------------------------------------
+
+    category = (
+        db.query(Category)
+        .filter(
+            Category.id == category_id
+        )
+        .first()
+    )
 
     if not category:
         raise HTTPException(
             status_code=404,
-            detail="Category not found"
+            detail="Category not found",
         )
 
-    # Check duplicate name
-    duplicate = db.query(Category).filter(
-        Category.name.ilike(category_data.name),
-        Category.id != category_id
-    ).first()
+    # -----------------------------------------------------
+    # NORMALIZE NAME
+    # -----------------------------------------------------
+
+    name = normalize_category_name(
+        category_data.name
+    )
+
+    # -----------------------------------------------------
+    # CHECK DUPLICATE
+    # -----------------------------------------------------
+
+    duplicate = (
+        db.query(Category)
+        .filter(
+            Category.name.ilike(name),
+            Category.id != category_id,
+        )
+        .first()
+    )
 
     if duplicate:
         raise HTTPException(
             status_code=400,
-            detail="Category already exists"
+            detail="Category already exists",
         )
 
-    category.name = category_data.name
+    # -----------------------------------------------------
+    # UPDATE
+    # -----------------------------------------------------
 
-    db.commit()
-    db.refresh(category)
+    category.name = name
+
+    try:
+        db.commit()
+        db.refresh(category)
+
+    except IntegrityError:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=400,
+            detail="Category already exists",
+        )
 
     return category
 
@@ -152,32 +248,78 @@ def update_category(
 # ADMIN ONLY
 # =========================================================
 
-@router.delete("/{category_id}")
+@router.delete(
+    "/{category_id}",
+)
 def delete_category(
     category_id: int,
     db: Session = Depends(get_db),
-    current_admin=Depends(get_current_admin)
+    current_admin=Depends(get_current_admin),
 ):
-    category = db.query(Category).filter(
-        Category.id == category_id
-    ).first()
+    # -----------------------------------------------------
+    # FIND CATEGORY
+    # -----------------------------------------------------
+
+    category = (
+        db.query(Category)
+        .filter(
+            Category.id == category_id
+        )
+        .first()
+    )
 
     if not category:
         raise HTTPException(
             status_code=404,
-            detail="Category not found"
+            detail="Category not found",
         )
 
-    # Check whether expenses use this category
+    # -----------------------------------------------------
+    # CHECK EXPENSES
+    # -----------------------------------------------------
+
     if category.expenses:
         raise HTTPException(
             status_code=400,
-            detail="Cannot delete category because expenses use it"
+            detail=(
+                "Cannot delete category because "
+                "expenses are using it"
+            ),
         )
 
-    db.delete(category)
-    db.commit()
+    # -----------------------------------------------------
+    # CHECK TRANSACTIONS
+    # -----------------------------------------------------
+
+    if category.transactions:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Cannot delete category because "
+                "transactions are using it"
+            ),
+        )
+
+    # -----------------------------------------------------
+    # DELETE
+    # -----------------------------------------------------
+
+    try:
+        db.delete(category)
+        db.commit()
+
+    except IntegrityError:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Cannot delete category because "
+                "it is being used"
+            ),
+        )
 
     return {
-        "message": "Category deleted successfully"
+        "message": "Category deleted successfully",
+        "category_id": category_id,
     }

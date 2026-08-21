@@ -13,7 +13,8 @@ def test_register_user():
             "full_name": "Test User",
             "email": "pytest_user_001@example.com",
             "password": "TestPassword123!",
-            "company_name": "Test Company"
+            "company_name": "Test Company",
+            "mobile_number": "9876543210",
         }
     )
 

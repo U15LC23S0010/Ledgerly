@@ -1,0 +1,124 @@
+/* =========================================================
+   APP LAYOUT
+========================================================= */
+
+.app-layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+
+  margin: 0;
+  padding: 0;
+
+  background: #f8fafc;
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.app-layout .sidebar {
+  position: fixed;
+
+  top: 0;
+  left: 0;
+
+  width: 230px;
+  height: 100vh;
+
+  flex: none;
+
+  z-index: 1000;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.app-layout .app-main {
+  width: calc(100% - 230px);
+  min-height: 100vh;
+
+  margin-left: 230px;
+
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow-x: hidden;
+}
+
+
+/* =========================================================
+   TOPBAR
+========================================================= */
+
+.app-layout .topbar {
+  width: 100%;
+  min-width: 0;
+
+  flex: 0 0 auto;
+}
+
+
+/* =========================================================
+   CONTENT
+========================================================= */
+
+.app-layout .app-content {
+  width: 100%;
+  min-width: 0;
+
+  flex: 1 1 auto;
+
+  margin: 0;
+  padding: 0;
+
+  overflow-x: hidden;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1000px) {
+
+  .app-layout .sidebar {
+    width: 210px;
+  }
+
+  .app-layout .app-main {
+    width: calc(100% - 210px);
+    margin-left: 210px;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 760px) {
+
+  .app-layout .sidebar {
+    width: 230px;
+
+    left: -230px;
+
+    transition: left 0.25s ease;
+  }
+
+  .app-layout .app-main {
+    width: 100%;
+    margin-left: 0;
+  }
+
+}

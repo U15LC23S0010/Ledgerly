@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, extract
 
 from app.db.session import get_db
-from app.models.expense import Expense
+from app.models.transaction import Transaction
 from app.models.category import Category
 from app.core.dependencies import get_current_user
 
@@ -12,50 +12,104 @@ router = APIRouter()
 
 
 # =========================================================
-# EXPENSE SUMMARY
+# ANALYTICS SUMMARY
 # =========================================================
 
 @router.get("/summary")
-def expense_summary(
+def analytics_summary(
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
-    total_expenses = db.query(
-        func.count(Expense.id)
-    ).filter(
-        Expense.user_id == current_user.id
-    ).scalar()
+    # -----------------------------------------------------
+    # TOTAL INCOME
+    # -----------------------------------------------------
 
-    total_amount = db.query(
-        func.sum(Expense.amount)
-    ).filter(
-        Expense.user_id == current_user.id
-    ).scalar()
+    total_income = (
+        db.query(func.sum(Transaction.amount))
+        .filter(
+            Transaction.user_id == current_user.id,
+            Transaction.transaction_type == "income",
+        )
+        .scalar()
+        or 0
+    )
 
-    average_amount = db.query(
-        func.avg(Expense.amount)
-    ).filter(
-        Expense.user_id == current_user.id
-    ).scalar()
+    # -----------------------------------------------------
+    # TOTAL EXPENSES
+    # -----------------------------------------------------
 
-    highest_expense = db.query(
-        func.max(Expense.amount)
-    ).filter(
-        Expense.user_id == current_user.id
-    ).scalar()
+    total_expenses = (
+        db.query(func.sum(Transaction.amount))
+        .filter(
+            Transaction.user_id == current_user.id,
+            Transaction.transaction_type == "expense",
+        )
+        .scalar()
+        or 0
+    )
 
-    lowest_expense = db.query(
-        func.min(Expense.amount)
-    ).filter(
-        Expense.user_id == current_user.id
-    ).scalar()
+    # -----------------------------------------------------
+    # INCOME COUNT
+    # -----------------------------------------------------
+
+    income_count = (
+        db.query(func.count(Transaction.id))
+        .filter(
+            Transaction.user_id == current_user.id,
+            Transaction.transaction_type == "income",
+        )
+        .scalar()
+        or 0
+    )
+
+    # -----------------------------------------------------
+    # EXPENSE COUNT
+    # -----------------------------------------------------
+
+    expense_count = (
+        db.query(func.count(Transaction.id))
+        .filter(
+            Transaction.user_id == current_user.id,
+            Transaction.transaction_type == "expense",
+        )
+        .scalar()
+        or 0
+    )
+
+    # -----------------------------------------------------
+    # TOTAL TRANSACTIONS
+    # -----------------------------------------------------
+
+    transaction_count = (
+        db.query(func.count(Transaction.id))
+        .filter(
+            Transaction.user_id == current_user.id,
+        )
+        .scalar()
+        or 0
+    )
+
+    # -----------------------------------------------------
+    # NET BALANCE
+    # -----------------------------------------------------
+
+    net_balance = (
+        float(total_income)
+        - float(total_expenses)
+    )
+
+    # -----------------------------------------------------
+    # RESPONSE
+    # -----------------------------------------------------
 
     return {
-        "total_expenses": total_expenses or 0,
-        "total_amount": total_amount or 0,
-        "average_expense": round(average_amount or 0, 2),
-        "highest_expense": highest_expense or 0,
-        "lowest_expense": lowest_expense or 0
+        "total_income": float(total_income),
+        "total_expenses": float(total_expenses),
+        "income_count": int(income_count),
+        "expense_count": int(expense_count),
+        "transaction_count": int(transaction_count),
+        "balance": net_balance,
+        "net_balance": net_balance,
     }
 
 
@@ -66,35 +120,48 @@ def expense_summary(
 @router.get("/category-summary")
 def category_summary(
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     results = (
         db.query(
-            Category.name,
-            func.sum(Expense.amount).label("total")
+            Category.id.label("category_id"),
+            Category.name.label("category"),
+            func.sum(
+                Transaction.amount
+            ).label("total"),
         )
         .join(
-            Expense,
-            Expense.category_id == Category.id
+            Category,
+            Transaction.category_id == Category.id,
         )
         .filter(
-            Expense.user_id == current_user.id
+            Transaction.user_id == current_user.id,
+            Transaction.transaction_type == "expense",
+            Transaction.category_id.isnot(None),
         )
         .group_by(
-            Category.name
+            Category.id,
+            Category.name,
         )
         .order_by(
-            func.sum(Expense.amount).desc()
+            func.sum(
+                Transaction.amount
+            ).desc()
         )
         .all()
     )
 
     return [
         {
-            "category": category,
-            "total": total
+            "category_id": int(category_id),
+            "category": category_name,
+            "total": float(total or 0),
         }
-        for category, total in results
+        for (
+            category_id,
+            category_name,
+            total,
+        ) in results
     ]
 
 
@@ -105,40 +172,56 @@ def category_summary(
 @router.get("/monthly-summary")
 def monthly_summary(
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     results = (
         db.query(
-            func.extract(
+            extract(
+                "year",
+                Transaction.date,
+            ).label("year"),
+
+            extract(
                 "month",
-                Expense.date
+                Transaction.date,
             ).label("month"),
+
             func.sum(
-                Expense.amount
-            ).label("total")
+                Transaction.amount
+            ).label("total"),
         )
         .filter(
-            Expense.user_id == current_user.id
+            Transaction.user_id == current_user.id,
+            Transaction.transaction_type == "expense",
         )
         .group_by(
-            func.extract(
+            extract(
+                "year",
+                Transaction.date,
+            ),
+            extract(
                 "month",
-                Expense.date
-            )
+                Transaction.date,
+            ),
         )
         .order_by(
-            func.extract(
+            extract(
+                "year",
+                Transaction.date,
+            ),
+            extract(
                 "month",
-                Expense.date
-            )
+                Transaction.date,
+            ),
         )
         .all()
     )
 
     return [
         {
+            "year": int(year),
             "month": int(month),
-            "total": total
+            "total": float(total or 0),
         }
-        for month, total in results
+        for year, month, total in results
     ]
