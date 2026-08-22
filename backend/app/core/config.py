@@ -1,4 +1,11 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+# backend/.env
+BASE_DIR = Path(__file__).resolve().parents[2]
+ENV_FILE = BASE_DIR / ".env"
 
 
 class Settings(BaseSettings):
@@ -10,11 +17,6 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
 
     # Comma-separated frontend URLs
-    # Example:
-    # CORS_ORIGINS=http://localhost:5174
-    #
-    # Production example:
-    # CORS_ORIGINS=https://your-frontend-domain.com
     CORS_ORIGINS: str = "http://localhost:5174"
 
     # =========================================================
@@ -56,18 +58,15 @@ class Settings(BaseSettings):
     SMTP_FROM_NAME: str = "Ledgerly"
 
     # =========================================================
-    # PYDANTIC SETTINGS CONFIGURATION
+    # PYDANTIC SETTINGS
     # =========================================================
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
+        case_sensitive=True,
     )
 
-
-# =============================================================
-# SETTINGS INSTANCE
-# =============================================================
 
 settings = Settings()
