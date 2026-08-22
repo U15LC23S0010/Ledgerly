@@ -1,4 +1,3 @@
-
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -10,7 +9,7 @@ from app.core.config import settings
 # DATABASE
 # =========================================================
 
-from app.db.database import Base, engine, SessionLocal
+from app.db.database import SessionLocal
 from app.db.seed import seed_default_categories
 
 # =========================================================
@@ -61,17 +60,17 @@ from app.api.v1.endpoints.reports import router as reports_router
 async def lifespan(app: FastAPI):
     """
     Application startup and shutdown logic.
+
+    Database schema management is handled exclusively by Alembic.
+    Application startup only performs safe default-data seeding.
     """
 
     # -----------------------------------------------------
     # STARTUP
     # -----------------------------------------------------
 
-    # Create tables if they do not already exist.
-    #
-    # This is mainly useful for local development/testing.
-    # In production, Alembic migrations should be preferred.
-    Base.metadata.create_all(bind=engine)
+    # Database schema is managed by Alembic migrations.
+    # Do NOT use Base.metadata.create_all() here.
 
     # Seed default categories.
     db = SessionLocal()
