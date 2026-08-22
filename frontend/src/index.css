@@ -1,5 +1,5 @@
 /* =========================================================
-   LEDGERFLOW AI — GLOBAL RESET
+   LEDGERFLOW AI — GLOBAL STYLES
    ========================================================= */
 
 *,
@@ -7,7 +7,6 @@
 *::after {
   box-sizing: border-box;
 }
-
 
 /* =========================================================
    ROOT
@@ -18,10 +17,9 @@ body,
 #root {
   margin: 0;
   padding: 0;
-  min-height: 100%;
   width: 100%;
+  min-height: 100%;
 }
-
 
 /* =========================================================
    GLOBAL FONT
@@ -37,16 +35,15 @@ html {
     "Segoe UI",
     sans-serif;
 
-  background: #0f172a;
+  background: #f5f7fb;
 }
-
 
 body {
   min-width: 320px;
+  min-height: 100vh;
 
-  color: #e5e7eb;
-
-  background: #0f172a;
+  color: #172033;
+  background: #f5f7fb;
 
   font-family:
     Inter,
@@ -58,9 +55,9 @@ body {
     sans-serif;
 
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
-
 
 /* =========================================================
    ROOT APPLICATION
@@ -68,12 +65,11 @@ body {
 
 #root {
   min-height: 100vh;
-  background: #0f172a;
+  background: #f5f7fb;
 }
 
-
 /* =========================================================
-   IMPORTANT — PREVENT GLOBAL BUTTON CONFLICTS
+   ELEMENT RESET
    ========================================================= */
 
 button,
@@ -83,23 +79,19 @@ select {
   font: inherit;
 }
 
-
 button {
   margin: 0;
   border: 0;
   outline: 0;
 }
 
-
 button:not(:disabled) {
   cursor: pointer;
 }
 
-
 button:disabled {
   cursor: not-allowed;
 }
-
 
 input,
 textarea,
@@ -107,22 +99,9 @@ select {
   outline: none;
 }
 
-
-/* =========================================================
-   IMAGES & SVG
-   ========================================================= */
-
-img,
-svg {
-  display: block;
-  max-width: 100%;
+textarea {
+  resize: vertical;
 }
-
-
-svg {
-  flex-shrink: 0;
-}
-
 
 /* =========================================================
    LINKS
@@ -133,16 +112,28 @@ a {
   text-decoration: none;
 }
 
+/* =========================================================
+   IMAGES / SVG
+   ========================================================= */
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+svg {
+  flex-shrink: 0;
+}
 
 /* =========================================================
    TEXT SELECTION
    ========================================================= */
 
 ::selection {
-  background: rgba(59, 130, 246, 0.25);
-  color: #ffffff;
+  background: rgba(37, 99, 235, 0.18);
+  color: #172033;
 }
-
 
 /* =========================================================
    SCROLLBAR
@@ -153,47 +144,21 @@ a {
   height: 8px;
 }
 
-
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #f1f5f9;
 }
 
-
 ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: #cbd5e1;
   border-radius: 999px;
 }
 
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
+  background: #94a3b8;
 }
-
 
 /* =========================================================
-   COMMON FORM FIXES
-   ========================================================= */
-
-input::placeholder,
-textarea::placeholder {
-  color: #98a1b2;
-  opacity: 1;
-}
-
-
-select {
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-
-textarea {
-  resize: vertical;
-}
-
-
-/* =========================================================
-   INPUT DEFAULT COLORS
+   FORM ELEMENTS
    ========================================================= */
 
 input,
@@ -203,6 +168,11 @@ select {
   background: #ffffff;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
 
 input:disabled,
 textarea:disabled,
@@ -211,23 +181,26 @@ select:disabled {
   color: #64748b;
 }
 
+select {
+  -webkit-appearance: none;
+  appearance: none;
+}
 
 /* =========================================================
-   REMOVE DEFAULT NUMBER ARROWS
+   NUMBER INPUT
    ========================================================= */
 
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   margin: 0;
   -webkit-appearance: none;
+  appearance: none;
 }
-
 
 input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
-
 
 /* =========================================================
    ACCESSIBILITY
@@ -236,25 +209,93 @@ input[type="number"] {
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
-select:focus-visible {
-  outline: 3px solid rgba(59, 130, 246, 0.35);
+select:focus-visible,
+a:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.25);
   outline-offset: 2px;
 }
 
+/* =========================================================
+   BUTTON TRANSITIONS
+   ========================================================= */
+
+button {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
 
 /* =========================================================
-   MODAL SAFETY
+   COMMON STATUS COLORS
+   ========================================================= */
+
+.text-success {
+  color: #16a34a;
+}
+
+.text-danger {
+  color: #dc2626;
+}
+
+.text-warning {
+  color: #d97706;
+}
+
+.text-info {
+  color: #2563eb;
+}
+
+/* =========================================================
+   STATUS BACKGROUNDS
+   ========================================================= */
+
+.bg-success {
+  background: #dcfce7;
+}
+
+.bg-danger {
+  background: #fee2e2;
+}
+
+.bg-warning {
+  background: #fef3c7;
+}
+
+.bg-info {
+  background: #dbeafe;
+}
+
+/* =========================================================
+   TABLE BASE
+   ========================================================= */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* =========================================================
+   MODAL
    ========================================================= */
 
 .modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
+
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
 }
 
-
 /* =========================================================
-   ICON SAFETY
+   ICONS
    ========================================================= */
 
 .lucide {
@@ -263,232 +304,12 @@ select:focus-visible {
   stroke-width: 2;
 }
 
-
 /* =========================================================
-   GLOBAL APP BACKGROUND
-   ========================================================= */
-
-.app,
-.app-container,
-.main-app,
-.dashboard-layout {
-  min-height: 100vh;
-  background: #0f172a;
-}
-
-
-/* =========================================================
-   COMMON DARK SURFACES
-   ========================================================= */
-
-.sidebar,
-.topbar,
-.navbar {
-  background: #111827;
-  color: #e5e7eb;
-}
-
-
-/* =========================================================
-   COMMON CONTENT AREA
-   ========================================================= */
-
-.main-content,
-.content-area,
-.page-content {
-  background: #0f172a;
-  color: #e5e7eb;
-}
-
-
-/* =========================================================
-   WHITE CARD / PANEL SUPPORT
-   ========================================================= */
-
-.card,
-.panel,
-.dashboard-card,
-.stat-card,
-.table-container,
-.form-container,
-.modal,
-.modal-content {
-  color: #172033;
-  background: #ffffff;
-}
-
-
-/* =========================================================
-   CARD HEADINGS
-   ========================================================= */
-
-.card h1,
-.card h2,
-.card h3,
-.card h4,
-.card h5,
-.card h6,
-.panel h1,
-.panel h2,
-.panel h3,
-.panel h4,
-.panel h5,
-.panel h6,
-.dashboard-card h1,
-.dashboard-card h2,
-.dashboard-card h3,
-.dashboard-card h4,
-.dashboard-card h5,
-.dashboard-card h6 {
-  color: #172033;
-}
-
-
-/* =========================================================
-   CARD TEXT
-   ========================================================= */
-
-.card p,
-.card span,
-.panel p,
-.panel span,
-.dashboard-card p,
-.dashboard-card span {
-  color: inherit;
-}
-
-
-/* =========================================================
-   TABLES
-   ========================================================= */
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-
-th {
-  color: #475569;
-  background: #f8fafc;
-}
-
-
-td {
-  color: #172033;
-  background: #ffffff;
-}
-
-
-th,
-td {
-  border-bottom: 1px solid #e2e8f0;
-}
-
-
-/* =========================================================
-   FORM LABELS
-   ========================================================= */
-
-label {
-  color: #334155;
-}
-
-
-/* =========================================================
-   BUTTON BASE
-   ========================================================= */
-
-button {
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.15s ease,
-    box-shadow 0.2s ease;
-}
-
-
-/* =========================================================
-   BUTTON HOVER
-   ========================================================= */
-
-button:not(:disabled):hover {
-  transform: translateY(-1px);
-}
-
-
-/* =========================================================
-   MODAL OVERLAY
-   ========================================================= */
-
-.modal-overlay {
-  background: rgba(2, 6, 23, 0.7);
-  backdrop-filter: blur(4px);
-}
-
-
-/* =========================================================
-   STATUS COLORS
-   ========================================================= */
-
-.text-success {
-  color: #16a34a;
-}
-
-
-.text-danger {
-  color: #dc2626;
-}
-
-
-.text-warning {
-  color: #d97706;
-}
-
-
-.text-info {
-  color: #2563eb;
-}
-
-
-/* =========================================================
-   BACKGROUND STATUS COLORS
-   ========================================================= */
-
-.bg-success {
-  background: #dcfce7;
-}
-
-
-.bg-danger {
-  background: #fee2e2;
-}
-
-
-.bg-warning {
-  background: #fef3c7;
-}
-
-
-.bg-info {
-  background: #dbeafe;
-}
-
-
-/* =========================================================
-   MOBILE
+   RESPONSIVE
    ========================================================= */
 
 @media (max-width: 768px) {
   body {
     min-width: 320px;
-  }
-
-  .main-content,
-  .content-area,
-  .page-content {
-    padding-left: 16px;
-    padding-right: 16px;
   }
 }

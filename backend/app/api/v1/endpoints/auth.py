@@ -13,7 +13,7 @@ from pydantic import BaseModel, EmailStr
 
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
+from app.db.database import get_db
 
 from app.models.user import User
 from app.models.refresh_token import RefreshToken
@@ -51,7 +51,10 @@ OTP_EXPIRE_MINUTES = 5
 
 def utc_now() -> datetime:
     """
-    Return the current UTC time as a timezone-aware datetime.
+    Return the current UTC time as a naive datetime.
+
+    SQLite commonly stores DateTime values without timezone
+    information, so comparisons must use the same format.
     """
     return datetime.now(timezone.utc)
 
@@ -1420,25 +1423,20 @@ def login(
         }
 
     except HTTPException:
-
         raise
 
     except Exception as e:
+            db.rollback()
 
-        db.rollback()
+            print(
+                "LOGIN INTERNAL ERROR:",
+                repr(e),
+            )
 
-        print(
-            "LOGIN INTERNAL ERROR:",
-            repr(e),
-        )
-
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                f"Login internal error: {str(e)}"
-            ),
-        )
-
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error",
+            )
 
 # =========================================================
 # REFRESH ACCESS TOKEN

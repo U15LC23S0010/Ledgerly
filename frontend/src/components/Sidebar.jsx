@@ -20,35 +20,46 @@ import {
 
 import "./Sidebar.css";
 
+
+/* =========================================================
+   SIDEBAR SECTIONS
+========================================================= */
+
 const sections = [
   {
     title: "WORKSPACE",
+
     items: [
       {
         label: "Dashboard",
         path: "/dashboard",
         icon: LayoutDashboard,
       },
+
       {
         label: "Transactions",
         path: "/transactions",
         icon: ArrowLeftRight,
       },
+
       {
         label: "Expenses",
         path: "/expenses",
         icon: ReceiptText,
       },
+
       {
         label: "Auto Expense",
         path: "/auto-expense",
         icon: WandSparkles,
       },
+
       {
         label: "Categories",
         path: "/categories",
         icon: Tags,
       },
+
       {
         label: "Budget",
         path: "/budget",
@@ -59,12 +70,14 @@ const sections = [
 
   {
     title: "ANALYZE",
+
     items: [
       {
         label: "Analytics",
         path: "/analytics",
         icon: BarChart3,
       },
+
       {
         label: "AI Insights",
         path: "/insights",
@@ -76,27 +89,32 @@ const sections = [
 
   {
     title: "BUSINESS",
+
     items: [
       {
         label: "Accounts",
         path: "/accounts",
         icon: Landmark,
       },
+
       {
         label: "Customers",
         path: "/customers",
         icon: Users,
       },
+
       {
         label: "Vendors",
         path: "/vendors",
         icon: Store,
       },
+
       {
         label: "Invoices",
         path: "/invoices",
         icon: FileText,
       },
+
       {
         label: "Reports",
         path: "/reports",
@@ -106,36 +124,67 @@ const sections = [
   },
 ];
 
+
 export default function Sidebar() {
+
   const navigate = useNavigate();
 
+
+  /* =========================================================
+     LOGOUT
+  ========================================================= */
+
   const handleLogout = () => {
+
     localStorage.removeItem("access_token");
     localStorage.removeItem("userEmail");
 
     navigate("/login", {
       replace: true,
     });
+
   };
+
 
   return (
     <aside className="sidebar">
 
-      {/* =========================================
+
+      {/* =====================================================
           BRAND
-      ========================================= */}
+      ===================================================== */}
 
       <button
         type="button"
         className="sidebar-brand"
+
+        /*
+          IMPORTANT:
+          Use /workspace instead of /.
+
+          /workspace reads the saved Dashboard View:
+          Overview  -> Dashboard
+          Expenses  -> Expenses
+          Analytics -> Analytics
+        */
+
         onClick={() => navigate("/dashboard")}
-        aria-label="Go to Ledgerly dashboard"
+
+        aria-label="Go to Ledgerly workspace"
       >
+
         <div className="login-logo">
-        <img src="/ledgerly-30x30.png" alt="Ledgerly" />
+
+          <img
+            src="/ledgerly-30x30.png"
+            alt="Ledgerly"
+          />
+
         </div>
 
+
         <div className="brand-copy">
+
           <strong>
             Ledgerly <em></em>
           </strong>
@@ -143,13 +192,15 @@ export default function Sidebar() {
           <small>
             SMART BOOKKEEPING
           </small>
+
         </div>
+
       </button>
 
 
-      {/* =========================================
+      {/* =====================================================
           NAVIGATION
-      ========================================= */}
+      ===================================================== */}
 
       <nav
         className="sidebar-nav"
@@ -157,6 +208,7 @@ export default function Sidebar() {
       >
 
         {sections.map((section) => (
+
           <div
             className="nav-section"
             key={section.title}
@@ -166,7 +218,9 @@ export default function Sidebar() {
               {section.title}
             </div>
 
+
             {section.items.map((item) => {
+
               const Icon = item.icon;
 
               return (
@@ -180,6 +234,7 @@ export default function Sidebar() {
                     }`
                   }
                 >
+
                   <Icon className="nav-icon" />
 
                   <span className="nav-label">
@@ -191,21 +246,25 @@ export default function Sidebar() {
                       {item.badge}
                     </span>
                   )}
+
                 </NavLink>
               );
+
             })}
 
           </div>
+
         ))}
 
       </nav>
 
 
-      {/* =========================================
+      {/* =====================================================
           BOTTOM AREA
-      ========================================= */}
+      ===================================================== */}
 
       <div className="sidebar-bottom">
+
 
         {/* SETTINGS */}
 
@@ -218,11 +277,13 @@ export default function Sidebar() {
             }`
           }
         >
+
           <Settings className="nav-icon" />
 
           <span className="nav-label">
             Settings
           </span>
+
         </NavLink>
 
 
@@ -234,7 +295,9 @@ export default function Sidebar() {
             VK
           </div>
 
+
           <div className="user-copy">
+
             <strong>
               Vinayak
             </strong>
@@ -242,7 +305,9 @@ export default function Sidebar() {
             <span>
               Administrator
             </span>
+
           </div>
+
 
           <button
             type="button"
@@ -250,7 +315,9 @@ export default function Sidebar() {
             aria-label="Logout"
             onClick={handleLogout}
           >
+
             <LogOut />
+
           </button>
 
         </div>

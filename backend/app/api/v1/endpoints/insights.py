@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.db.session import get_db
+from app.db.database import get_db
 from app.core.dependencies import get_current_user
 
 from app.models.expense import Expense

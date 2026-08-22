@@ -46,3 +46,6 @@ build/
 dist/
 *.egg-info/
 frontend/dev-dist/
+
+# Archived Alembic migrations
+backend/migrations_old/

@@ -19,7 +19,7 @@ class Customer(Base):
 
     tax_id = Column(String, nullable=True)
 
-    notes =  Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
 
     user_id = Column(
         Integer,
@@ -27,7 +27,10 @@ class Customer(Base):
         nullable=False
     )
 
-    user = relationship("User")
+    user = relationship(
+        "User",
+        back_populates="customers"
+    )
 
     invoices = relationship(
         "Invoice",

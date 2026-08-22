@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
+from app.db.database import get_db
 
 from app.models.transaction import Transaction
 from app.models.account import Account

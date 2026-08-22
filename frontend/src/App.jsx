@@ -28,21 +28,77 @@ import Welcome from "./pages/Welcome";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+const SETTINGS_KEY = "ledgerly_settings";
+
+
+/* =========================================================
+   DEFAULT WORKSPACE REDIRECT
+========================================================= */
+
+function WorkspaceDefaultRedirect() {
+  let destination = "/dashboard";
+
+  try {
+    const storedSettings = localStorage.getItem(SETTINGS_KEY);
+
+    if (storedSettings) {
+      const settings = JSON.parse(storedSettings);
+
+      switch (settings.dashboardView) {
+        case "expenses":
+          destination = "/expenses";
+          break;
+
+        case "analytics":
+          destination = "/analytics";
+          break;
+
+        case "overview":
+        default:
+          destination = "/dashboard";
+          break;
+      }
+    }
+  } catch (error) {
+    console.error(
+      "Unable to read dashboard preference:",
+      error
+    );
+
+    destination = "/dashboard";
+  }
+
+  return (
+    <Navigate
+      to={destination}
+      replace
+    />
+  );
+}
+
+
+/* =========================================================
+   APPLICATION
+========================================================= */
+
 export default function App() {
   return (
     <Routes>
 
-      {/* =========================================
+      {/* =================================================
           PUBLIC ROUTES
-      ========================================= */}
+      ================================================= */}
 
-       <Route path="/welcome"
-       element={<Welcome />} />
+      <Route
+        path="/welcome"
+        element={<Welcome />}
+      />
 
-       <Route
-       path="/"
-       element={<GuideGate />}
-/>
       <Route
         path="/login"
         element={<Login />}
@@ -58,11 +114,6 @@ export default function App() {
         element={<VerifyRegistration />}
       />
 
-      {/* =========================================
-          PASSWORD RECOVERY
-          MUST BE PUBLIC
-      ========================================= */}
-
       <Route
         path="/forgot-password"
         element={<ForgotPassword />}
@@ -73,23 +124,59 @@ export default function App() {
         element={<ResetPassword />}
       />
 
-      {/* =========================================
-          PROTECTED ROUTES
-      ========================================= */}
+
+      {/* =================================================
+          PROTECTED APPLICATION
+      ================================================= */}
 
       <Route element={<ProtectedRoute />}>
 
         <Route element={<AppLayout />}>
+
+          {/* =============================================
+              ROOT
+
+              This is where the saved Dashboard View
+              preference is applied.
+          ============================================= */}
+
+          <Route
+            path="/"
+            element={<WorkspaceDefaultRedirect />}
+          />
+
+
+          {/* =============================================
+              DASHBOARD
+
+              IMPORTANT:
+              This is ALWAYS the actual Dashboard.
+              Clicking Dashboard goes here directly.
+          ============================================= */}
 
           <Route
             path="/dashboard"
             element={<Dashboard />}
           />
 
+
+          {/* =============================================
+              WORKSPACE ALIAS
+
+              Optional compatibility route.
+              If anything still uses /workspace,
+              it follows the saved preference.
+          ============================================= */}
+
           <Route
-            path="/accounts"
-            element={<Accounts />}
+            path="/workspace"
+            element={<WorkspaceDefaultRedirect />}
           />
+
+
+          {/* =============================================
+              WORKSPACE
+          ============================================= */}
 
           <Route
             path="/transactions"
@@ -102,13 +189,13 @@ export default function App() {
           />
 
           <Route
-            path="/analytics"
-            element={<Analytics />}
+            path="/auto-expense"
+            element={<AutoExpense />}
           />
 
           <Route
-            path="/auto-expense"
-            element={<AutoExpense />}
+            path="/categories"
+            element={<Categories />}
           />
 
           <Route
@@ -116,9 +203,29 @@ export default function App() {
             element={<Budget />}
           />
 
+
+          {/* =============================================
+              ANALYZE
+          ============================================= */}
+
           <Route
-            path="/categories"
-            element={<Categories />}
+            path="/analytics"
+            element={<Analytics />}
+          />
+
+          <Route
+            path="/insights"
+            element={<Insights />}
+          />
+
+
+          {/* =============================================
+              BUSINESS
+          ============================================= */}
+
+          <Route
+            path="/accounts"
+            element={<Accounts />}
           />
 
           <Route
@@ -137,14 +244,14 @@ export default function App() {
           />
 
           <Route
-            path="/insights"
-            element={<Insights />}
-          />
-
-          <Route
             path="/reports"
             element={<Reports />}
           />
+
+
+          {/* =============================================
+              SETTINGS
+          ============================================= */}
 
           <Route
             path="/settings"
@@ -163,22 +270,23 @@ export default function App() {
 
           <Route
             path="/start"
-            element={<GuideGate />}
+            element={<WorkspaceDefaultRedirect />}
           />
 
         </Route>
 
       </Route>
 
-      {/* =========================================
+
+      {/* =================================================
           UNKNOWN ROUTE
-      ========================================= */}
+      ================================================= */}
 
       <Route
         path="*"
         element={
           <Navigate
-            to="/dashboard"
+            to="/"
             replace
           />
         }

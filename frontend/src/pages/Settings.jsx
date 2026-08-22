@@ -36,19 +36,15 @@ import "./Settings.css";
 
 const DEFAULT_SETTINGS = {
   businessName: "Ledgerly",
-
   currency: "INR",
-
   dateFormat: "DD/MM/YYYY",
-
   appearance: "light",
-
   layoutDensity: "comfortable",
 
+  // Default workspace section
   dashboardView: "overview",
 
   showFinancialSummary: true,
-
   confirmDelete: true,
 };
 
@@ -59,6 +55,11 @@ const DEFAULT_SETTINGS = {
 
 const SETTINGS_KEY = "ledgerly_settings";
 
+const DASHBOARD_VIEW_ROUTES = {
+  overview: "/dashboard",
+  expenses: "/expenses",
+  analytics: "/analytics",
+};
 
 /* =========================================================
    APPLICATION
@@ -286,39 +287,40 @@ export default function Settings() {
      ======================================================= */
 
   function saveSettings(event) {
-
+  if (event) {
     event.preventDefault();
-
-
-    localStorage.setItem(
-      SETTINGS_KEY,
-      JSON.stringify(settings)
-    );
-
-
-    /* Make settings available to
-       other pages immediately */
-
-    window.dispatchEvent(
-      new CustomEvent(
-        "ledgerflow-settings-updated",
-        {
-          detail: settings,
-        }
-      )
-    );
-
-
-    setSaved(true);
-
-
-    setTimeout(() => {
-
-      setSaved(false);
-
-    }, 3000);
-
   }
+
+  const normalizedSettings = {
+    ...DEFAULT_SETTINGS,
+    ...settings,
+
+    // Always keep a valid workspace preference
+    dashboardView:
+      DASHBOARD_VIEW_ROUTES[settings.dashboardView]
+        ? settings.dashboardView
+        : "overview",
+  };
+
+  setSettings(normalizedSettings);
+
+  localStorage.setItem(
+    SETTINGS_KEY,
+    JSON.stringify(normalizedSettings)
+  );
+
+  window.dispatchEvent(
+    new CustomEvent("ledgerly-settings-updated", {
+      detail: normalizedSettings,
+    })
+  );
+
+  setSaved(true);
+
+  setTimeout(() => {
+    setSaved(false);
+  }, 3000);
+}
 
 
   /* =======================================================
@@ -326,92 +328,89 @@ export default function Settings() {
      ======================================================= */
 
   function resetSettings() {
+  const confirmed = window.confirm(
+    "Reset all Ledgerly settings to their default values?"
+  );
 
-    const confirmed =
-      window.confirm(
-        "Reset all Ledgerly settings to their default values?"
-      );
-
-
-    if (!confirmed) {
-      return;
-    }
-
-
-    setSettings(DEFAULT_SETTINGS);
-
-
-    localStorage.setItem(
-      SETTINGS_KEY,
-      JSON.stringify(DEFAULT_SETTINGS)
-    );
-
-
-    document.documentElement.setAttribute(
-      "data-theme",
-      "light"
-    );
-
-
-    document.documentElement.setAttribute(
-      "data-density",
-      "comfortable"
-    );
-
-
-    window.dispatchEvent(
-      new CustomEvent(
-        "ledgerly-settings-updated",
-        {
-          detail: DEFAULT_SETTINGS,
-        }
-      )
-    );
-
-
-    setSaved(true);
-
-
-    setTimeout(() => {
-
-      setSaved(false);
-
-    }, 3000);
-
+  if (!confirmed) {
+    return;
   }
 
+  const resetSettings = {
+    ...DEFAULT_SETTINGS,
+    dashboardView: "overview",
+  };
+
+  setSettings(resetSettings);
+
+  localStorage.setItem(
+    SETTINGS_KEY,
+    JSON.stringify(resetSettings)
+  );
+
+  document.documentElement.setAttribute(
+    "data-theme",
+    "light"
+  );
+
+  document.documentElement.setAttribute(
+    "data-density",
+    "comfortable"
+  );
+
+  window.dispatchEvent(
+    new CustomEvent(
+      "ledgerly-settings-updated",
+      {
+        detail: resetSettings,
+      }
+    )
+  );
+
+  setSaved(true);
+
+  setTimeout(() => {
+    setSaved(false);
+  }, 3000);
+}
 
   /* =======================================================
      CLEAR PREFERENCES
      ======================================================= */
 
   function clearPreferences() {
+  const confirmed = window.confirm(
+    "Clear your saved Ledgerly preferences?"
+  );
 
-    const confirmed =
-      window.confirm(
-        "Clear your saved Ledgerly preferences?"
-      );
-
-
-    if (!confirmed) {
-      return;
-    }
-
-
-    localStorage.removeItem(
-      SETTINGS_KEY
-    );
-
-
-    setSettings(
-      DEFAULT_SETTINGS
-    );
-
-
-    setSaved(true);
-
+  if (!confirmed) {
+    return;
   }
 
+  localStorage.removeItem(SETTINGS_KEY);
+
+  const clearedSettings = {
+    ...DEFAULT_SETTINGS,
+    dashboardView: "overview",
+  };
+
+  setSettings(clearedSettings);
+
+  window.dispatchEvent(
+    new CustomEvent(
+      "ledgerly-settings-updated",
+      {
+        detail: clearedSettings,
+      }
+    )
+  );
+
+  setSaved(true);
+
+  setTimeout(() => {
+    setSaved(false);
+  }, 3000);
+}
 
   /* =======================================================
      EXPORT SETTINGS
@@ -1031,50 +1030,53 @@ export default function Settings() {
 
             <div className="settings-option">
 
-              <div className="settings-option-info">
+  <div className="settings-option-info">
 
-                <div className="option-title">
+    <div className="option-title">
 
-                  <LayoutDashboard size={17} />
+      <LayoutDashboard size={17} />
 
-                  <strong>
-                    Dashboard view
-                  </strong>
+      <strong>
+        Dashboard view
+      </strong>
 
-                </div>
+    </div>
 
-                <span>
-                  Choose the default dashboard section.
-                </span>
+    <span>
+      Choose the default dashboard section.
+    </span>
 
-              </div>
+  </div>
 
-              <select
-                value={settings.dashboardView}
-                onChange={(e) =>
-                  handleChange(
-                    "dashboardView",
-                    e.target.value
-                  )
-                }
-              >
+  <select
+    value={
+      DASHBOARD_VIEW_ROUTES[settings.dashboardView]
+        ? settings.dashboardView
+        : "overview"
+    }
+    onChange={(e) =>
+      handleChange(
+        "dashboardView",
+        e.target.value
+      )
+    }
+  >
 
-                <option value="overview">
-                  Overview
-                </option>
+    <option value="overview">
+      Overview
+    </option>
 
-                <option value="expenses">
-                  Expenses
-                </option>
+    <option value="expenses">
+      Expenses
+    </option>
 
-                <option value="analytics">
-                  Analytics
-                </option>
+    <option value="analytics">
+      Analytics
+    </option>
 
-              </select>
+  </select>
 
-            </div>
-
+</div>
 
             {/* =================================================
                 FINANCIAL SUMMARY

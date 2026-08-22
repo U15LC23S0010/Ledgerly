@@ -8,7 +8,10 @@ from alembic import context
 import sys
 import os
 
-# Add backend directory to Python path
+# =========================================================
+# PYTHON PATH
+# =========================================================
+
 sys.path.append(
     os.path.abspath(
         os.path.join(os.path.dirname(__file__), "..")
@@ -38,12 +41,10 @@ from app.models.invoice_item import InvoiceItem
 from app.models.vendor import Vendor
 
 # =========================================================
-# ENVIRONMENT
+# APPLICATION SETTINGS
 # =========================================================
 
-from dotenv import load_dotenv
-
-load_dotenv()
+from app.core.config import settings
 
 # =========================================================
 # ALEMBIC CONFIG
@@ -54,20 +55,17 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# IMPORTANT:
-# Alembic reads all SQLAlchemy models from this metadata
+# =========================================================
+# ALEMBIC METADATA
+# =========================================================
+
 target_metadata = Base.metadata
 
 # =========================================================
 # DATABASE URL
 # =========================================================
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-if not DATABASE_URL:
-    raise RuntimeError(
-        "DATABASE_URL not found in .env"
-    )
+DATABASE_URL = settings.DATABASE_URL
 
 # =========================================================
 # OFFLINE MIGRATIONS

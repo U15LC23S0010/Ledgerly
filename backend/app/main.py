@@ -1,8 +1,36 @@
+
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.db.database import Base, engine
+from app.core.config import settings
 
+# =========================================================
+# DATABASE
+# =========================================================
+
+from app.db.database import Base, engine, SessionLocal
+from app.db.seed import seed_default_categories
+
+# =========================================================
+# MODELS
+# =========================================================
+# Import all models so SQLAlchemy metadata knows about them.
+# =========================================================
+
+from app.models.user import User
+from app.models.expense import Expense
+from app.models.budget import Budget
+from app.models.category import Category
+from app.models.refresh_token import RefreshToken
+from app.models.account import Account
+from app.models.transaction import Transaction
+from app.models.customer import Customer
+from app.models.invoice import Invoice
+from app.models.invoice_item import InvoiceItem
+from app.models.vendor import Vendor
+from app.models.otp import OTPVerification
 
 # =========================================================
 # ROUTERS
@@ -24,22 +52,41 @@ from app.api.v1.endpoints.invoices import router as invoices_router
 from app.api.v1.endpoints.vendors import router as vendors_router
 from app.api.v1.endpoints.reports import router as reports_router
 
+
 # =========================================================
-# MODELS
+# APPLICATION LIFESPAN
 # =========================================================
 
-from app.models.user import User
-from app.models.expense import Expense
-from app.models.budget import Budget
-from app.models.category import Category
-from app.models.refresh_token import RefreshToken
-from app.models.account import Account
-from app.models.transaction import Transaction
-from app.models.customer import Customer
-from app.models.invoice import Invoice
-from app.models.invoice_item import InvoiceItem
-from app.models.vendor import Vendor
-from app.models.otp import OTPVerification
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application startup and shutdown logic.
+    """
+
+    # -----------------------------------------------------
+    # STARTUP
+    # -----------------------------------------------------
+
+    # Create tables if they do not already exist.
+    #
+    # This is mainly useful for local development/testing.
+    # In production, Alembic migrations should be preferred.
+    Base.metadata.create_all(bind=engine)
+
+    # Seed default categories.
+    db = SessionLocal()
+
+    try:
+        seed_default_categories(db)
+    finally:
+        db.close()
+
+    yield
+
+    # -----------------------------------------------------
+    # SHUTDOWN
+    # -----------------------------------------------------
+    # Nothing is required here currently.
 
 
 # =========================================================
@@ -49,7 +96,8 @@ from app.models.otp import OTPVerification
 app = FastAPI(
     title="Ledgerly - Smart Bookkeeping",
     description="Smart bookkeeping and financial management platform.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 
@@ -57,23 +105,19 @@ app = FastAPI(
 # CORS
 # =========================================================
 
+allowed_origins = [
+    origin.strip()
+    for origin in settings.CORS_ORIGINS.split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-# =========================================================
-# DATABASE TABLES
-# =========================================================
-
-Base.metadata.create_all(bind=engine)
 
 
 # =========================================================
@@ -83,7 +127,7 @@ Base.metadata.create_all(bind=engine)
 app.include_router(
     auth_router,
     prefix="/api/v1/auth",
-    tags=["Authentication"]
+    tags=["Authentication"],
 )
 
 
@@ -94,7 +138,7 @@ app.include_router(
 app.include_router(
     expenses_router,
     prefix="/api/v1/expenses",
-    tags=["Expenses"]
+    tags=["Expenses"],
 )
 
 
@@ -105,7 +149,7 @@ app.include_router(
 app.include_router(
     analytics_router,
     prefix="/api/v1/analytics",
-    tags=["Analytics"]
+    tags=["Analytics"],
 )
 
 
@@ -116,7 +160,7 @@ app.include_router(
 app.include_router(
     budget_router,
     prefix="/api/v1",
-    tags=["Budget"]
+    tags=["Budget"],
 )
 
 
@@ -127,7 +171,7 @@ app.include_router(
 app.include_router(
     dashboard_router,
     prefix="/api/v1/dashboard",
-    tags=["Dashboard"]
+    tags=["Dashboard"],
 )
 
 
@@ -138,7 +182,7 @@ app.include_router(
 app.include_router(
     category_router,
     prefix="/api/v1",
-    tags=["Categories"]
+    tags=["Categories"],
 )
 
 
@@ -149,7 +193,7 @@ app.include_router(
 app.include_router(
     insights_router,
     prefix="/api/v1",
-    tags=["AI Insights"]
+    tags=["AI Insights"],
 )
 
 
@@ -160,7 +204,7 @@ app.include_router(
 app.include_router(
     auto_expense_router,
     prefix="/api/v1",
-    tags=["Auto Expense"]
+    tags=["Auto Expense"],
 )
 
 
@@ -171,7 +215,7 @@ app.include_router(
 app.include_router(
     accounts_router,
     prefix="/api/v1",
-    tags=["Bookkeeping"]
+    tags=["Bookkeeping"],
 )
 
 
@@ -182,7 +226,7 @@ app.include_router(
 app.include_router(
     transactions_router,
     prefix="/api/v1",
-    tags=["Transactions"]
+    tags=["Transactions"],
 )
 
 
@@ -193,7 +237,7 @@ app.include_router(
 app.include_router(
     customers_router,
     prefix="/api/v1/customers",
-    tags=["Customers"]
+    tags=["Customers"],
 )
 
 
@@ -203,7 +247,8 @@ app.include_router(
 
 app.include_router(
     vendors_router,
-    prefix="/api/v1"
+    prefix="/api/v1",
+    tags=["Vendors"],
 )
 
 
@@ -214,8 +259,9 @@ app.include_router(
 app.include_router(
     invoices_router,
     prefix="/api/v1/invoices",
-    tags=["Invoices"]
+    tags=["Invoices"],
 )
+
 
 # =========================================================
 # REPORTS APIs
@@ -224,8 +270,9 @@ app.include_router(
 app.include_router(
     reports_router,
     prefix="/api/v1",
-    tags=["Reports"]
+    tags=["Reports"],
 )
+
 
 # =========================================================
 # ADMIN APIs
@@ -234,7 +281,7 @@ app.include_router(
 app.include_router(
     admin_router,
     prefix="/api/v1",
-    tags=["Admin"]
+    tags=["Admin"],
 )
 
 
@@ -246,7 +293,8 @@ app.include_router(
 def home():
     return {
         "message": "LedgerFlow AI Backend Running",
-        "status": "success"
+        "status": "success",
+        "environment": settings.APP_ENV,
     }
 
 
@@ -257,5 +305,6 @@ def home():
 @app.get("/health")
 def health_check():
     return {
-        "message": "Server is healthy"
+        "message": "Server is healthy",
+        "status": "success",
     }
