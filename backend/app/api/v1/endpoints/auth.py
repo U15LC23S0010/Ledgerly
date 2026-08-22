@@ -53,10 +53,10 @@ def utc_now() -> datetime:
     """
     Return the current UTC time as a naive datetime.
 
-    SQLite commonly stores DateTime values without timezone
-    information, so comparisons must use the same format.
+    Database DateTime columns are stored without timezone
+    information, so comparisons use naive UTC datetimes.
     """
-    return datetime.now(timezone.utc)
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 # =========================================================

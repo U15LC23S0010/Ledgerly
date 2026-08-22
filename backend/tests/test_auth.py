@@ -249,3 +249,203 @@ def test_get_current_user():
     )
 
     assert data["user"]["full_name"] == "Test User"
+
+
+# =========================================================
+# REFRESH ACCESS TOKEN
+# =========================================================
+
+def test_refresh_access_token():
+
+    login_response = client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": TEST_EMAIL,
+            "password": TEST_PASSWORD,
+        },
+    )
+
+    assert login_response.status_code == 200
+
+    refresh_token = (
+        login_response.json()["refresh_token"]
+    )
+
+    response = client.post(
+        "/api/v1/auth/refresh",
+        params={
+            "refresh_token": refresh_token,
+        },
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
+
+
+# =========================================================
+# INVALID REFRESH TOKEN
+# =========================================================
+
+def test_invalid_refresh_token():
+
+    response = client.post(
+        "/api/v1/auth/refresh",
+        params={
+            "refresh_token": "invalid-refresh-token",
+        },
+    )
+
+    assert response.status_code == 401
+
+    assert (
+        response.json()["detail"]
+        == "Invalid refresh token"
+    )
+
+
+# =========================================================
+# LOGOUT / REVOKE REFRESH TOKEN
+# =========================================================
+
+def test_logout_revokes_refresh_token():
+
+    login_response = client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": TEST_EMAIL,
+            "password": TEST_PASSWORD,
+        },
+    )
+
+    assert login_response.status_code == 200
+
+    refresh_token = (
+        login_response.json()["refresh_token"]
+    )
+
+    # -----------------------------------------------------
+    # LOGOUT
+    # -----------------------------------------------------
+
+    logout_response = client.post(
+        "/api/v1/auth/logout",
+        params={
+            "refresh_token": refresh_token,
+        },
+    )
+
+    assert logout_response.status_code == 200
+
+    assert (
+        logout_response.json()["message"]
+        == "Logout successful"
+    )
+
+    # -----------------------------------------------------
+    # REVOKED TOKEN MUST NO LONGER WORK
+    # -----------------------------------------------------
+
+    refresh_response = client.post(
+        "/api/v1/auth/refresh",
+        params={
+            "refresh_token": refresh_token,
+        },
+    )
+
+    assert refresh_response.status_code == 401
+
+    assert (
+        refresh_response.json()["detail"]
+        == "Refresh token has been revoked"
+    )
+
+
+# =========================================================
+# ACCESS TOKEN CANNOT BE USED AS REFRESH TOKEN
+# =========================================================
+
+def test_access_token_cannot_be_used_as_refresh_token():
+
+    login_response = client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": TEST_EMAIL,
+            "password": TEST_PASSWORD,
+        },
+    )
+
+    assert login_response.status_code == 200
+
+    access_token = (
+        login_response.json()["access_token"]
+    )
+
+    response = client.post(
+        "/api/v1/auth/refresh",
+        params={
+            "refresh_token": access_token,
+        },
+    )
+
+    assert response.status_code == 401
+
+    assert (
+        response.json()["detail"]
+        == "Invalid refresh token"
+    )
+
+
+# =========================================================
+# ALREADY REVOKED TOKEN
+# =========================================================
+
+def test_logout_already_revoked_token():
+
+    login_response = client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": TEST_EMAIL,
+            "password": TEST_PASSWORD,
+        },
+    )
+
+    assert login_response.status_code == 200
+
+    refresh_token = (
+        login_response.json()["refresh_token"]
+    )
+
+    # -----------------------------------------------------
+    # FIRST LOGOUT
+    # -----------------------------------------------------
+
+    first_logout = client.post(
+        "/api/v1/auth/logout",
+        params={
+            "refresh_token": refresh_token,
+        },
+    )
+
+    assert first_logout.status_code == 200
+
+    # -----------------------------------------------------
+    # SECOND LOGOUT
+    # -----------------------------------------------------
+
+    second_logout = client.post(
+        "/api/v1/auth/logout",
+        params={
+            "refresh_token": refresh_token,
+        },
+    )
+
+    assert second_logout.status_code == 400
+
+    assert (
+        second_logout.json()["detail"]
+        == "Refresh token already revoked"
+    )
