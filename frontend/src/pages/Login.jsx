@@ -2,11 +2,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import axios from "axios";
+
+import api from "../api/api";
 
 import "./Login.css";
-
-const API_URL = "http://127.0.0.1:8000/api/v1";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -70,15 +69,15 @@ export default function Login() {
       // LOGIN REQUEST
       // =====================================================
 
-      const response = await axios.post(
-        `${API_URL}/auth/login`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        }
-      );
+      const response = await api.post(
+  "/auth/login",
+  formData,
+  {
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  }
+);
 
       console.log("LOGIN RESPONSE:", response.data);
 
@@ -138,14 +137,7 @@ export default function Login() {
       // =====================================================
 
       try {
-        const meResponse = await axios.get(
-          `${API_URL}/auth/me`,
-          {
-            headers: {
-              Authorization: `Bearer ${savedToken}`,
-            },
-          }
-        );
+         const meResponse = await api.get("/auth/me");
 
         console.log(
           "CURRENT USER:",
