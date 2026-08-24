@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -24,10 +25,12 @@ import { getDashboard } from "../api/dashboardApi";
 import "./Dashboard.css";
 
 /* =========================================================
-   SETTINGS / CURRENCY HELPERS
+   SETTINGS
 ========================================================= */
 
 const SETTINGS_KEY = "ledgerly_settings";
+const CURRENCY_KEY = "ledgerly_currency";
+const DATE_FORMAT_KEY = "ledgerly_date_format";
 
 const VALID_CURRENCIES = [
   "INR",
@@ -36,58 +39,173 @@ const VALID_CURRENCIES = [
   "GBP",
 ];
 
-function getStoredCurrency() {
-  /*
-   * First use the dedicated currency value written by Settings.
-   */
-  const directCurrency =
-    localStorage.getItem("ledgerly_currency");
+const VALID_DATE_FORMATS = [
+  "DD/MM/YYYY",
+  "MM/DD/YYYY",
+  "YYYY-MM-DD",
+];
 
-  if (
-    directCurrency &&
-    VALID_CURRENCIES.includes(directCurrency)
-  ) {
-    return directCurrency;
-  }
+/* =========================================================
+   DEFAULT SETTINGS
+========================================================= */
 
-  /*
-   * Fallback to the complete Ledgerly settings object.
-   */
+const DEFAULT_SETTINGS = {
+  currency: "INR",
+  dateFormat: "DD/MM/YYYY",
+};
+
+/* =========================================================
+   CURRENCY CONVERSION
+========================================================= */
+
+/*
+ * Ledgerly stores monetary values in INR.
+ *
+ * These rates represent:
+ *
+ * 1 INR = X selected currency
+ *
+ * Update these values whenever you want to use newer rates.
+ *
+ * INR is always the base currency.
+ */
+
+const INR_TO_CURRENCY_RATES = {
+  INR: 1,
+  USD: 0.0118,
+  EUR: 0.0101,
+  GBP: 0.0088,
+};
+
+/*
+ * Convert an INR amount into the selected display currency.
+ */
+function convertCurrency(value, currency) {
+  const amount = Number(value || 0);
+
+  const selectedCurrency =
+    VALID_CURRENCIES.includes(currency)
+      ? currency
+      : "INR";
+
+  const rate =
+    INR_TO_CURRENCY_RATES[selectedCurrency] || 1;
+
+  return amount * rate;
+}
+
+/* =========================================================
+   READ SETTINGS
+========================================================= */
+
+function getStoredSettings() {
+  let settings = {
+    ...DEFAULT_SETTINGS,
+  };
+
+  /* -----------------------------------------------
+     Complete settings object
+  ----------------------------------------------- */
+
   const storedSettings =
     localStorage.getItem(SETTINGS_KEY);
 
   if (storedSettings) {
     try {
-      const parsedSettings =
-        JSON.parse(storedSettings);
+      const parsed = JSON.parse(
+        storedSettings
+      );
 
       if (
-        parsedSettings?.currency &&
+        parsed?.currency &&
         VALID_CURRENCIES.includes(
-          parsedSettings.currency
+          parsed.currency
         )
       ) {
-        return parsedSettings.currency;
+        settings.currency =
+          parsed.currency;
+      }
+
+      if (
+        parsed?.dateFormat &&
+        VALID_DATE_FORMATS.includes(
+          parsed.dateFormat
+        )
+      ) {
+        settings.dateFormat =
+          parsed.dateFormat;
       }
     } catch (error) {
       console.error(
-        "Unable to read Ledgerly currency settings:",
+        "Unable to read Ledgerly settings:",
         error
       );
     }
   }
 
-  /*
-   * Final fallback.
-   */
-  return "INR";
+  /* -----------------------------------------------
+     Dedicated currency key
+  ----------------------------------------------- */
+
+  const storedCurrency =
+    localStorage.getItem(CURRENCY_KEY);
+
+  if (
+    storedCurrency &&
+    VALID_CURRENCIES.includes(
+      storedCurrency
+    )
+  ) {
+    settings.currency =
+      storedCurrency;
+  }
+
+  /* -----------------------------------------------
+     Dedicated date-format key
+  ----------------------------------------------- */
+
+  const storedDateFormat =
+    localStorage.getItem(
+      DATE_FORMAT_KEY
+    );
+
+  if (
+    storedDateFormat &&
+    VALID_DATE_FORMATS.includes(
+      storedDateFormat
+    )
+  ) {
+    settings.dateFormat =
+      storedDateFormat;
+  }
+
+  return settings;
 }
 
-function formatCurrency(value, currency) {
-  const amount = Number(value || 0);
+/* =========================================================
+   CURRENCY FORMATTER
+========================================================= */
 
+/*
+ * IMPORTANT:
+ *
+ * This function first converts the INR amount
+ * and THEN formats it as the selected currency.
+ */
+function formatCurrency(
+  value,
+  currency
+) {
   const selectedCurrency =
-    currency || getStoredCurrency();
+    VALID_CURRENCIES.includes(currency)
+      ? currency
+      : "INR";
+
+  const convertedAmount =
+    convertCurrency(
+      value,
+      selectedCurrency
+    );
 
   try {
     return new Intl.NumberFormat(
@@ -98,7 +216,7 @@ function formatCurrency(value, currency) {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
       }
-    ).format(amount);
+    ).format(convertedAmount);
   } catch (error) {
     console.error(
       "Currency formatting error:",
@@ -113,8 +231,59 @@ function formatCurrency(value, currency) {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
       }
-    ).format(amount);
+    ).format(value || 0);
   }
+}
+
+/* =========================================================
+   DATE FORMATTER
+========================================================= */
+
+function formatDate(
+  date,
+  dateFormat = "DD/MM/YYYY"
+) {
+  if (!date) {
+    return "—";
+  }
+
+  const parsed =
+    new Date(date);
+
+  if (
+    Number.isNaN(
+      parsed.getTime()
+    )
+  ) {
+    return String(date);
+  }
+
+  const day = String(
+    parsed.getDate()
+  ).padStart(2, "0");
+
+  const month = String(
+    parsed.getMonth() + 1
+  ).padStart(2, "0");
+
+  const year =
+    parsed.getFullYear();
+
+  if (
+    dateFormat ===
+    "MM/DD/YYYY"
+  ) {
+    return `${month}/${day}/${year}`;
+  }
+
+  if (
+    dateFormat ===
+    "YYYY-MM-DD"
+  ) {
+    return `${year}-${month}-${day}`;
+  }
+
+  return `${day}/${month}/${year}`;
 }
 
 /* =========================================================
@@ -122,26 +291,50 @@ function formatCurrency(value, currency) {
 ========================================================= */
 
 export default function Dashboard() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const [dashboard, setDashboard] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
+  const [dashboard, setDashboard] =
+    useState(null);
 
-  /*
-   * Currency is loaded from Ledgerly Settings.
-   */
-  const [currency, setCurrency] = useState(
-    getStoredCurrency()
-  );
+  const [loading, setLoading] =
+    useState(true);
 
-  const [selectedMonth, setSelectedMonth] =
+  const [error, setError] =
+    useState("");
+
+  const [refreshing, setRefreshing] =
+    useState(false);
+
+  /* -----------------------------------------------
+     GLOBAL SETTINGS
+  ----------------------------------------------- */
+
+  const initialSettings =
+    getStoredSettings();
+
+  const [currency, setCurrency] =
     useState(
-      new Date()
-        .toISOString()
-        .slice(0, 7)
+      initialSettings.currency
     );
+
+  const [dateFormat, setDateFormat] =
+    useState(
+      initialSettings.dateFormat
+    );
+
+  /* -----------------------------------------------
+     SELECTED MONTH
+  ----------------------------------------------- */
+
+  const [
+    selectedMonth,
+    setSelectedMonth,
+  ] = useState(() =>
+    new Date()
+      .toISOString()
+      .slice(0, 7)
+  );
 
   /* =======================================================
      LOAD DASHBOARD
@@ -152,62 +345,140 @@ export default function Dashboard() {
   }, [selectedMonth]);
 
   /* =======================================================
-     LISTEN FOR SETTINGS / CURRENCY CHANGES
+     SETTINGS LISTENERS
   ======================================================= */
 
   useEffect(() => {
-    /*
-     * Handle the global settings event.
-     */
+    /* -----------------------------------------------
+       Global settings event
+    ----------------------------------------------- */
+
     const handleSettingsUpdated = (
       event
     ) => {
+      const updated =
+        event.detail || {};
+
+      const currentSettings =
+        getStoredSettings();
+
       const updatedCurrency =
-        event.detail?.currency ||
-        getStoredCurrency();
+        updated.currency ||
+        currentSettings.currency;
+
+      const updatedDateFormat =
+        updated.dateFormat ||
+        currentSettings.dateFormat;
 
       if (
         VALID_CURRENCIES.includes(
           updatedCurrency
         )
       ) {
-        setCurrency(updatedCurrency);
+        setCurrency(
+          updatedCurrency
+        );
+      }
+
+      if (
+        VALID_DATE_FORMATS.includes(
+          updatedDateFormat
+        )
+      ) {
+        setDateFormat(
+          updatedDateFormat
+        );
       }
     };
 
-    /*
-     * Handle the dedicated currency event.
-     */
+    /* -----------------------------------------------
+       Currency event
+    ----------------------------------------------- */
+
     const handleCurrencyChanged = (
       event
     ) => {
+      const eventCurrency =
+        event.detail;
+
       const updatedCurrency =
-        event.detail ||
-        getStoredCurrency();
+        typeof eventCurrency ===
+        "string"
+          ? eventCurrency
+          : getStoredSettings()
+              .currency;
 
       if (
         VALID_CURRENCIES.includes(
           updatedCurrency
         )
       ) {
-        setCurrency(updatedCurrency);
+        setCurrency(
+          updatedCurrency
+        );
       }
     };
 
-    /*
-     * Also handle browser storage changes.
-     * This helps when Settings changes localStorage.
-     */
+    /* -----------------------------------------------
+       Date-format event
+    ----------------------------------------------- */
+
+    const handleDateFormatChanged = (
+      event
+    ) => {
+      const eventDateFormat =
+        event.detail;
+
+      const updatedDateFormat =
+        typeof eventDateFormat ===
+        "string"
+          ? eventDateFormat
+          : getStoredSettings()
+              .dateFormat;
+
+      if (
+        VALID_DATE_FORMATS.includes(
+          updatedDateFormat
+        )
+      ) {
+        setDateFormat(
+          updatedDateFormat
+        );
+      }
+    };
+
+    /* -----------------------------------------------
+       Browser storage event
+    ----------------------------------------------- */
+
     const handleStorageChange = (
       event
     ) => {
       if (
         event.key ===
-          "ledgerly_currency" ||
-        event.key === SETTINGS_KEY
+          CURRENCY_KEY ||
+        event.key ===
+          SETTINGS_KEY
       ) {
+        const updated =
+          getStoredSettings();
+
         setCurrency(
-          getStoredCurrency()
+          updated.currency
+        );
+
+        setDateFormat(
+          updated.dateFormat
+        );
+      }
+
+      if (
+        event.key ===
+        DATE_FORMAT_KEY
+      ) {
+        setDateFormat(
+          getStoredSettings()
+            .dateFormat
         );
       }
     };
@@ -223,14 +494,29 @@ export default function Dashboard() {
     );
 
     window.addEventListener(
+      "ledgerly-date-format-changed",
+      handleDateFormatChanged
+    );
+
+    window.addEventListener(
       "storage",
       handleStorageChange
     );
 
-    /*
-     * Sync once when Dashboard mounts.
-     */
-    setCurrency(getStoredCurrency());
+    /* -----------------------------------------------
+       Initial synchronization
+    ----------------------------------------------- */
+
+    const currentSettings =
+      getStoredSettings();
+
+    setCurrency(
+      currentSettings.currency
+    );
+
+    setDateFormat(
+      currentSettings.dateFormat
+    );
 
     return () => {
       window.removeEventListener(
@@ -241,6 +527,11 @@ export default function Dashboard() {
       window.removeEventListener(
         "ledgerly-currency-changed",
         handleCurrencyChanged
+      );
+
+      window.removeEventListener(
+        "ledgerly-date-format-changed",
+        handleDateFormatChanged
       );
 
       window.removeEventListener(
@@ -271,7 +562,9 @@ export default function Dashboard() {
           selectedMonth
         );
 
-      setDashboard(response.data);
+      setDashboard(
+        response.data
+      );
     } catch (err) {
       console.error(
         "Dashboard error:",
@@ -279,14 +572,16 @@ export default function Dashboard() {
       );
 
       if (
-        err.response?.status === 401
+        err.response?.status ===
+        401
       ) {
         setError(
           "Your session has expired. Please sign in again."
         );
       } else {
         setError(
-          err.response?.data?.detail ||
+          err.response?.data
+            ?.detail ||
             "Unable to load dashboard data."
         );
       }
@@ -297,58 +592,75 @@ export default function Dashboard() {
   }
 
   /* =======================================================
-     SELECTED MONTH LABEL
+     MONTH LABEL
   ======================================================= */
 
   const selectedMonthLabel =
     useMemo(() => {
-      const [year, month] =
+      const [
+        year,
+        month,
+      ] =
         selectedMonth
           .split("-")
           .map(Number);
 
-      if (!year || !month) {
+      if (
+        !year ||
+        !month
+      ) {
         return "";
       }
 
-      const first = new Date(
-        year,
-        month - 1,
-        1
-      );
-
-      const last = new Date(
-        year,
-        month,
-        0
-      );
-
-      const formatDay = (value) =>
-        value.toLocaleDateString(
-          "en-IN",
-          {
-            day: "2-digit",
-            month: "short",
-          }
+      const first =
+        new Date(
+          year,
+          month - 1,
+          1
         );
 
-      return `${formatDay(
+      const last =
+        new Date(
+          year,
+          month,
+          0
+        );
+
+      const formatMonthDay =
+        (value) =>
+          value.toLocaleDateString(
+            "en-IN",
+            {
+              day: "2-digit",
+              month: "short",
+            }
+          );
+
+      return `${formatMonthDay(
         first
-      )} — ${formatDay(last)} ${year}`;
+      )} — ${formatMonthDay(
+        last
+      )} ${year}`;
     }, [selectedMonth]);
 
   /* =======================================================
-     SELECTED MONTH NAME
+     MONTH NAME
   ======================================================= */
 
   const selectedMonthName =
     useMemo(() => {
-      const [year, month] =
+      const [
+        year,
+        month,
+      ] =
         selectedMonth
           .split("-")
           .map(Number);
 
-      if (!year || !month) {
+      if (
+        !year ||
+        !month
+      ) {
         return "";
       }
 
@@ -359,8 +671,10 @@ export default function Dashboard() {
       ).toLocaleDateString(
         "en-IN",
         {
-          month: "short",
-          year: "numeric",
+          month:
+            "short",
+          year:
+            "numeric",
         }
       );
     }, [selectedMonth]);
@@ -389,18 +703,24 @@ export default function Dashboard() {
       ];
 
       return dashboard.category_summary.map(
-        (item, index) => ({
+        (
+          item,
+          index
+        ) => ({
           name:
             item.category ||
             "Uncategorized",
 
-          total: Number(
-            item.total || 0
-          ),
+          total:
+            Number(
+              item.total ||
+                0
+            ),
 
           color:
             colors[
-              index % colors.length
+              index %
+                colors.length
             ],
         })
       );
@@ -414,8 +734,12 @@ export default function Dashboard() {
     useMemo(
       () =>
         categoryData.reduce(
-          (total, item) =>
-            total + item.total,
+          (
+            total,
+            item
+          ) =>
+            total +
+            item.total,
           0
         ),
       [categoryData]
@@ -425,34 +749,38 @@ export default function Dashboard() {
      DONUT
   ======================================================= */
 
-  const donut = useMemo(() => {
-    if (!categoryTotal) {
-      return "#e5e7eb 0% 100%";
-    }
+  const donut =
+    useMemo(() => {
+      if (!categoryTotal) {
+        return "#e5e7eb 0% 100%";
+      }
 
-    let current = 0;
+      let current = 0;
 
-    return categoryData
-      .map((item) => {
-        const start =
-          (current /
-            categoryTotal) *
-          100;
+      return categoryData
+        .map(
+          (item) => {
+            const start =
+              (current /
+                categoryTotal) *
+              100;
 
-        current += item.total;
+            current +=
+              item.total;
 
-        const end =
-          (current /
-            categoryTotal) *
-          100;
+            const end =
+              (current /
+                categoryTotal) *
+              100;
 
-        return `${item.color} ${start}% ${end}%`;
-      })
-      .join(", ");
-  }, [
-    categoryData,
-    categoryTotal,
-  ]);
+            return `${item.color} ${start}% ${end}%`;
+          }
+        )
+        .join(", ");
+    }, [
+      categoryData,
+      categoryTotal,
+    ]);
 
   /* =======================================================
      LOADING
@@ -461,7 +789,6 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="dashboard-page">
-
         <div className="dashboard-loading">
 
           <div className="loading-spinner" />
@@ -471,11 +798,10 @@ export default function Dashboard() {
           </h2>
 
           <p>
-            Connecting to your LedgerFlow workspace.
+            Connecting to your Ledgerly workspace.
           </p>
 
         </div>
-
       </div>
     );
   }
@@ -487,7 +813,6 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="dashboard-page">
-
         <div className="dashboard-error">
 
           <AlertTriangle />
@@ -496,7 +821,9 @@ export default function Dashboard() {
             Unable to load dashboard
           </h2>
 
-          <p>{error}</p>
+          <p>
+            {error}
+          </p>
 
           <button
             type="button"
@@ -508,7 +835,6 @@ export default function Dashboard() {
           </button>
 
         </div>
-
       </div>
     );
   }
@@ -522,7 +848,8 @@ export default function Dashboard() {
     {};
 
   const budget =
-    dashboard?.budget || {};
+    dashboard?.budget ||
+    {};
 
   const expenseSummary =
     dashboard?.expense_summary ||
@@ -533,39 +860,53 @@ export default function Dashboard() {
     [];
 
   const accounts =
-    dashboard?.accounts || [];
+    dashboard?.accounts ||
+    [];
 
   const username =
-    dashboard?.user || "User";
+    dashboard?.user ||
+    "User";
+
+  /* =======================================================
+     FINANCIAL VALUES
+  ======================================================= */
 
   const totalAccountBalance =
     accounts.reduce(
-      (total, account) =>
+      (
+        total,
+        account
+      ) =>
         total +
         Number(
-          account.balance || 0
+          account.balance ||
+            0
         ),
       0
     );
 
   const totalIncome =
     Number(
-      financial.total_income || 0
+      financial.total_income ||
+        0
     );
 
   const totalExpenses =
     Number(
-      financial.total_expenses || 0
+      financial.total_expenses ||
+        0
     );
 
   const monthlyIncome =
     Number(
-      financial.monthly_income || 0
+      financial.monthly_income ||
+        0
     );
 
   const monthlyExpenses =
     Number(
-      financial.monthly_expenses || 0
+      financial.monthly_expenses ||
+        0
     );
 
   const monthlyNetCashFlow =
@@ -576,33 +917,15 @@ export default function Dashboard() {
 
   const budgetPercentage =
     Number(
-      budget.used_percentage || 0
+      budget.used_percentage ||
+        0
     );
 
   const budgetRemaining =
     Number(
-      budget.remaining || 0
+      budget.remaining ||
+        0
     );
-
-  console.log(
-    "DASHBOARD ACCOUNTS:",
-    accounts
-  );
-
-  console.log(
-    "TOTAL ACCOUNT BALANCE:",
-    totalAccountBalance
-  );
-
-  console.log(
-    "FINANCIAL SUMMARY:",
-    financial
-  );
-
-  console.log(
-    "DASHBOARD CURRENCY:",
-    currency
-  );
 
   /* =======================================================
      BUDGET STATUS
@@ -610,25 +933,31 @@ export default function Dashboard() {
 
   function getBudgetStatus() {
     if (
-      budget.status === "not_set"
+      budget.status ===
+      "not_set"
     ) {
       return {
-        title: "Budget not set",
+        title:
+          "Budget not set",
 
         text:
           "Create a monthly budget to start tracking your spending.",
 
-        tone: "blue",
+        tone:
+          "blue",
 
-        icon: CircleDollarSign,
+        icon:
+          CircleDollarSign,
       };
     }
 
     if (
-      budget.status === "exceeded"
+      budget.status ===
+      "exceeded"
     ) {
       return {
-        title: "Budget exceeded",
+        title:
+          "Budget exceeded",
 
         text: `You've exceeded your budget by ${formatCurrency(
           Math.abs(
@@ -637,26 +966,32 @@ export default function Dashboard() {
           currency
         )}.`,
 
-        tone: "red",
+        tone:
+          "red",
 
-        icon: AlertTriangle,
+        icon:
+          AlertTriangle,
       };
     }
 
     if (
-      budget.status === "warning"
+      budget.status ===
+      "warning"
     ) {
       return {
-        title: "Budget warning",
+        title:
+          "Budget warning",
 
         text: `${formatCurrency(
           budgetRemaining,
           currency
         )} remains in your monthly budget.`,
 
-        tone: "orange",
+        tone:
+          "orange",
 
-        icon: AlertTriangle,
+        icon:
+          AlertTriangle,
       };
     }
 
@@ -669,9 +1004,11 @@ export default function Dashboard() {
         currency
       )} remains in your monthly budget.`,
 
-      tone: "green",
+      tone:
+        "green",
 
-      icon: CheckCircle2,
+      icon:
+        CheckCircle2,
     };
   }
 
@@ -693,7 +1030,9 @@ export default function Dashboard() {
   return (
     <div className="dashboard-page">
 
-      {/* HEADER */}
+      {/* ===================================================
+          HEADER
+      =================================================== */}
 
       <div className="dash-heading">
 
@@ -727,7 +1066,9 @@ export default function Dashboard() {
             onClick={() =>
               loadDashboard(true)
             }
-            disabled={refreshing}
+            disabled={
+              refreshing
+            }
           >
 
             <RefreshCw
@@ -749,27 +1090,42 @@ export default function Dashboard() {
             <CalendarDays />
 
             <select
-              value={selectedMonth}
-              onChange={(event) =>
+              value={
+                selectedMonth
+              }
+              onChange={(
+                event
+              ) =>
                 setSelectedMonth(
-                  event.target.value
+                  event.target
+                    .value
                 )
               }
               aria-label="Select dashboard month"
             >
 
               {Array.from(
-                { length: 12 },
-                (_, index) => {
+                {
+                  length: 12,
+                },
+                (
+                  _,
+                  index
+                ) => {
+
                   const year =
                     new Date().getFullYear();
 
                   const month =
                     index + 1;
 
-                  const value = `${year}-${String(
-                    month
-                  ).padStart(2, "0")}`;
+                  const value =
+                    `${year}-${String(
+                      month
+                    ).padStart(
+                      2,
+                      "0"
+                    )}`;
 
                   const label =
                     new Date(
@@ -779,15 +1135,21 @@ export default function Dashboard() {
                     ).toLocaleDateString(
                       "en-IN",
                       {
-                        month: "long",
-                        year: "numeric",
+                        month:
+                          "long",
+                        year:
+                          "numeric",
                       }
                     );
 
                   return (
                     <option
-                      key={value}
-                      value={value}
+                      key={
+                        value
+                      }
+                      value={
+                        value
+                      }
                     >
                       {label}
                     </option>
@@ -805,7 +1167,9 @@ export default function Dashboard() {
 
       </div>
 
-      {/* STAT CARDS */}
+      {/* ===================================================
+          STAT CARDS
+      =================================================== */}
 
       <section className="stat-grid">
 
@@ -865,7 +1229,9 @@ export default function Dashboard() {
               : "No monthly budget set"
           }
           tone="orange"
-          icon={CircleDollarSign}
+          icon={
+            CircleDollarSign
+          }
           progress={Math.min(
             budgetPercentage,
             100
@@ -874,7 +1240,9 @@ export default function Dashboard() {
 
       </section>
 
-      {/* CASH FLOW */}
+      {/* ===================================================
+          CASH FLOW
+      =================================================== */}
 
       <section className="dashboard-cashflow-grid">
 
@@ -938,7 +1306,8 @@ export default function Dashboard() {
 
             <strong
               className={
-                monthlyNetCashFlow >= 0
+                monthlyNetCashFlow >=
+                0
                   ? "positive"
                   : "negative"
               }
@@ -966,8 +1335,11 @@ export default function Dashboard() {
             </span>
 
             <strong>
-              {expenseSummary.monthly_expense_records ||
-                0}
+              {
+                expenseSummary
+                  .monthly_expense_records ||
+                0
+              }
             </strong>
 
           </div>
@@ -976,16 +1348,22 @@ export default function Dashboard() {
 
       </section>
 
-      {/* ANALYSIS */}
+      {/* ===================================================
+          ANALYSIS
+      =================================================== */}
 
       <section className="dashboard-grid">
+
+        {/* SPENDING */}
 
         <div className="panel spending-panel">
 
           <PanelTitle
             eyebrow="SPENDING ANALYSIS"
             title="Where your money goes"
-            action={selectedMonthName}
+            action={
+              selectedMonthLabel
+            }
           />
 
           <div className="spending-body">
@@ -993,7 +1371,8 @@ export default function Dashboard() {
             <div
               className="donut"
               style={{
-                "--donut": `conic-gradient(${donut})`,
+                "--donut":
+                  `conic-gradient(${donut})`,
               }}
             >
 
@@ -1016,7 +1395,9 @@ export default function Dashboard() {
 
             <div className="legend">
 
-              {categoryData.length === 0 ? (
+              {categoryData.length ===
+              0 ? (
+
                 <div className="empty-state">
 
                   <ReceiptText />
@@ -1026,48 +1407,67 @@ export default function Dashboard() {
                   </span>
 
                 </div>
+
               ) : (
+
                 categoryData
-                  .slice(0, 8)
-                  .map((category) => (
-                    <div
-                      className="legend-row"
-                      key={category.name}
-                    >
+                  .slice(
+                    0,
+                    8
+                  )
+                  .map(
+                    (
+                      category
+                    ) => (
 
-                      <span>
+                      <div
+                        className="legend-row"
+                        key={
+                          category.name
+                        }
+                      >
 
-                        <i
-                          style={{
-                            background:
-                              category.color,
-                          }}
-                        />
+                        <span>
 
-                        {category.name}
+                          <i
+                            style={{
+                              background:
+                                category.color,
+                            }}
+                          />
 
-                      </span>
+                          {
+                            category.name
+                          }
 
-                      <b>
-                        {formatCurrency(
-                          category.total,
-                          currency
-                        )}
-                      </b>
+                        </span>
 
-                      <small>
-                        {categoryTotal
-                          ? Math.round(
-                              (category.total /
-                                categoryTotal) *
-                                100
-                            )
-                          : 0}
-                        %
-                      </small>
+                        <b>
+                          {formatCurrency(
+                            category.total,
+                            currency
+                          )}
+                        </b>
 
-                    </div>
-                  ))
+                        <small>
+
+                          {
+                            categoryTotal
+                              ? Math.round(
+                                  (category.total /
+                                    categoryTotal) *
+                                    100
+                                )
+                              : 0
+                          }%
+
+                        </small>
+
+                      </div>
+
+                    )
+                  )
+
               )}
 
             </div>
@@ -1078,7 +1478,9 @@ export default function Dashboard() {
             className="outline-button"
             type="button"
             onClick={() =>
-              goTo("/analytics")
+              goTo(
+                "/analytics"
+              )
             }
           >
 
@@ -1099,14 +1501,18 @@ export default function Dashboard() {
             title="AI Insights"
             action="View all"
             onAction={() =>
-              goTo("/insights")
+              goTo(
+                "/insights"
+              )
             }
           />
 
           <div className="insights">
 
             <Insight
-              icon={Sparkles}
+              icon={
+                Sparkles
+              }
               tone="purple"
               title={
                 dashboard?.top_category
@@ -1124,18 +1530,29 @@ export default function Dashboard() {
             />
 
             <Insight
-              icon={budgetStatus.icon}
-              tone={budgetStatus.tone}
-              title={budgetStatus.title}
-              text={budgetStatus.text}
+              icon={
+                budgetStatus.icon
+              }
+              tone={
+                budgetStatus.tone
+              }
+              title={
+                budgetStatus.title
+              }
+              text={
+                budgetStatus.text
+              }
             />
 
             <Insight
-              icon={Lightbulb}
+              icon={
+                Lightbulb
+              }
               tone="blue"
               title="Net cash flow"
               text={`Your current net cash flow is ${formatCurrency(
-                financial.net_cash_flow,
+                financial.net_cash_flow ||
+                  0,
                 currency
               )}.`}
             />
@@ -1146,13 +1563,18 @@ export default function Dashboard() {
 
       </section>
 
-      {/* HIGHEST EXPENSE */}
+      {/* ===================================================
+          HIGHEST EXPENSE
+      =================================================== */}
 
       {dashboard?.highest_expense && (
+
         <section className="panel highest-expense-panel">
 
           <div className="highest-expense-icon">
+
             <ArrowUpRight />
+
           </div>
 
           <div className="highest-expense-content">
@@ -1162,12 +1584,19 @@ export default function Dashboard() {
             </span>
 
             <strong>
-              {dashboard.highest_expense.title}
+              {
+                dashboard
+                  .highest_expense
+                  .title
+              }
             </strong>
 
             <small>
               {formatDate(
-                dashboard.highest_expense.date
+                dashboard
+                  .highest_expense
+                  .date,
+                dateFormat
               )}
             </small>
 
@@ -1175,17 +1604,24 @@ export default function Dashboard() {
 
           <b>
             {formatCurrency(
-              dashboard.highest_expense.amount,
+              dashboard
+                .highest_expense
+                .amount,
               currency
             )}
           </b>
 
         </section>
+
       )}
 
-      {/* TRANSACTIONS + QUICK ACTIONS */}
+      {/* ===================================================
+          TRANSACTIONS + QUICK ACTIONS
+      =================================================== */}
 
       <section className="bottom-grid">
+
+        {/* TRANSACTIONS */}
 
         <div className="panel transactions-panel">
 
@@ -1194,21 +1630,39 @@ export default function Dashboard() {
             title="Recent transactions"
             action="View all"
             onAction={() =>
-              goTo("/transactions")
+              goTo(
+                "/transactions"
+              )
             }
           />
 
           <div className="table-head">
 
-            <span>Date</span>
-            <span>Description</span>
-            <span>Type</span>
-            <span>Account</span>
-            <span>Amount</span>
+            <span>
+              Date
+            </span>
+
+            <span>
+              Description
+            </span>
+
+            <span>
+              Type
+            </span>
+
+            <span>
+              Account
+            </span>
+
+            <span>
+              Amount
+            </span>
 
           </div>
 
-          {transactions.length === 0 ? (
+          {transactions.length ===
+          0 ? (
+
             <div className="empty-transactions">
 
               <ReceiptText />
@@ -1226,7 +1680,9 @@ export default function Dashboard() {
                 className="outline-button"
                 type="button"
                 onClick={() =>
-                  goTo("/transactions")
+                  goTo(
+                    "/transactions"
+                  )
                 }
               >
 
@@ -1237,9 +1693,13 @@ export default function Dashboard() {
               </button>
 
             </div>
+
           ) : (
+
             transactions.map(
-              (transaction) => {
+              (
+                transaction
+              ) => {
 
                 const income =
                   transaction.transaction_type ===
@@ -1250,25 +1710,33 @@ export default function Dashboard() {
                   "transfer";
 
                 return (
+
                   <div
                     className="transaction-row"
-                    key={transaction.id}
+                    key={
+                      transaction.id
+                    }
                   >
 
                     <span>
                       {formatDate(
-                        transaction.date
+                        transaction.date,
+                        dateFormat
                       )}
                     </span>
 
                     <strong>
 
                       <span className="txn-icon">
+
                         <ReceiptText />
+
                       </span>
 
-                      {transaction.description ||
-                        "Transaction"}
+                      {
+                        transaction.description ||
+                        "Transaction"
+                      }
 
                     </strong>
 
@@ -1284,11 +1752,13 @@ export default function Dashboard() {
                         }`}
                       >
 
-                        {transfer
-                          ? "Transfer"
-                          : income
-                          ? "Income"
-                          : "Expense"}
+                        {
+                          transfer
+                            ? "Transfer"
+                            : income
+                            ? "Income"
+                            : "Expense"
+                        }
 
                       </em>
 
@@ -1297,18 +1767,28 @@ export default function Dashboard() {
                     <span className="transaction-account">
 
                       <div>
-                        {transaction.account_name ||
-                          (transaction.account_id
-                            ? `Account #${transaction.account_id}`
-                            : "—")}
+
+                        {
+                          transaction.account_name ||
+                          (
+                            transaction.account_id
+                              ? `Account #${transaction.account_id}`
+                              : "—"
+                          )
+                        }
+
                       </div>
 
                       {transaction.category_name && (
+
                         <small className="transaction-category">
+
                           {
                             transaction.category_name
                           }
+
                         </small>
+
                       )}
 
                     </span>
@@ -1323,11 +1803,13 @@ export default function Dashboard() {
                       }
                     >
 
-                      {transfer
-                        ? ""
-                        : income
-                        ? "+"
-                        : "-"}{" "}
+                      {
+                        transfer
+                          ? ""
+                          : income
+                          ? "+"
+                          : "-"
+                      }{" "}
 
                       {formatCurrency(
                         Math.abs(
@@ -1342,9 +1824,11 @@ export default function Dashboard() {
                     </b>
 
                   </div>
+
                 );
               }
             )
+
           )}
 
         </div>
@@ -1365,7 +1849,9 @@ export default function Dashboard() {
               title="Add transaction"
               text="Record income or expense"
               onClick={() =>
-                goTo("/transactions")
+                goTo(
+                  "/transactions"
+                )
               }
             />
 
@@ -1374,7 +1860,9 @@ export default function Dashboard() {
               title="Add expense"
               text="Track your expenses"
               onClick={() =>
-                goTo("/expenses")
+                goTo(
+                  "/expenses"
+                )
               }
             />
 
@@ -1383,7 +1871,9 @@ export default function Dashboard() {
               title="Manage budget"
               text="Set and track budgets"
               onClick={() =>
-                goTo("/budget")
+                goTo(
+                  "/budget"
+                )
               }
             />
 
@@ -1392,7 +1882,9 @@ export default function Dashboard() {
               title="View analytics"
               text="Analyze financial activity"
               onClick={() =>
-                goTo("/analytics")
+                goTo(
+                  "/analytics"
+                )
               }
             />
 
@@ -1401,7 +1893,9 @@ export default function Dashboard() {
               title="AI insights"
               text="Get intelligent financial insights"
               onClick={() =>
-                goTo("/insights")
+                goTo(
+                  "/insights"
+                )
               }
             />
 
@@ -1410,7 +1904,9 @@ export default function Dashboard() {
               title="Manage accounts"
               text="View your financial accounts"
               onClick={() =>
-                goTo("/accounts")
+                goTo(
+                  "/accounts"
+                )
               }
             />
 
@@ -1420,7 +1916,9 @@ export default function Dashboard() {
 
       </section>
 
-      {/* ACCOUNTS */}
+      {/* ===================================================
+          ACCOUNTS
+      =================================================== */}
 
       <section className="panel accounts-dashboard-panel">
 
@@ -1429,14 +1927,18 @@ export default function Dashboard() {
           title="Your accounts"
           action="View accounts"
           onAction={() =>
-            goTo("/accounts")
+            goTo(
+              "/accounts"
+            )
           }
         />
 
         <div className="dashboard-accounts">
 
           {!accounts ||
-          accounts.length === 0 ? (
+          accounts.length ===
+            0 ? (
+
             <div className="empty-state">
 
               <Wallet />
@@ -1454,7 +1956,9 @@ export default function Dashboard() {
                 className="outline-button"
                 type="button"
                 onClick={() =>
-                  goTo("/accounts")
+                  goTo(
+                    "/accounts"
+                  )
                 }
               >
 
@@ -1465,40 +1969,57 @@ export default function Dashboard() {
               </button>
 
             </div>
+
           ) : (
+
             accounts.map(
-              (account) => (
+              (
+                account
+              ) => (
+
                 <div
                   className="dashboard-account"
-                  key={account.id}
+                  key={
+                    account.id
+                  }
                 >
 
                   <div className="account-icon">
+
                     <Wallet />
+
                   </div>
 
                   <div>
 
                     <strong>
-                      {account.name}
+                      {
+                        account.name
+                      }
                     </strong>
 
                     <span>
-                      {account.account_type}
+                      {
+                        account.account_type
+                      }
                     </span>
 
                   </div>
 
                   <b>
+
                     {formatCurrency(
                       account.balance,
                       currency
                     )}
+
                   </b>
 
                 </div>
+
               )
             )
+
           )}
 
         </div>
@@ -1542,7 +2063,9 @@ function Stat({
         {value}
       </strong>
 
-      {progress !== undefined ? (
+      {progress !==
+      undefined ? (
+
         <div className="stat-progress">
 
           <span
@@ -1558,10 +2081,15 @@ function Stat({
           />
 
         </div>
+
       ) : (
+
         <div className="mini-line">
+
           <span />
+
         </div>
+
       )}
 
       <small>
@@ -1598,6 +2126,7 @@ function PanelTitle({
       </div>
 
       {action && (
+
         <button
           type="button"
           onClick={onAction}
@@ -1605,13 +2134,17 @@ function PanelTitle({
 
           {action}
 
-          {action !== "View all" &&
+          {action !==
+            "View all" &&
             action !==
               "View accounts" && (
+
               <ChevronDown />
+
             )}
 
         </button>
+
       )}
 
     </div>
@@ -1655,7 +2188,9 @@ function Insight({
         title="More options"
         aria-label="More options"
       >
+
         <MoreHorizontal />
+
       </button>
 
     </div>
@@ -1696,35 +2231,5 @@ function Action({
       </div>
 
     </button>
-  );
-}
-
-/* =========================================================
-   DATE FORMAT
-========================================================= */
-
-function formatDate(date) {
-  if (!date) {
-    return "—";
-  }
-
-  const parsed =
-    new Date(date);
-
-  if (
-    Number.isNaN(
-      parsed.getTime()
-    )
-  ) {
-    return String(date);
-  }
-
-  return parsed.toLocaleDateString(
-    "en-IN",
-    {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    }
   );
 }
