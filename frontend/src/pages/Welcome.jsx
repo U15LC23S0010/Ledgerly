@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+
 import {
   ArrowRight,
   BarChart3,
@@ -18,24 +19,22 @@ function Welcome() {
   const navigate = useNavigate();
 
   const finishWelcome = () => {
-    // Do NOT permanently store welcome_seen.
-    // Welcome should appear again after the next login.
-    navigate("/dashboard", {
-      replace: true,
-    });
+    // This login's welcome screen has been completed
+    sessionStorage.removeItem("ledgerly_show_welcome");
+
+    // Go to the user's preferred dashboard
+    navigate("/dashboard", { replace: true });
   };
 
   return (
     <div className="welcome-page">
 
-      {/* Animated background */}
       <div className="welcome-orb welcome-orb-one" />
       <div className="welcome-orb welcome-orb-two" />
       <div className="welcome-orb welcome-orb-three" />
 
       <div className="welcome-grid" />
 
-      {/* Floating finance elements */}
       <div className="welcome-floating welcome-floating-one">
         <TrendingUp />
       </div>
@@ -52,12 +51,10 @@ function Welcome() {
         <Receipt />
       </div>
 
-      {/* Main card */}
       <main className="welcome-card">
 
         <div className="welcome-card-glow" />
 
-        {/* Close */}
         <button
           type="button"
           className="welcome-close"
@@ -67,7 +64,6 @@ function Welcome() {
           <X size={18} />
         </button>
 
-        {/* Logo */}
         <div className="welcome-logo-wrapper">
           <div className="welcome-logo-ring" />
 
@@ -76,7 +72,6 @@ function Welcome() {
           </div>
         </div>
 
-        {/* Badge */}
         <div className="welcome-badge">
           <span className="welcome-status-dot" />
 
@@ -87,7 +82,6 @@ function Welcome() {
           </span>
         </div>
 
-        {/* Title */}
         <h1 className="welcome-title">
           Your smarter
           <span>
@@ -95,14 +89,12 @@ function Welcome() {
           </span>
         </h1>
 
-        {/* Description */}
         <p className="welcome-description">
           LedgerFlow AI brings your transactions, accounts,
           expenses, budgets, reports and financial insights
           together in one intelligent bookkeeping workspace.
         </p>
 
-        {/* Features */}
         <div className="welcome-features">
 
           <div className="welcome-feature">
@@ -170,7 +162,6 @@ function Welcome() {
 
         </div>
 
-        {/* Checklist */}
         <div className="welcome-checklist">
 
           <div>
@@ -196,7 +187,6 @@ function Welcome() {
 
         </div>
 
-        {/* CTA */}
         <button
           type="button"
           className="welcome-start-button"
@@ -211,7 +201,6 @@ function Welcome() {
           <div className="welcome-button-shine" />
         </button>
 
-        {/* Footer */}
         <p className="welcome-note">
           Your complete guide is always available from the
           sidebar whenever you need help.

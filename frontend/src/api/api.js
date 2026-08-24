@@ -1,81 +1,108 @@
 import axios from "axios";
 
-/*
-=========================================================
-AXIOS API INSTANCE
-=========================================================
-*/
-
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
+
   headers: {
     "Content-Type": "application/json",
   },
 });
 
+
 /*
 =========================================================
 REQUEST INTERCEPTOR
-Attach JWT token to every authenticated request
 =========================================================
 */
 
 api.interceptors.request.use(
   (config) => {
+
     const token =
+      localStorage.getItem("access") ||
       localStorage.getItem("access_token") ||
-      localStorage.getItem("access");
+      localStorage.getItem("token");
 
     if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
+
+      config.headers =
+        config.headers || {};
+
+      config.headers.Authorization =
+        `Bearer ${token}`;
     }
 
     return config;
   },
+
   (error) => {
     return Promise.reject(error);
   }
 );
 
+
 /*
 =========================================================
 RESPONSE INTERCEPTOR
-Handle expired / invalid JWT
+
+IMPORTANT:
+Do NOT redirect to /login here.
+
+ProtectedRoute is responsible for authentication
+routing.
+
 =========================================================
 */
 
 api.interceptors.response.use(
+
   (response) => {
     return response;
   },
 
   (error) => {
-    const status = error.response?.status;
+
+    const status =
+      error.response?.status;
 
     if (status === 401) {
+
       console.warn(
         "JWT authentication failed or expired."
       );
 
-      // Remove authentication data
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("access");
-      localStorage.removeItem("token");
-      localStorage.removeItem("userEmail");
-      localStorage.removeItem("user");
+      localStorage.removeItem(
+        "access"
+      );
 
-      // Redirect to login
-      if (
-        window.location.pathname !== "/login" &&
-        window.location.pathname !== "/register"
-      ) {
-        window.location.replace("/login");
-      }
+      localStorage.removeItem(
+        "access_token"
+      );
+
+      localStorage.removeItem(
+        "refresh"
+      );
+
+      localStorage.removeItem(
+        "refresh_token"
+      );
+
+      localStorage.removeItem(
+        "token"
+      );
+
+      localStorage.removeItem(
+        "user"
+      );
+
+      localStorage.removeItem(
+        "userEmail"
+      );
     }
 
     return Promise.reject(error);
   }
 );
+
 
 export default api;

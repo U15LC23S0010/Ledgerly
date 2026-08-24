@@ -1,10 +1,17 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+
+import {
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyRegistration from "./pages/VerifyRegistration";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+
+import Welcome from "./pages/Welcome";
 
 import Dashboard from "./pages/Dashboard";
 import Accounts from "./pages/Accounts";
@@ -22,8 +29,6 @@ import Settings from "./pages/Settings";
 import Transactions from "./pages/Transactions";
 import Notifications from "./pages/Notifications";
 import Guide from "./pages/Guide";
-import GuideGate from "./pages/GuideGate";
-import Welcome from "./pages/Welcome";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
@@ -44,10 +49,12 @@ function WorkspaceDefaultRedirect() {
   let destination = "/dashboard";
 
   try {
-    const storedSettings = localStorage.getItem(SETTINGS_KEY);
+    const storedSettings =
+      localStorage.getItem(SETTINGS_KEY);
 
     if (storedSettings) {
-      const settings = JSON.parse(storedSettings);
+      const settings =
+        JSON.parse(storedSettings);
 
       switch (settings.dashboardView) {
         case "expenses":
@@ -90,14 +97,9 @@ export default function App() {
   return (
     <Routes>
 
-      {/* =================================================
-          PUBLIC ROUTES
-      ================================================= */}
-
-      <Route
-        path="/welcome"
-        element={<Welcome />}
-      />
+      {/* =====================================================
+          PUBLIC AUTHENTICATION ROUTES
+      ===================================================== */}
 
       <Route
         path="/login"
@@ -125,20 +127,38 @@ export default function App() {
       />
 
 
-      {/* =================================================
+      {/* =====================================================
+          WELCOME ROUTE
+
+          IMPORTANT:
+          - NOT inside ProtectedRoute
+          - NOT inside AppLayout
+          - No sidebar
+          - No dashboard
+          - Login redirects here after successful login
+      ===================================================== */}
+
+      <Route
+        path="/welcome"
+        element={<Welcome />}
+      />
+
+
+      {/* =====================================================
           PROTECTED APPLICATION
-      ================================================= */}
+      ===================================================== */}
 
       <Route element={<ProtectedRoute />}>
 
+        {/* ===================================================
+            APPLICATION LAYOUT
+        =================================================== */}
+
         <Route element={<AppLayout />}>
 
-          {/* =============================================
+          {/* =================================================
               ROOT
-
-              This is where the saved Dashboard View
-              preference is applied.
-          ============================================= */}
+          ================================================= */}
 
           <Route
             path="/"
@@ -146,13 +166,9 @@ export default function App() {
           />
 
 
-          {/* =============================================
+          {/* =================================================
               DASHBOARD
-
-              IMPORTANT:
-              This is ALWAYS the actual Dashboard.
-              Clicking Dashboard goes here directly.
-          ============================================= */}
+          ================================================= */}
 
           <Route
             path="/dashboard"
@@ -160,23 +176,14 @@ export default function App() {
           />
 
 
-          {/* =============================================
-              WORKSPACE ALIAS
-
-              Optional compatibility route.
-              If anything still uses /workspace,
-              it follows the saved preference.
-          ============================================= */}
+          {/* =================================================
+              WORKSPACE
+          ================================================= */}
 
           <Route
             path="/workspace"
             element={<WorkspaceDefaultRedirect />}
           />
-
-
-          {/* =============================================
-              WORKSPACE
-          ============================================= */}
 
           <Route
             path="/transactions"
@@ -204,9 +211,9 @@ export default function App() {
           />
 
 
-          {/* =============================================
+          {/* =================================================
               ANALYZE
-          ============================================= */}
+          ================================================= */}
 
           <Route
             path="/analytics"
@@ -219,9 +226,9 @@ export default function App() {
           />
 
 
-          {/* =============================================
+          {/* =================================================
               BUSINESS
-          ============================================= */}
+          ================================================= */}
 
           <Route
             path="/accounts"
@@ -249,9 +256,9 @@ export default function App() {
           />
 
 
-          {/* =============================================
+          {/* =================================================
               SETTINGS
-          ============================================= */}
+          ================================================= */}
 
           <Route
             path="/settings"
@@ -268,6 +275,11 @@ export default function App() {
             element={<Guide />}
           />
 
+
+          {/* =================================================
+              START
+          ================================================= */}
+
           <Route
             path="/start"
             element={<WorkspaceDefaultRedirect />}
@@ -278,15 +290,15 @@ export default function App() {
       </Route>
 
 
-      {/* =================================================
-          UNKNOWN ROUTE
-      ================================================= */}
+      {/* =====================================================
+          UNKNOWN ROUTES
+      ===================================================== */}
 
       <Route
         path="*"
         element={
           <Navigate
-            to="/"
+            to="/login"
             replace
           />
         }

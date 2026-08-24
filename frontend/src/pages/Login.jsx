@@ -4,7 +4,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 
 import api from "../api/api";
-
 import "./Login.css";
 
 export default function Login() {
@@ -14,13 +13,8 @@ export default function Login() {
   const [password, setPassword] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // =========================================================
-  // LOGIN
-  // =========================================================
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,64 +23,76 @@ export default function Login() {
     setLoading(true);
 
     try {
-      // =====================================================
-      // CLEAR OLD AUTH DATA
-      // =====================================================
-
-      localStorage.removeItem("access");
-      localStorage.removeItem("refresh");
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("userEmail");
-
-      // =====================================================
-      // VALIDATE
-      // =====================================================
-
       const normalizedEmail = email.trim().toLowerCase();
+
+      // -----------------------------------------
+      // VALIDATION
+      // -----------------------------------------
 
       if (!normalizedEmail) {
         setError("Please enter your email address.");
+        setLoading(false);
         return;
       }
 
       if (!password) {
         setError("Please enter your password.");
+        setLoading(false);
         return;
       }
 
-      // =====================================================
-      // FASTAPI LOGIN FORM
-      // =====================================================
+      // -----------------------------------------
+      // CLEAR OLD AUTH DATA
+      // -----------------------------------------
+
+      localStorage.removeItem("access");
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("userEmail");
+
+      // -----------------------------------------
+      // CLEAR OLD WELCOME FLAG
+      //
+      // Every successful login gets a fresh
+      // welcome screen.
+      // -----------------------------------------
+
+      sessionStorage.removeItem("ledgerly_show_welcome");
+
+      // -----------------------------------------
+      // FASTAPI LOGIN
+      // -----------------------------------------
 
       const formData = new URLSearchParams();
 
       formData.append("username", normalizedEmail);
       formData.append("password", password);
 
-      // =====================================================
-      // LOGIN REQUEST
-      // =====================================================
-
       const response = await api.post(
-  "/auth/login",
-  formData,
-  {
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-  }
-);
+        "/auth/login",
+        formData,
+        {
+          headers: {
+            "Content-Type":
+              "application/x-www-form-urlencoded",
+          },
+        }
+      );
 
       console.log("LOGIN RESPONSE:", response.data);
 
-      // =====================================================
+      // -----------------------------------------
       // GET TOKENS
-      // =====================================================
+      // -----------------------------------------
 
-      const accessToken = response.data?.access_token;
-      const refreshToken = response.data?.refresh_token;
+      const accessToken =
+        response.data?.access_token;
+
+      const refreshToken =
+        response.data?.refresh_token;
 
       if (!accessToken) {
         throw new Error(
@@ -94,11 +100,14 @@ export default function Login() {
         );
       }
 
-      // =====================================================
-      // SAVE AUTH DATA
-      // =====================================================
+      // -----------------------------------------
+      // SAVE ACCESS TOKEN
+      // -----------------------------------------
 
-      localStorage.setItem("access", accessToken);
+      localStorage.setItem(
+        "access",
+        accessToken
+      );
 
       localStorage.setItem(
         "access_token",
@@ -110,6 +119,11 @@ export default function Login() {
           "refresh",
           refreshToken
         );
+
+        localStorage.setItem(
+          "refresh_token",
+          refreshToken
+        );
       }
 
       localStorage.setItem(
@@ -117,39 +131,31 @@ export default function Login() {
         normalizedEmail
       );
 
-      // =====================================================
-      // VERIFY TOKEN WAS SAVED
-      // =====================================================
+      console.log(
+        "ACCESS TOKEN SAVED:",
+        !!localStorage.getItem("access")
+      );
 
-      const savedToken =
-        localStorage.getItem("access");
-
-      if (!savedToken) {
-        throw new Error(
-          "Authentication token could not be saved."
-        );
-      }
-
-      console.log("ACCESS TOKEN SAVED");
-
-      // =====================================================
+      // -----------------------------------------
       // GET CURRENT USER
-      // =====================================================
+      // -----------------------------------------
 
       try {
-         const meResponse = await api.get("/auth/me");
+        const meResponse =
+          await api.get("/auth/me");
 
         console.log(
           "CURRENT USER:",
           meResponse.data
         );
 
-        if (meResponse.data?.user) {
+        const currentUser =
+          meResponse.data?.user;
+
+        if (currentUser) {
           localStorage.setItem(
             "user",
-            JSON.stringify(
-              meResponse.data.user
-            )
+            JSON.stringify(currentUser)
           );
         }
       } catch (meError) {
@@ -158,14 +164,33 @@ export default function Login() {
           meError
         );
 
-        // Do not stop login if /me temporarily fails.
+        // Do not destroy the token.
+        // ProtectedRoute will verify it.
       }
 
-      // =====================================================
-      // SUCCESS
-      // =====================================================
+      // -----------------------------------------
+      // IMPORTANT
+      // -----------------------------------------
+      // Tell Welcome that this is a fresh login.
+      // sessionStorage lasts only for this browser
+      // session and is cleared when the tab/session
+      // ends.
+      // -----------------------------------------
 
-      navigate("/dashboard", {
+      sessionStorage.setItem(
+        "ledgerly_show_welcome",
+        "true"
+      );
+
+      console.log(
+        "LOGIN SUCCESS → GOING TO WELCOME"
+      );
+
+      // -----------------------------------------
+      // NAVIGATE TO WELCOME
+      // -----------------------------------------
+
+      navigate("/welcome", {
         replace: true,
       });
 
@@ -175,9 +200,9 @@ export default function Login() {
         err
       );
 
-      // =====================================================
+      // -----------------------------------------
       // 401
-      // =====================================================
+      // -----------------------------------------
 
       if (err.response?.status === 401) {
         setError(
@@ -185,9 +210,9 @@ export default function Login() {
         );
       }
 
-      // =====================================================
+      // -----------------------------------------
       // 403
-      // =====================================================
+      // -----------------------------------------
 
       else if (err.response?.status === 403) {
         setError(
@@ -196,11 +221,13 @@ export default function Login() {
         );
       }
 
-      // =====================================================
-      // FASTAPI VALIDATION / OTHER DETAILS
-      // =====================================================
+      // -----------------------------------------
+      // FASTAPI DETAIL
+      // -----------------------------------------
 
-      else if (err.response?.data?.detail) {
+      else if (
+        err.response?.data?.detail
+      ) {
         const detail =
           err.response.data.detail;
 
@@ -218,9 +245,9 @@ export default function Login() {
         }
       }
 
-      // =====================================================
+      // -----------------------------------------
       // NETWORK ERROR
-      // =====================================================
+      // -----------------------------------------
 
       else if (
         err.code === "ERR_NETWORK" ||
@@ -231,9 +258,9 @@ export default function Login() {
         );
       }
 
-      // =====================================================
+      // -----------------------------------------
       // OTHER ERROR
-      // =====================================================
+      // -----------------------------------------
 
       else {
         setError(
@@ -247,22 +274,19 @@ export default function Login() {
     }
   };
 
-  // =========================================================
-  // UI
-  // =========================================================
-
   return (
     <main className="login-page">
 
-      {/* =====================================================
-          LEFT BRAND PANEL
-      ===================================================== */}
+      {/* LEFT BRAND */}
 
       <section className="login-brand">
 
         <div className="login-logo">
-         <img src="/pwa-192x192.png" alt="Ledgerly" />
-         </div>
+          <img
+            src="/pwa-192x192.png"
+            alt="Ledgerly"
+          />
+        </div>
 
         <div className="brand-name">
           <span>Ledgerly</span>
@@ -277,7 +301,6 @@ export default function Login() {
 
           <div>
             <strong>01</strong>
-
             <span>
               Track your finances
             </span>
@@ -285,7 +308,6 @@ export default function Login() {
 
           <div>
             <strong>02</strong>
-
             <span>
               Understand your spending
             </span>
@@ -293,7 +315,6 @@ export default function Login() {
 
           <div>
             <strong>03</strong>
-
             <span>
               Make better decisions
             </span>
@@ -303,18 +324,13 @@ export default function Login() {
 
       </section>
 
-
-      {/* =====================================================
-          LOGIN PANEL
-      ===================================================== */}
+      {/* LOGIN PANEL */}
 
       <section className="login-panel">
 
         <div className="login-container">
 
-          {/* =================================================
-              MOBILE BRAND
-          ================================================= */}
+          {/* MOBILE BRAND */}
 
           <div className="mobile-brand">
 
@@ -328,10 +344,7 @@ export default function Login() {
 
           </div>
 
-
-          {/* =================================================
-              HEADING
-          ================================================= */}
+          {/* HEADING */}
 
           <div className="login-heading">
 
@@ -350,10 +363,7 @@ export default function Login() {
 
           </div>
 
-
-          {/* =================================================
-              ERROR
-          ================================================= */}
+          {/* ERROR */}
 
           {error && (
             <div className="login-error">
@@ -367,19 +377,14 @@ export default function Login() {
             </div>
           )}
 
-
-          {/* =================================================
-              LOGIN FORM
-          ================================================= */}
+          {/* LOGIN FORM */}
 
           <form
             className="login-form"
             onSubmit={handleSubmit}
           >
 
-            {/* =================================================
-                EMAIL
-            ================================================= */}
+            {/* EMAIL */}
 
             <div className="form-group">
 
@@ -404,10 +409,7 @@ export default function Login() {
 
             </div>
 
-
-            {/* =================================================
-                PASSWORD
-            ================================================= */}
+            {/* PASSWORD */}
 
             <div className="form-group">
 
@@ -429,11 +431,6 @@ export default function Login() {
                 </button>
 
               </div>
-
-
-              {/* =================================================
-                  PASSWORD INPUT + VISIBILITY BUTTON
-              ================================================= */}
 
               <div className="password-input-wrapper">
 
@@ -461,7 +458,8 @@ export default function Login() {
                   className="password-visibility-button"
                   onClick={() =>
                     setShowPassword(
-                      (previous) => !previous
+                      (previous) =>
+                        !previous
                     )
                   }
                   disabled={loading}
@@ -487,10 +485,7 @@ export default function Login() {
 
             </div>
 
-
-            {/* =================================================
-                SIGN IN BUTTON
-            ================================================= */}
+            {/* SIGN IN BUTTON */}
 
             <button
               type="submit"
@@ -500,17 +495,14 @@ export default function Login() {
 
               {loading ? (
                 <>
-
                   <span className="button-spinner" />
 
                   <span>
                     Signing in...
                   </span>
-
                 </>
               ) : (
                 <>
-
                   <span>
                     Sign in
                   </span>
@@ -518,7 +510,6 @@ export default function Login() {
                   <span className="login-arrow">
                     →
                   </span>
-
                 </>
               )}
 
@@ -526,10 +517,7 @@ export default function Login() {
 
           </form>
 
-
-          {/* =================================================
-              REGISTER
-          ================================================= */}
+          {/* REGISTER */}
 
           <div className="register-prompt">
 
@@ -544,10 +532,7 @@ export default function Login() {
 
           </div>
 
-
-          {/* =================================================
-              SECURITY
-          ================================================= */}
+          {/* SECURITY */}
 
           <div className="login-security">
 

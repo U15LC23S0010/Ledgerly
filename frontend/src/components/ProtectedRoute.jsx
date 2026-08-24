@@ -1,29 +1,37 @@
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import {
+  Navigate,
+  Outlet,
+  useLocation,
+} from "react-router-dom";
+
 import { useEffect, useState } from "react";
 
 import api from "../api/api";
+
 import "./ProtectedRoute.css";
 
 export default function ProtectedRoute() {
+
   const location = useLocation();
 
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
+
     let mounted = true;
 
     async function checkAuthentication() {
+
       try {
+
         const accessToken =
+          localStorage.getItem("access_token") ||
           localStorage.getItem("access") ||
           localStorage.getItem("token");
 
-        // -----------------------------------------
-        // NO TOKEN
-        // -----------------------------------------
-
         if (!accessToken) {
+
           if (mounted) {
             setAuthenticated(false);
             setCheckingAuth(false);
@@ -32,30 +40,16 @@ export default function ProtectedRoute() {
           return;
         }
 
-        // -----------------------------------------
-        // VERIFY TOKEN WITH BACKEND
-        // -----------------------------------------
-
         const response = await api.get("/auth/me");
 
-        /*
-         * Your backend returns:
-         *
-         * {
-         *   message: "Welcome!",
-         *   user: {...}
-         * }
-         */
-
-        const currentUser = response.data?.user;
+        const currentUser =
+          response.data?.user;
 
         if (!currentUser) {
-          throw new Error("Invalid user response");
+          throw new Error(
+            "Invalid user response"
+          );
         }
-
-        // -----------------------------------------
-        // SAVE USER
-        // -----------------------------------------
 
         localStorage.setItem(
           "user",
@@ -64,29 +58,29 @@ export default function ProtectedRoute() {
 
         if (mounted) {
           setAuthenticated(true);
+          setCheckingAuth(false);
         }
+
       } catch (error) {
+
         console.error(
           "Authentication check failed:",
           error
         );
 
-        // -----------------------------------------
-        // INVALID / EXPIRED TOKEN
-        // -----------------------------------------
-
         localStorage.removeItem("access");
+        localStorage.removeItem("access_token");
         localStorage.removeItem("refresh");
+        localStorage.removeItem("refresh_token");
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+        localStorage.removeItem("userEmail");
 
         if (mounted) {
           setAuthenticated(false);
-        }
-      } finally {
-        if (mounted) {
           setCheckingAuth(false);
         }
+
       }
     }
 
@@ -95,15 +89,14 @@ export default function ProtectedRoute() {
     return () => {
       mounted = false;
     };
+
   }, []);
 
-  // -----------------------------------------
-  // CHECKING AUTH
-  // -----------------------------------------
-
   if (checkingAuth) {
+
     return (
       <div className="auth-loading-screen">
+
         <div className="auth-loading-card">
 
           <div className="auth-loading-logo">
@@ -119,29 +112,23 @@ export default function ProtectedRoute() {
           </p>
 
         </div>
+
       </div>
     );
   }
 
-  // -----------------------------------------
-  // NOT AUTHENTICATED
-  // -----------------------------------------
-
   if (!authenticated) {
+
     return (
       <Navigate
         to="/login"
         replace
         state={{
-          from: location.pathname
+          from: location.pathname,
         }}
       />
     );
   }
-
-  // -----------------------------------------
-  // AUTHENTICATED
-  // -----------------------------------------
 
   return <Outlet />;
 }
