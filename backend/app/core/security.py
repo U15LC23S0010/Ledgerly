@@ -6,19 +6,11 @@ from uuid import uuid4
 from app.core.config import settings
 
 
-# =========================================================
-# PASSWORD HASHING
-# =========================================================
-
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto"
 )
 
-
-# =========================================================
-# JWT SETTINGS
-# =========================================================
 
 SECRET_KEY = settings.SECRET_KEY
 
@@ -29,11 +21,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = (
 )
 
 REFRESH_TOKEN_EXPIRE_DAYS = 7
-
-
-# =========================================================
-# PASSWORD FUNCTIONS
-# =========================================================
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
@@ -49,10 +36,6 @@ def verify_password(
         hashed_password
     )
 
-
-# =========================================================
-# ACCESS TOKEN
-# =========================================================
 
 def create_access_token(data: dict) -> str:
 
@@ -72,11 +55,6 @@ def create_access_token(data: dict) -> str:
         SECRET_KEY,
         algorithm=ALGORITHM
     )
-
-
-# =========================================================
-# REFRESH TOKEN
-# =========================================================
 
 def create_refresh_token(data: dict) -> str:
 

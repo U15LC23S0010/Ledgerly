@@ -1,20 +1,10 @@
 from datetime import date
 
-
-# =========================================================
-# GET TODAY
-# =========================================================
-
 def get_today() -> date:
     """
     Return today's date.
     """
     return date.today()
-
-
-# =========================================================
-# CURRENT MONTH DATE RANGE
-# =========================================================
 
 def get_current_month_range():
     """
@@ -45,10 +35,6 @@ def get_current_month_range():
 
     return start_date, next_month
 
-
-# =========================================================
-# MONTH DATE RANGE
-# =========================================================
 
 def get_month_range(year: int, month: int):
     """

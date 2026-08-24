@@ -110,11 +110,7 @@ def get_accounts(
 
 
 # =========================================================
-# BULK DELETE ACCOUNTS
-#
-# IMPORTANT:
-# This route MUST come BEFORE /{account_id}
-# so "bulk" is not interpreted as an integer account_id.
+#  BULK DELETE ACCOUNTS
 # =========================================================
 
 @router.delete("/bulk")
@@ -141,10 +137,6 @@ def bulk_delete_accounts(
             detail="No accounts selected",
         )
 
-    # -----------------------------------------------------
-    # Convert IDs to integers
-    # -----------------------------------------------------
-
     try:
         account_ids = [
             int(account_id)
@@ -157,12 +149,7 @@ def bulk_delete_accounts(
             detail="All account IDs must be valid integers",
         )
 
-    # Remove duplicates
     account_ids = list(set(account_ids))
-
-    # -----------------------------------------------------
-    # Get only accounts belonging to current user
-    # -----------------------------------------------------
 
     accounts = (
         db.query(Account)
@@ -173,9 +160,6 @@ def bulk_delete_accounts(
         .all()
     )
 
-    # -----------------------------------------------------
-    # Make sure every requested account belongs to user
-    # -----------------------------------------------------
 
     found_ids = {
         account.id
@@ -229,9 +213,6 @@ def bulk_delete_accounts(
 
 # =========================================================
 # GET ACCOUNT BY ID
-#
-# IMPORTANT:
-# This comes AFTER /bulk.
 # =========================================================
 
 @router.get(
@@ -303,7 +284,6 @@ def update_account(
             ),
         )
 
-    # Check duplicate account name
     duplicate = (
         db.query(Account)
         .filter(

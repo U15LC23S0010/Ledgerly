@@ -1,10 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-
-# =========================================================
-# CREATE / UPDATE BUDGET
-# =========================================================
-
 class BudgetCreate(BaseModel):
 
     monthly_budget: float = Field(
@@ -27,10 +22,6 @@ class BudgetCreate(BaseModel):
         description="Budget year"
     )
 
-
-# =========================================================
-# BUDGET RESPONSE
-# =========================================================
 
 class BudgetResponse(BaseModel):
 

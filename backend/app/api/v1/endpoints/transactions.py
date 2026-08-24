@@ -26,21 +26,12 @@ router = APIRouter(
     tags=["Transactions"],
 )
 
-
-# =========================================================
-# CONSTANTS
-# =========================================================
-
 ALLOWED_TRANSACTION_TYPES = {
     "income",
     "expense",
     "transfer",
 }
 
-
-# =========================================================
-# BULK DELETE REQUEST SCHEMA
-# =========================================================
 
 class BulkDeleteTransactionsRequest(BaseModel):
     transaction_ids: List[int]
@@ -290,7 +281,6 @@ def apply_transaction_effect(
 
 # =========================================================
 # REVERSE BALANCE EFFECT
-# Used when deleting/editing transactions
 # =========================================================
 
 def reverse_transaction_effect(
@@ -1146,9 +1136,6 @@ def update_transaction(
     ),
 ):
 
-    # -----------------------------------------------------
-    # 1. FIND EXISTING TRANSACTION
-    # -----------------------------------------------------
 
     transaction = (
         db.query(Transaction)
@@ -1168,10 +1155,6 @@ def update_transaction(
             detail="Transaction not found.",
         )
 
-    # -----------------------------------------------------
-    # 2. VALIDATE NEW DATA
-    # -----------------------------------------------------
-
     transaction_type = (
         validate_transaction_type(
             transaction_data.transaction_type
@@ -1186,9 +1169,6 @@ def update_transaction(
         transaction_data.description
     )
 
-    # -----------------------------------------------------
-    # 3. GET OLD ACCOUNTS
-    # -----------------------------------------------------
 
     old_source_account = get_user_account(
         db,
@@ -1206,19 +1186,12 @@ def update_transaction(
             current_user.id,
         )
 
-    # -----------------------------------------------------
-    # 4. REVERSE OLD BALANCE
-    # -----------------------------------------------------
 
     reverse_transaction_effect(
         transaction,
         old_source_account,
         old_destination_account,
     )
-
-    # -----------------------------------------------------
-    # 5. VALIDATE NEW ACCOUNTS
-    # -----------------------------------------------------
 
     new_source_account, new_destination_account = (
         validate_accounts(
@@ -1236,18 +1209,12 @@ def update_transaction(
         )
     )
 
-    # -----------------------------------------------------
-    # 6. VALIDATE CATEGORY
-    # -----------------------------------------------------
 
     category = validate_category(
         db,
         transaction_data.category_id,
     )
 
-    # -----------------------------------------------------
-    # 7. UPDATE TRANSACTION
-    # -----------------------------------------------------
 
     transaction.description = description
 
@@ -1279,9 +1246,6 @@ def update_transaction(
         else None
     )
 
-    # -----------------------------------------------------
-    # 8. APPLY NEW BALANCE
-    # -----------------------------------------------------
 
     apply_transaction_effect(
         transaction_type=transaction_type,
@@ -1293,9 +1257,6 @@ def update_transaction(
         destination_account=new_destination_account,
     )
 
-    # -----------------------------------------------------
-    # 9. SAVE
-    # -----------------------------------------------------
 
     try:
 
@@ -1315,10 +1276,6 @@ def update_transaction(
             ),
         )
 
-    # -----------------------------------------------------
-    # 10. RESPONSE
-    # -----------------------------------------------------
-
     return {
         "message": (
             "Transaction updated successfully"
@@ -1332,10 +1289,6 @@ def update_transaction(
 
 # =========================================================
 # BULK DELETE TRANSACTIONS
-#
-# IMPORTANT:
-# Balance is reversed for EVERY transaction before
-# deleting the transactions.
 # =========================================================
 
 @router.delete(
@@ -1352,17 +1305,9 @@ def bulk_delete_transactions(
     ),
 ):
 
-    # -----------------------------------------------------
-    # 1. GET TRANSACTION IDS
-    # -----------------------------------------------------
-
     transaction_ids = list(
         set(request.transaction_ids)
     )
-
-    # -----------------------------------------------------
-    # 2. VALIDATE IDS
-    # -----------------------------------------------------
 
     if not transaction_ids:
 
@@ -1370,14 +1315,6 @@ def bulk_delete_transactions(
             status_code=400,
             detail="No transaction IDs were provided.",
         )
-
-    # -----------------------------------------------------
-    # 3. FIND TRANSACTIONS
-    #
-    # IMPORTANT:
-    # Only transactions belonging to the current user
-    # are allowed to be deleted.
-    # -----------------------------------------------------
 
     transactions = (
         db.query(Transaction)
@@ -1390,9 +1327,6 @@ def bulk_delete_transactions(
         .all()
     )
 
-    # -----------------------------------------------------
-    # 4. CHECK MISSING TRANSACTIONS
-    # -----------------------------------------------------
 
     found_ids = {
         transaction.id
@@ -1415,17 +1349,10 @@ def bulk_delete_transactions(
             ),
         )
 
-    # -----------------------------------------------------
-    # 5. REVERSE BALANCES
-    # -----------------------------------------------------
 
     try:
 
         for transaction in transactions:
-
-            # ---------------------------------------------
-            # SOURCE ACCOUNT
-            # ---------------------------------------------
 
             source_account = get_user_account(
                 db,
@@ -1435,9 +1362,6 @@ def bulk_delete_transactions(
                 current_user.id,
             )
 
-            # ---------------------------------------------
-            # DESTINATION ACCOUNT
-            # ---------------------------------------------
 
             destination_account = None
 
@@ -1451,9 +1375,6 @@ def bulk_delete_transactions(
                     current_user.id,
                 )
 
-            # ---------------------------------------------
-            # REVERSE BALANCE EFFECT
-            # ---------------------------------------------
 
             reverse_transaction_effect(
                 transaction,
@@ -1463,17 +1384,11 @@ def bulk_delete_transactions(
                 destination_account,
             )
 
-        # -------------------------------------------------
-        # 6. DELETE ALL TRANSACTIONS
-        # -------------------------------------------------
 
         for transaction in transactions:
 
             db.delete(transaction)
 
-        # -------------------------------------------------
-        # 7. COMMIT
-        # -------------------------------------------------
 
         db.commit()
 
@@ -1490,9 +1405,6 @@ def bulk_delete_transactions(
             ),
         )
 
-    # -----------------------------------------------------
-    # 8. RESPONSE
-    # -----------------------------------------------------
 
     return {
         "message": (
@@ -1510,13 +1422,6 @@ def bulk_delete_transactions(
         ],
     }
 
-
-# =========================================================
-# DELETE SINGLE TRANSACTION
-#
-# IMPORTANT:
-# Balance is reversed before deletion.
-# =========================================================
 
 @router.delete(
     "/{transaction_id}"
@@ -1550,9 +1455,6 @@ def delete_transaction(
             detail="Transaction not found.",
         )
 
-    # -----------------------------------------------------
-    # SOURCE ACCOUNT
-    # -----------------------------------------------------
 
     source_account = get_user_account(
         db,
@@ -1562,9 +1464,6 @@ def delete_transaction(
         current_user.id,
     )
 
-    # -----------------------------------------------------
-    # DESTINATION ACCOUNT
-    # -----------------------------------------------------
 
     destination_account = None
 
@@ -1580,9 +1479,6 @@ def delete_transaction(
 
     try:
 
-        # -------------------------------------------------
-        # REVERSE BALANCE
-        # -------------------------------------------------
 
         reverse_transaction_effect(
             transaction,
@@ -1592,15 +1488,8 @@ def delete_transaction(
             destination_account,
         )
 
-        # -------------------------------------------------
-        # DELETE TRANSACTION
-        # -------------------------------------------------
 
         db.delete(transaction)
-
-        # -------------------------------------------------
-        # COMMIT
-        # -------------------------------------------------
 
         db.commit()
 

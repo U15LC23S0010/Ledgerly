@@ -300,10 +300,6 @@ def normalize_transaction_date(
     )
 
 
-# =========================================================
-# GET CONFIDENCE
-# =========================================================
-
 def get_confidence(data) -> float:
     """
     Get confidence returned by parser.

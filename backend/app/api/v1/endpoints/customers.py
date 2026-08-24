@@ -78,10 +78,6 @@ def get_customers(
 
 # =========================================================
 # BULK DELETE CUSTOMERS
-#
-# IMPORTANT:
-# This route MUST appear before /{customer_id}
-# so "bulk-delete" is not interpreted as an integer ID.
 # =========================================================
 
 @router.delete("/bulk-delete")
@@ -122,9 +118,6 @@ def bulk_delete_customers(
             detail="No selected customers were found.",
         )
 
-    # -----------------------------------------------------
-    # Make sure all requested IDs belong to current user
-    # -----------------------------------------------------
 
     found_ids = {customer.id for customer in customers}
     missing_ids = set(customer_ids) - found_ids
@@ -137,16 +130,6 @@ def bulk_delete_customers(
 
     # -----------------------------------------------------
     # Delete
-    #
-    # Customer model has:
-    #
-    # invoices = relationship(
-    #     "Invoice",
-    #     back_populates="customer",
-    #     cascade="all, delete-orphan"
-    # )
-    #
-    # Therefore associated invoices may also be deleted.
     # -----------------------------------------------------
 
     try:

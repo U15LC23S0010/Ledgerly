@@ -20,10 +20,6 @@ router = APIRouter(
 )
 
 
-# =========================================================
-# BASIC HELPERS
-# =========================================================
-
 def calculate_percentage(value, total):
     if not total:
         return 0.0
@@ -185,7 +181,6 @@ def detect_unusual_expenses(
     if not current_amounts:
         return []
 
-    # Prefer previous-month behavior as baseline.
     if historical_amounts:
 
         baseline = (
@@ -211,8 +206,6 @@ def detect_unusual_expenses(
             expense.amount
         )
 
-        # At least 3x normal transaction size
-        # and at least ₹1,000.
         if (
             amount >= baseline * 3
             and amount >= 1000
@@ -1006,13 +999,7 @@ def get_insights(
         expense_count=expense_count
     )
 
-
-    # =====================================================
-    # BUDGET RESPONSE
-    # =====================================================
-
     budget_analysis = analysis["budget"]
-
 
     # =====================================================
     # FINAL RESPONSE

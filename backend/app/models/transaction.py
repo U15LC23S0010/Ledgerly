@@ -27,7 +27,6 @@ class Transaction(Base):
         String,
         nullable=False
     )
-    # income, expense, transfer
 
     date = Column(
         Date,
@@ -46,7 +45,6 @@ class Transaction(Base):
 
     # =========================================================
     # DESTINATION ACCOUNT
-    # Used for transfers
     # =========================================================
 
     destination_account_id = Column(

@@ -14,19 +14,11 @@ class Vendor(Base):
 
     __tablename__ = "vendors"
 
-    # =====================================================
-    # PRIMARY KEY
-    # =====================================================
-
     id = Column(
         Integer,
         primary_key=True,
         index=True,
     )
-
-    # =====================================================
-    # VENDOR INFORMATION
-    # =====================================================
 
     name = Column(
         String(200),
@@ -53,20 +45,12 @@ class Vendor(Base):
         nullable=True,
     )
 
-    # =====================================================
-    # USER
-    # =====================================================
-
     user_id = Column(
         Integer,
         ForeignKey("users.id"),
         nullable=False,
         index=True,
     )
-
-    # =====================================================
-    # RELATIONSHIP
-    # =====================================================
 
     user = relationship(
         "User",

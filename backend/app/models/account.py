@@ -3,7 +3,6 @@ from sqlalchemy.orm import relationship
 
 from app.db.database import Base
 
-
 class Account(Base):
     __tablename__ = "accounts"
 
@@ -15,7 +14,6 @@ class Account(Base):
         String,
         nullable=False
     )
-    # asset, liability, equity, revenue, expense
 
     balance = Column(
         Float,

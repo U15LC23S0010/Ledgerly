@@ -1,5 +1,5 @@
 /* =========================================================
-   LEDGERFLOW AI — SIDEBAR
+   LEDGERLY AI — SIDEBAR
 ========================================================= */
 
 .sidebar {
@@ -509,4 +509,11 @@
   .app-main {
     margin-left: 230px;
   }
+}
+
+/* Remove unwanted empty white box at bottom of sidebar */
+.sidebar-footer:empty,
+.sidebar-bottom:empty,
+.sidebar-bottom-box:empty {
+  display: none !important;
 }

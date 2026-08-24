@@ -27,10 +27,6 @@ router = APIRouter(
 )
 
 
-# =========================================================
-# HELPER - CURRENT MONTH BUDGET
-# =========================================================
-
 def get_current_budget(
     db: Session,
     current_user

@@ -58,10 +58,6 @@ def create_invoice(
     current_user: User = Depends(get_current_user)
 ):
 
-    # -----------------------------------------------------
-    # CHECK CUSTOMER
-    # -----------------------------------------------------
-
     customer = (
         db.query(Customer)
         .filter(

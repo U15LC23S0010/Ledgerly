@@ -15,8 +15,6 @@ from app.db.seed import seed_default_categories
 # =========================================================
 # MODELS
 # =========================================================
-# Import all models so SQLAlchemy metadata knows about them.
-# =========================================================
 
 from app.models.user import User
 from app.models.expense import Expense
@@ -51,11 +49,6 @@ from app.api.v1.endpoints.invoices import router as invoices_router
 from app.api.v1.endpoints.vendors import router as vendors_router
 from app.api.v1.endpoints.reports import router as reports_router
 
-
-# =========================================================
-# APPLICATION LIFESPAN
-# =========================================================
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -64,15 +57,6 @@ async def lifespan(app: FastAPI):
     Database schema management is handled exclusively by Alembic.
     Application startup only performs safe default-data seeding.
     """
-
-    # -----------------------------------------------------
-    # STARTUP
-    # -----------------------------------------------------
-
-    # Database schema is managed by Alembic migrations.
-    # Do NOT use Base.metadata.create_all() here.
-
-    # Seed default categories.
     db = SessionLocal()
 
     try:
@@ -81,12 +65,6 @@ async def lifespan(app: FastAPI):
         db.close()
 
     yield
-
-    # -----------------------------------------------------
-    # SHUTDOWN
-    # -----------------------------------------------------
-    # Nothing is required here currently.
-
 
 # =========================================================
 # CREATE FASTAPI APPLICATION

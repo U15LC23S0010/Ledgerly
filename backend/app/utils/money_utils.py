@@ -5,10 +5,6 @@ from typing import Union
 Number = Union[int, float, Decimal, str, None]
 
 
-# =========================================================
-# CONVERT VALUE TO DECIMAL
-# =========================================================
-
 def to_decimal(value: Number) -> Decimal:
     """
     Convert a numeric value to Decimal safely.
@@ -28,10 +24,6 @@ def to_decimal(value: Number) -> Decimal:
         return Decimal("0")
 
 
-# =========================================================
-# ROUND MONEY
-# =========================================================
-
 def round_money(value: Number, decimals: int = 2) -> float:
     """
     Convert a value to money format and round it.
@@ -50,10 +42,6 @@ def round_money(value: Number, decimals: int = 2) -> float:
     return float(rounded)
 
 
-# =========================================================
-# MONEY AS FLOAT
-# =========================================================
-
 def money_to_float(value: Number) -> float:
     """
     Convert a money value safely to float.
@@ -66,10 +54,6 @@ def money_to_float(value: Number) -> float:
     return float(to_decimal(value))
 
 
-# =========================================================
-# MONEY AS DECIMAL
-# =========================================================
-
 def money_to_decimal(value: Number) -> Decimal:
     """
     Return a money value as Decimal.
@@ -77,10 +61,6 @@ def money_to_decimal(value: Number) -> Decimal:
 
     return to_decimal(value)
 
-
-# =========================================================
-# ADD MONEY
-# =========================================================
 
 def add_money(*values: Number) -> Decimal:
     """
@@ -98,10 +78,6 @@ def add_money(*values: Number) -> Decimal:
 
     return total
 
-
-# =========================================================
-# SUBTRACT MONEY
-# =========================================================
 
 def subtract_money(
     first: Number,

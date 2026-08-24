@@ -8,18 +8,10 @@ from app.db.database import get_db
 from app.models.user import User
 
 
-# =========================================================
-# OAUTH2
-# =========================================================
-
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/api/v1/auth/login"
 )
 
-
-# =========================================================
-# CURRENT USER
-# =========================================================
 
 def get_current_user(
     token: str = Depends(oauth2_scheme),
@@ -41,16 +33,11 @@ def get_current_user(
             algorithms=[ALGORITHM]
         )
 
-        # -------------------------------------------------
-        # TOKEN TYPE
-        # -------------------------------------------------
-
+       
         if payload.get("type") != "access":
             raise credentials_exception
 
-        # -------------------------------------------------
-        # SUBJECT
-        # -------------------------------------------------
+        
 
         email = payload.get("sub")
 
@@ -61,9 +48,7 @@ def get_current_user(
 
         raise credentials_exception
 
-    # -----------------------------------------------------
-    # USER
-    # -----------------------------------------------------
+
 
     user = (
         db.query(User)
@@ -74,9 +59,6 @@ def get_current_user(
     if user is None:
         raise credentials_exception
 
-    # -----------------------------------------------------
-    # ACTIVE
-    # -----------------------------------------------------
 
     if not user.is_active:
 
@@ -88,9 +70,6 @@ def get_current_user(
     return user
 
 
-# =========================================================
-# CURRENT ADMIN
-# =========================================================
 
 def get_current_admin(
     current_user: User = Depends(get_current_user)

@@ -50,8 +50,7 @@ def normalize_category_name(name: str) -> str:
 
 
 # =========================================================
-# CREATE CATEGORY
-# ADMIN ONLY
+# CREATE CATEGORY(ADMIN)
 # =========================================================
 
 @router.post(
@@ -64,10 +63,6 @@ def create_category(
     current_admin=Depends(get_current_admin),
 ):
     name = normalize_category_name(category.name)
-
-    # -----------------------------------------------------
-    # CHECK DUPLICATE
-    # -----------------------------------------------------
 
     existing_category = (
         db.query(Category)
@@ -107,11 +102,6 @@ def create_category(
     return new_category
 
 
-# =========================================================
-# GET ALL CATEGORIES
-# LOGIN REQUIRED
-# =========================================================
-
 @router.get(
     "/",
     response_model=list[CategoryResponse],
@@ -130,11 +120,6 @@ def get_categories(
 
     return categories
 
-
-# =========================================================
-# GET CATEGORY BY ID
-# LOGIN REQUIRED
-# =========================================================
 
 @router.get(
     "/{category_id}",
@@ -161,11 +146,6 @@ def get_category(
 
     return category
 
-
-# =========================================================
-# UPDATE CATEGORY
-# ADMIN ONLY
-# =========================================================
 
 @router.put(
     "/{category_id}",
@@ -242,11 +222,6 @@ def update_category(
 
     return category
 
-
-# =========================================================
-# DELETE CATEGORY
-# ADMIN ONLY
-# =========================================================
 
 @router.delete(
     "/{category_id}",

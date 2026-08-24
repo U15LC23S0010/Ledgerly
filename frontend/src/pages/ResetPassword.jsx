@@ -63,7 +63,6 @@ export default function ResetPassword() {
 
     setEmail(savedEmail);
 
-    // Restore OTP if the page was refreshed
     if (savedOtp) {
       setOtp(savedOtp);
     }
@@ -117,17 +116,8 @@ export default function ResetPassword() {
         response.data
       );
 
-      // =====================================================
-      // IMPORTANT
-      // Backend does NOT return a reset token.
-      //
-      // The backend verifies the OTP here and expects the
-      // same email + OTP again when /reset-password is called.
-      // =====================================================
-
       setOtpVerified(true);
 
-      // Store OTP so it survives a page refresh.
       sessionStorage.setItem(
         "ledgerly_password_reset_otp",
         otpValue
@@ -220,14 +210,6 @@ export default function ResetPassword() {
 
     try {
       setLoading(true);
-
-      // =====================================================
-      // BACKEND EXPECTS:
-      //
-      // email
-      // otp
-      // new_password
-      // =====================================================
 
       const response = await axios.post(
         `${API_URL}/auth/reset-password`,
@@ -398,7 +380,10 @@ export default function ResetPassword() {
       <section className="reset-brand">
 
         <div className="reset-brand-logo">
-          LF
+          <img
+          src="/pwa-70x70.png"
+          alt="Ledgerly"
+          />
         </div>
 
         <div className="reset-brand-name">

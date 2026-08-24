@@ -4,7 +4,13 @@ import smtplib
 
 from email.message import EmailMessage
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    BackgroundTasks,
+)
+
 from fastapi.security import OAuth2PasswordRequestForm
 
 from jose import jwt, JWTError
@@ -56,12 +62,9 @@ def utc_now() -> datetime:
     Database DateTime columns are stored without timezone
     information, so comparisons use naive UTC datetimes.
     """
+
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
-
-# =========================================================
-# OTP SCHEMAS
-# =========================================================
 
 class VerifyRegistrationRequest(BaseModel):
     full_name: str
@@ -119,15 +122,19 @@ def send_otp(
     """
     Send OTP through Gmail SMTP.
 
+    This function runs as a FastAPI BackgroundTask.
+
     mobile_number is retained because the
     OTPVerification table requires it.
 
     OTP is sent only through email.
     """
 
-    # mobile_number is intentionally retained for compatibility
-    # with the OTPVerification model.
     _ = mobile_number
+
+    # -----------------------------------------------------
+    # PASSWORD RESET EMAIL
+    # -----------------------------------------------------
 
     if purpose == "password_reset":
 
@@ -151,6 +158,10 @@ Ledgerly
 Smart Bookkeeping
 """
 
+    # -----------------------------------------------------
+    # REGISTRATION EMAIL
+    # -----------------------------------------------------
+
     else:
 
         subject = "Ledgerly - Your Verification Code"
@@ -173,6 +184,10 @@ Ledgerly
 Smart Bookkeeping
 """
 
+    # -----------------------------------------------------
+    # CREATE EMAIL
+    # -----------------------------------------------------
+
     message = EmailMessage()
 
     message["Subject"] = subject
@@ -185,6 +200,10 @@ Smart Bookkeeping
     message["To"] = email
 
     message.set_content(body)
+
+    # -----------------------------------------------------
+    # SEND EMAIL
+    # -----------------------------------------------------
 
     try:
 
@@ -213,14 +232,6 @@ Smart Bookkeeping
             repr(e),
         )
 
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                "Unable to send verification email. "
-                "Please try again."
-            ),
-        )
-
 
 # =========================================================
 # REGISTER
@@ -229,6 +240,7 @@ Smart Bookkeeping
 @router.post("/register")
 def register(
     user: UserCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     """
@@ -239,7 +251,7 @@ def register(
     3. Check admin code.
     4. Generate OTP.
     5. Store OTP.
-    6. Send OTP.
+    6. Queue OTP email in background.
     """
 
     # -----------------------------------------------------
@@ -271,9 +283,7 @@ def register(
 
         raise HTTPException(
             status_code=400,
-            detail=(
-                "Password must contain at least 6 characters."
-            ),
+            detail="Password must contain at least 6 characters.",
         )
 
     # -----------------------------------------------------
@@ -407,14 +417,15 @@ def register(
         )
 
     # -----------------------------------------------------
-    # SEND OTP
+    # QUEUE EMAIL
     # -----------------------------------------------------
 
-    send_otp(
-        email=email,
-        mobile_number=mobile_number,
-        otp=otp,
-        purpose="registration",
+    background_tasks.add_task(
+        send_otp,
+        email,
+        mobile_number,
+        otp,
+        "registration",
     )
 
     return {
@@ -437,10 +448,6 @@ def verify_registration(
     """
     Verify registration OTP and create the user.
     """
-
-    # -----------------------------------------------------
-    # NORMALIZE
-    # -----------------------------------------------------
 
     email = data.email.strip().lower()
 
@@ -535,10 +542,7 @@ def verify_registration(
 
         raise HTTPException(
             status_code=404,
-            detail=(
-                "OTP not found. "
-                "Please request a new OTP."
-            ),
+            detail="OTP not found. Please request a new OTP.",
         )
 
     # -----------------------------------------------------
@@ -564,10 +568,7 @@ def verify_registration(
 
         raise HTTPException(
             status_code=400,
-            detail=(
-                "OTP has expired. "
-                "Please request a new OTP."
-            ),
+            detail="OTP has expired. Please request a new OTP.",
         )
 
     # -----------------------------------------------------
@@ -624,9 +625,7 @@ def verify_registration(
         )
 
     return {
-        "message": (
-            "Account verified and created successfully."
-        ),
+        "message": "Account verified and created successfully.",
         "id": new_user.id,
         "full_name": new_user.full_name,
         "email": new_user.email,
@@ -643,6 +642,7 @@ def verify_registration(
 @router.post("/resend-otp")
 def resend_otp(
     data: ResendOTPRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     """
@@ -734,14 +734,15 @@ def resend_otp(
         )
 
     # -----------------------------------------------------
-    # SEND
+    # QUEUE EMAIL
     # -----------------------------------------------------
 
-    send_otp(
-        email=email,
-        mobile_number=mobile_number,
-        otp=otp,
-        purpose="registration",
+    background_tasks.add_task(
+        send_otp,
+        email,
+        mobile_number,
+        otp,
+        "registration",
     )
 
     return {
@@ -757,6 +758,7 @@ def resend_otp(
 @router.post("/forgot-password")
 def forgot_password(
     data: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     """
@@ -779,9 +781,7 @@ def forgot_password(
 
         raise HTTPException(
             status_code=404,
-            detail=(
-                "No account found with this email address."
-            ),
+            detail="No account found with this email address.",
         )
 
     # -----------------------------------------------------
@@ -855,27 +855,23 @@ def forgot_password(
 
         raise HTTPException(
             status_code=500,
-            detail=(
-                "Unable to create password "
-                "reset request."
-            ),
+            detail="Unable to create password reset request.",
         )
 
     # -----------------------------------------------------
-    # SEND PASSWORD RESET OTP
+    # QUEUE PASSWORD RESET EMAIL
     # -----------------------------------------------------
 
-    send_otp(
-        email=email,
-        mobile_number=user.mobile_number,
-        otp=otp,
-        purpose="password_reset",
+    background_tasks.add_task(
+        send_otp,
+        email,
+        user.mobile_number,
+        otp,
+        "password_reset",
     )
 
     return {
-        "message": (
-            "Password reset OTP sent successfully."
-        ),
+        "message": "Password reset OTP sent successfully.",
         "email": email,
         "expires_in_minutes": OTP_EXPIRE_MINUTES,
     }
@@ -888,6 +884,7 @@ def forgot_password(
 @router.post("/forgot-password/resend")
 def resend_forgot_password_otp(
     data: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     """
@@ -910,9 +907,7 @@ def resend_forgot_password_otp(
 
         raise HTTPException(
             status_code=404,
-            detail=(
-                "No account found with this email address."
-            ),
+            detail="No account found with this email address.",
         )
 
     # -----------------------------------------------------
@@ -986,26 +981,23 @@ def resend_forgot_password_otp(
 
         raise HTTPException(
             status_code=500,
-            detail=(
-                "Unable to resend password reset OTP."
-            ),
+            detail="Unable to resend password reset OTP.",
         )
 
     # -----------------------------------------------------
-    # SEND
+    # QUEUE EMAIL
     # -----------------------------------------------------
 
-    send_otp(
-        email=email,
-        mobile_number=user.mobile_number,
-        otp=otp,
-        purpose="password_reset",
+    background_tasks.add_task(
+        send_otp,
+        email,
+        user.mobile_number,
+        otp,
+        "password_reset",
     )
 
     return {
-        "message": (
-            "New password reset OTP sent successfully."
-        ),
+        "message": "New password reset OTP sent successfully.",
         "expires_in_minutes": OTP_EXPIRE_MINUTES,
     }
 
@@ -1066,10 +1058,7 @@ def verify_forgot_password_otp(
 
         raise HTTPException(
             status_code=404,
-            detail=(
-                "OTP not found. "
-                "Please request a new OTP."
-            ),
+            detail="OTP not found. Please request a new OTP.",
         )
 
     # -----------------------------------------------------
@@ -1095,10 +1084,7 @@ def verify_forgot_password_otp(
 
         raise HTTPException(
             status_code=400,
-            detail=(
-                "OTP has expired. "
-                "Please request a new OTP."
-            ),
+            detail="OTP has expired. Please request a new OTP.",
         )
 
     # -----------------------------------------------------
@@ -1111,10 +1097,6 @@ def verify_forgot_password_otp(
             status_code=400,
             detail="Invalid OTP.",
         )
-
-    # -----------------------------------------------------
-    # SUCCESS
-    # -----------------------------------------------------
 
     return {
         "message": "OTP verified successfully.",
@@ -1152,9 +1134,7 @@ def reset_password(
 
         raise HTTPException(
             status_code=400,
-            detail=(
-                "Password must contain at least 6 characters."
-            ),
+            detail="Password must contain at least 6 characters.",
         )
 
     # -----------------------------------------------------
@@ -1205,10 +1185,7 @@ def reset_password(
 
         raise HTTPException(
             status_code=404,
-            detail=(
-                "OTP not found. "
-                "Please request a new OTP."
-            ),
+            detail="OTP not found. Please request a new OTP.",
         )
 
     # -----------------------------------------------------
@@ -1234,10 +1211,7 @@ def reset_password(
 
         raise HTTPException(
             status_code=400,
-            detail=(
-                "OTP has expired. "
-                "Please request a new OTP."
-            ),
+            detail="OTP has expired. Please request a new OTP.",
         )
 
     # -----------------------------------------------------
@@ -1256,10 +1230,6 @@ def reset_password(
     # -----------------------------------------------------
 
     user.password = hash_password(new_password)
-
-    # -----------------------------------------------------
-    # CONSUME OTP
-    # -----------------------------------------------------
 
     otp_record.is_verified = True
 
@@ -1423,20 +1393,23 @@ def login(
         }
 
     except HTTPException:
+
         raise
 
     except Exception as e:
-            db.rollback()
 
-            print(
-                "LOGIN INTERNAL ERROR:",
-                repr(e),
-            )
+        db.rollback()
 
-            raise HTTPException(
-                status_code=500,
-                detail="Internal server error",
-            )
+        print(
+            "LOGIN INTERNAL ERROR:",
+            repr(e),
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error",
+        )
+
 
 # =========================================================
 # REFRESH ACCESS TOKEN
@@ -1482,9 +1455,6 @@ def refresh_access_token(
             detail="Refresh token has been revoked",
         )
 
-    # -----------------------------------------------------
-    # DATABASE EXPIRATION
-    # -----------------------------------------------------
 
     if stored_token.expires_at < utc_now():
 
@@ -1496,10 +1466,6 @@ def refresh_access_token(
             status_code=401,
             detail="Refresh token expired",
         )
-
-    # -----------------------------------------------------
-    # JWT VALIDATION
-    # -----------------------------------------------------
 
     try:
 

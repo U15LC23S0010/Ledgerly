@@ -1,9 +1,5 @@
 import api from "./api";
 
-// =========================================================
-// GET ANALYTICS SUMMARY
-// =========================================================
-
 export const getAnalyticsSummary = (month) => {
   return api.get(
     "/analytics/summary",
@@ -15,10 +11,6 @@ export const getAnalyticsSummary = (month) => {
   );
 };
 
-// =========================================================
-// GET CATEGORY SUMMARY
-// =========================================================
-
 export const getCategorySummary = (month) => {
   return api.get(
     "/analytics/category-summary",
@@ -29,10 +21,6 @@ export const getCategorySummary = (month) => {
     }
   );
 };
-
-// =========================================================
-// GET MONTHLY SUMMARY
-// =========================================================
 
 export const getMonthlySummary = () => {
   return api.get(

@@ -44,65 +44,40 @@ api.interceptors.request.use(
 /*
 =========================================================
 RESPONSE INTERCEPTOR
-
-IMPORTANT:
-Do NOT redirect to /login here.
-
-ProtectedRoute is responsible for authentication
-routing.
-
 =========================================================
 */
 
 api.interceptors.response.use(
-
   (response) => {
     return response;
   },
 
   (error) => {
-
-    const status =
-      error.response?.status;
+    const status = error.response?.status;
 
     if (status === 401) {
-
       console.warn(
         "JWT authentication failed or expired."
       );
 
-      localStorage.removeItem(
-        "access"
-      );
+      // Only clear authentication data if a token
+      // was actually being used for this request.
+      const hadAuthorizationHeader =
+        !!error.config?.headers?.Authorization;
 
-      localStorage.removeItem(
-        "access_token"
-      );
-
-      localStorage.removeItem(
-        "refresh"
-      );
-
-      localStorage.removeItem(
-        "refresh_token"
-      );
-
-      localStorage.removeItem(
-        "token"
-      );
-
-      localStorage.removeItem(
-        "user"
-      );
-
-      localStorage.removeItem(
-        "userEmail"
-      );
+      if (hadAuthorizationHeader) {
+        localStorage.removeItem("access");
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("userEmail");
+      }
     }
 
     return Promise.reject(error);
   }
 );
-
 
 export default api;

@@ -53,10 +53,6 @@ def dashboard(
 
     today = get_today()
 
-    # -----------------------------------------------------
-    # Determine selected month
-    # -----------------------------------------------------
-
     if month:
 
         try:
@@ -102,9 +98,6 @@ def dashboard(
         selected_date.month,
     )
 
-    # =====================================================
-    # DEBUG
-    # =====================================================
 
     print(
         "DASHBOARD MONTH:",
@@ -119,9 +112,6 @@ def dashboard(
 
     # =====================================================
     # TOTAL INCOME
-    #
-    # IMPORTANT:
-    # This is now SELECTED MONTH income.
     # =====================================================
 
     total_income = (
@@ -143,9 +133,6 @@ def dashboard(
 
     # =====================================================
     # TOTAL EXPENSES
-    #
-    # IMPORTANT:
-    # This is now SELECTED MONTH expenses.
     # =====================================================
 
     total_expenses = (
@@ -209,12 +196,6 @@ def dashboard(
 
     # =====================================================
     # MONTHLY SPENDING TREND
-    #
-    # Six months ending at SELECTED MONTH.
-    #
-    # Example:
-    # Selected September 2026
-    # -> April, May, June, July, August, September
     # =====================================================
 
     monthly_trend = []
@@ -391,9 +372,6 @@ def dashboard(
 
     # =====================================================
     # ACCOUNTS
-    #
-    # Account balances are current balances.
-    # They are not month-specific.
     # =====================================================
 
     accounts = (
@@ -424,9 +402,6 @@ def dashboard(
 
     # =====================================================
     # BUDGET
-    #
-    # IMPORTANT:
-    # Use SELECTED MONTH, not today's month.
     # =====================================================
 
     budget = (
@@ -762,8 +737,8 @@ def dashboard(
         data_status = "active"
 
   # =====================================================
-    # FINANCIAL INSIGHTS
-    # =====================================================
+  # FINANCIAL INSIGHTS
+  # =====================================================
 
     financial_insights = []
 
@@ -1113,12 +1088,6 @@ def dashboard(
 
     # =====================================================
     # RECENT TRANSACTIONS
-    #
-    # IMPORTANT:
-    # SELECTED MONTH ONLY.
-    #
-    # This was one of the reasons August data appeared
-    # when September was selected.
     # =====================================================
 
     recent_transactions = (

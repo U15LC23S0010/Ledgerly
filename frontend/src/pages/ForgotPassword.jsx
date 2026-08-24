@@ -120,7 +120,10 @@ export default function ForgotPassword() {
         {/* LOGO */}
 
         <div className="forgot-logo">
-          LF
+          <img
+          src="/pwa-70x70.png"
+          alt="Ledgerly"
+          />
         </div>
 
         {/* HEADING */}

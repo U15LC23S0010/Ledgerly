@@ -67,14 +67,7 @@ function getValidCurrency() {
   return BASE_CURRENCY;
 }
 
-// =========================================================
-// COMPONENT
-// =========================================================
-
 export default function Analytics() {
-  // =======================================================
-  // DATA
-  // =======================================================
 
   const [summary, setSummary] = useState(null);
 
@@ -82,35 +75,19 @@ export default function Analytics() {
 
   const [monthlyData, setMonthlyData] = useState([]);
 
-  // =======================================================
-  // UI
-  // =======================================================
-
   const [chartType, setChartType] = useState("pie");
 
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState("");
 
-  // =======================================================
-  // CURRENCY
-  // =======================================================
-
   const [currency, setCurrency] = useState(
     getValidCurrency
   );
 
-  // =======================================================
-  // GET CURRENT EXCHANGE RATE
-  // =======================================================
-
   const exchangeRate =
     CURRENCY_CONFIG[currency]?.rate ??
     CURRENCY_CONFIG[BASE_CURRENCY].rate;
-
-  // =======================================================
-  // LISTEN FOR SETTINGS CURRENCY CHANGES
-  // =======================================================
 
   useEffect(() => {
     const updateCurrency = () => {
@@ -268,9 +245,6 @@ export default function Analytics() {
     }
   }
 
-  // =======================================================
-  // FORMAT AXIS MONEY
-  // =======================================================
 
   function formatAxisMoney(value) {
     const converted = convertAmount(value);
@@ -624,9 +598,6 @@ export default function Analytics() {
     );
   }
 
-  // =======================================================
-  // UI
-  // =======================================================
 
   return (
     <div className="analytics-page">

@@ -26,18 +26,6 @@ const DEFAULT_CURRENCY = "INR";
 
 const VALID_CURRENCIES = ["INR", "USD", "EUR", "GBP"];
 
-/*
- * Fixed conversion rates from INR.
- *
- * These are ONLY used for displaying the user's selected
- * currency. The database always stores account balances
- * in INR.
- *
- * Example:
- *
- * 68000 INR
- * USD = 68000 × 0.0117 = 795.60 USD
- */
 
 const INR_TO_CURRENCY = {
   INR: 1,
@@ -287,10 +275,6 @@ export default function Accounts() {
       }
     };
 
-    /*
-     * Custom event used by Settings page.
-     */
-
     const handleCurrencyChanged = (
       event
     ) => {
@@ -307,10 +291,6 @@ export default function Accounts() {
         readCurrency();
       }
     };
-
-    /*
-     * Alternative custom event.
-     */
 
     const handleSettingsUpdated = (
       event
@@ -329,12 +309,6 @@ export default function Accounts() {
       }
     };
 
-    /*
-     * Browser storage event.
-     *
-     * This works when another browser tab/window
-     * changes the currency.
-     */
 
     const handleStorage = (event) => {
       if (
@@ -344,11 +318,6 @@ export default function Accounts() {
         readCurrency();
       }
     };
-
-    /*
-     * When user returns to the Accounts page/tab,
-     * read Settings again.
-     */
 
     const handleVisibilityChange = () => {
       if (
@@ -378,10 +347,6 @@ export default function Accounts() {
       "visibilitychange",
       handleVisibilityChange
     );
-
-    /*
-     * Also check once after mounting.
-     */
 
     readCurrency();
 
@@ -418,10 +383,6 @@ export default function Accounts() {
 
     return numericValue * exchangeRate;
   };
-
-  /* =======================================================
-     MONEY
-     ======================================================= */
 
   const money = (value) => {
     const converted =
@@ -476,15 +437,6 @@ export default function Accounts() {
     account
   ) => {
     setEditingAccount(account);
-
-    /*
-     * IMPORTANT:
-     *
-     * The database balance is INR.
-     *
-     * Therefore the edit form always receives
-     * the original INR value.
-     */
 
     setForm({
       name: account.name || "",
@@ -574,15 +526,6 @@ export default function Accounts() {
 
     try {
       setDeleting(false);
-
-      /*
-       * IMPORTANT:
-       *
-       * Always send the entered balance as INR.
-       *
-       * We NEVER send the converted display
-       * value to the backend.
-       */
 
       const payload = {
         name: form.name.trim(),
@@ -844,9 +787,6 @@ export default function Accounts() {
     }
   };
 
-  /* =======================================================
-     UI
-     ======================================================= */
 
   return (
     <div className="accounts-page">
@@ -860,7 +800,7 @@ export default function Accounts() {
         <div>
 
           <div className="accounts-eyebrow">
-            LEDGERFLOW WORKSPACE
+            LEDGERLY WORKSPACE
           </div>
 
           <h1>

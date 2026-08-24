@@ -20,9 +20,6 @@ export default function AutoExpense() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
 
-  // =======================================================
-  // SUBMIT
-  // =======================================================
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -67,8 +64,6 @@ export default function AutoExpense() {
             "Please confirm the expense details."
         );
 
-        // Still display the parsed expense
-        // so the user can see what AI understood.
         setSuccess({
           ...data,
           expense: data.expense,
@@ -473,10 +468,6 @@ export default function AutoExpense() {
 
               </div>
 
-
-              {/* =================================================
-                  AI REASON
-              ================================================= */}
 
               {success.ai?.reason && (
 

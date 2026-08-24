@@ -10,24 +10,12 @@ ENV_FILE = BASE_DIR / ".env"
 
 class Settings(BaseSettings):
 
-    # =========================================================
-    # APPLICATION
-    # =========================================================
-
+    
     APP_ENV: str = "development"
 
-    # Comma-separated frontend URLs
     CORS_ORIGINS: str = "http://localhost:5174"
 
-    # =========================================================
-    # DATABASE
-    # =========================================================
-
     DATABASE_URL: str
-
-    # =========================================================
-    # JWT
-    # =========================================================
 
     SECRET_KEY: str
 
@@ -35,15 +23,7 @@ class Settings(BaseSettings):
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    # =========================================================
-    # ADMIN
-    # =========================================================
-
     ADMIN_REGISTRATION_CODE: str
-
-    # =========================================================
-    # SMTP
-    # =========================================================
 
     SMTP_HOST: str
 
@@ -57,9 +37,6 @@ class Settings(BaseSettings):
 
     SMTP_FROM_NAME: str = "Ledgerly"
 
-    # =========================================================
-    # PYDANTIC SETTINGS
-    # =========================================================
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,
@@ -67,6 +44,5 @@ class Settings(BaseSettings):
         extra="ignore",
         case_sensitive=True,
     )
-
 
 settings = Settings()

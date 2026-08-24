@@ -1,4 +1,4 @@
-// src/utils/currency.js
+
 
 const CURRENCY_CONFIG = {
   INR: {

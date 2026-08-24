@@ -32,7 +32,7 @@ import Guide from "./pages/Guide";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
-
+import Profile from "./pages/Profile";
 
 /* =========================================================
    SETTINGS
@@ -264,6 +264,11 @@ export default function App() {
             path="/settings"
             element={<Settings />}
           />
+
+          <Route
+            path="/profile"
+            element={<Profile />}
+         />
 
           <Route
             path="/notifications"

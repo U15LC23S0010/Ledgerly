@@ -67,7 +67,6 @@ class Invoice(Base):
         nullable=False,
         default="draft"
     )
-    # draft, sent, paid, overdue, cancelled
 
     notes = Column(
         String,

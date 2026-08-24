@@ -468,9 +468,6 @@ def delete_expense(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # -----------------------------------------------------
-    # Find user's expense
-    # -----------------------------------------------------
 
     db_expense = (
         db.query(Expense)

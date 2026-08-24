@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 
 export default function GuideGate() {
   const completed = localStorage.getItem(
-    "ledgerflow_guide_completed"
+    "ledgerly_guide_completed"
   );
 
   if (completed === "true") {

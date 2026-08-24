@@ -6,7 +6,6 @@ import {
   Building2,
   Palette,
   SlidersHorizontal,
-  Shield,
   Database,
   Info,
   Save,
@@ -18,7 +17,6 @@ import {
   Sun,
   Monitor,
   Check,
-  User,
   LayoutDashboard,
   CalendarDays,
   CircleDollarSign,
@@ -30,11 +28,25 @@ import {
 import "./Settings.css";
 
 /* =========================================================
+   STORAGE KEYS
+========================================================= */
+
+const SETTINGS_KEY = "ledgerly_settings";
+const CURRENCY_KEY = "ledgerly_currency";
+const DATE_FORMAT_KEY = "ledgerly_date_format";
+
+/* =========================================================
    DEFAULT SETTINGS
-   ========================================================= */
+
+   IMPORTANT:
+   businessName is intentionally empty.
+
+   The actual business name comes from the user's
+   registration/account information.
+========================================================= */
 
 const DEFAULT_SETTINGS = {
-  businessName: "Ledgerly",
+  businessName: "",
   currency: "INR",
   dateFormat: "DD/MM/YYYY",
   appearance: "light",
@@ -47,16 +59,8 @@ const DEFAULT_SETTINGS = {
 };
 
 /* =========================================================
-   STORAGE KEYS
-   ========================================================= */
-
-const SETTINGS_KEY = "ledgerly_settings";
-const CURRENCY_KEY = "ledgerly_currency";
-const DATE_FORMAT_KEY = "ledgerly_date_format";
-
-/* =========================================================
    DASHBOARD ROUTES
-   ========================================================= */
+========================================================= */
 
 const DASHBOARD_VIEW_ROUTES = {
   overview: "/dashboard",
@@ -66,7 +70,7 @@ const DASHBOARD_VIEW_ROUTES = {
 
 /* =========================================================
    VALID VALUES
-   ========================================================= */
+========================================================= */
 
 const VALID_CURRENCIES = [
   "INR",
@@ -82,10 +86,120 @@ const VALID_DATE_FORMATS = [
 ];
 
 /* =========================================================
-   NORMALIZE SETTINGS
-   ========================================================= */
+   GET REGISTERED USER
+========================================================= */
 
-    function normalizeSettings(settings = {}) {
+function getStoredUser() {
+  try {
+    const storedUser = localStorage.getItem("user");
+
+    if (!storedUser) {
+      return null;
+    }
+
+    const parsedUser = JSON.parse(storedUser);
+
+    if (!parsedUser || typeof parsedUser !== "object") {
+      return null;
+    }
+
+    /*
+      Supports different registration/backend field names.
+    */
+
+    return parsedUser;
+  } catch (error) {
+    console.error(
+      "Unable to read stored user:",
+      error
+    );
+
+    return null;
+  }
+}
+
+/* =========================================================
+   GET REGISTERED BUSINESS NAME
+========================================================= */
+
+function getRegisteredBusinessName(user) {
+  if (!user) {
+    return "";
+  }
+
+  const possibleBusinessNames = [
+    user.business_name,
+    user.businessName,
+    user.company_name,
+    user.companyName,
+    user.company,
+    user.business,
+  ];
+
+  const businessName =
+    possibleBusinessNames.find(
+      (value) =>
+        typeof value === "string" &&
+        value.trim().length > 0
+    );
+
+  return businessName
+    ? businessName.trim()
+    : "";
+}
+
+/* =========================================================
+   GET REGISTERED USER NAME
+
+   This is only used internally if needed later.
+========================================================= */
+
+function getUserName(user) {
+  if (!user) {
+    return "";
+  }
+
+  if (
+    typeof user.name === "string" &&
+    user.name.trim()
+  ) {
+    return user.name.trim();
+  }
+
+  const fullName = [
+    user.first_name,
+    user.last_name,
+  ]
+    .filter(
+      (value) =>
+        typeof value === "string" &&
+        value.trim()
+    )
+    .join(" ")
+    .trim();
+
+  if (fullName) {
+    return fullName;
+  }
+
+  if (
+    typeof user.username === "string" &&
+    user.username.trim()
+  ) {
+    return user.username.trim();
+  }
+
+  return "";
+}
+
+/* =========================================================
+   NORMALIZE SETTINGS
+========================================================= */
+
+function normalizeSettings(
+  settings = {},
+  registeredBusinessName = ""
+) {
   const currency = VALID_CURRENCIES.includes(
     settings.currency
   )
@@ -93,25 +207,45 @@ const VALID_DATE_FORMATS = [
     : DEFAULT_SETTINGS.currency;
 
   const dashboardView =
-    DASHBOARD_VIEW_ROUTES[settings.dashboardView]
+    DASHBOARD_VIEW_ROUTES[
+      settings.dashboardView
+    ]
       ? settings.dashboardView
       : DEFAULT_SETTINGS.dashboardView;
 
-  const validDateFormats = [
-    "DD/MM/YYYY",
-    "MM/DD/YYYY",
-    "YYYY-MM-DD",
-  ];
-
-  const dateFormat = validDateFormats.includes(
+  const dateFormat = VALID_DATE_FORMATS.includes(
     settings.dateFormat
   )
     ? settings.dateFormat
     : DEFAULT_SETTINGS.dateFormat;
 
+  /*
+    BUSINESS NAME PRIORITY
+
+    1. Registered business name
+    2. Existing settings business name
+    3. Empty string
+
+    This prevents "Ledgerly" from appearing for
+    every registered user.
+  */
+
+  const existingBusinessName =
+    typeof settings.businessName === "string"
+      ? settings.businessName.trim()
+      : "";
+
+  const businessName =
+    registeredBusinessName ||
+    existingBusinessName ||
+    "";
+
   return {
     ...DEFAULT_SETTINGS,
     ...settings,
+
+    businessName,
+
     currency,
     dashboardView,
     dateFormat,
@@ -119,8 +253,8 @@ const VALID_DATE_FORMATS = [
 }
 
 /* =========================================================
-   APPLICATION
-   ========================================================= */
+   SETTINGS PAGE
+========================================================= */
 
 export default function Settings() {
   const [settings, setSettings] = useState(
@@ -129,38 +263,69 @@ export default function Settings() {
 
   const [saved, setSaved] = useState(false);
 
-  const [user, setUser] = useState(null);
-
   /* =======================================================
-     LOAD SETTINGS
-     ======================================================= */
+     LOAD SETTINGS + REGISTERED BUSINESS NAME
+  ======================================================= */
 
   useEffect(() => {
+    const storedUser = getStoredUser();
+
+    const registeredBusinessName =
+      getRegisteredBusinessName(
+        storedUser
+      );
+
     const storedSettings =
       localStorage.getItem(SETTINGS_KEY);
 
-    let loadedSettings = DEFAULT_SETTINGS;
+    let loadedSettings = {
+      ...DEFAULT_SETTINGS,
+      businessName:
+        registeredBusinessName,
+    };
+
+    /* -------------------------------------------------------
+       LOAD EXISTING SETTINGS
+    ------------------------------------------------------- */
 
     if (storedSettings) {
       try {
-        loadedSettings = normalizeSettings(
-          JSON.parse(storedSettings)
+        const parsedSettings =
+          JSON.parse(storedSettings);
+
+        loadedSettings =
+          normalizeSettings(
+            parsedSettings,
+            registeredBusinessName
+          );
+      } catch (error) {
+        console.error(
+          "Unable to load settings:",
+          error
         );
-      } catch {
-        loadedSettings = DEFAULT_SETTINGS;
+
+        loadedSettings =
+          normalizeSettings(
+            DEFAULT_SETTINGS,
+            registeredBusinessName
+          );
       }
     }
 
-    /*
-     * If an older version of Ledgerly stored the date
-     * separately, use it when available.
-     */
+    /* -------------------------------------------------------
+       LEGACY DATE FORMAT
+    ------------------------------------------------------- */
+
     const storedDateFormat =
-      localStorage.getItem(DATE_FORMAT_KEY);
+      localStorage.getItem(
+        DATE_FORMAT_KEY
+      );
 
     if (
       storedDateFormat &&
-      VALID_DATE_FORMATS.includes(storedDateFormat)
+      VALID_DATE_FORMATS.includes(
+        storedDateFormat
+      )
     ) {
       loadedSettings = {
         ...loadedSettings,
@@ -168,38 +333,49 @@ export default function Settings() {
       };
     }
 
-    setSettings(loadedSettings);
+    /* -------------------------------------------------------
+       IMPORTANT
 
-    /* -----------------------------------------------
-       LOAD USER
-       ----------------------------------------------- */
+       Registered business name always wins.
 
-    const storedUser =
-      localStorage.getItem("user");
+       Therefore an old setting like:
 
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch {
-        setUser(null);
-      }
+       businessName: "Ledgerly"
+
+       will be replaced with the business name
+       entered during registration.
+    ------------------------------------------------------- */
+
+    if (registeredBusinessName) {
+      loadedSettings = {
+        ...loadedSettings,
+        businessName:
+          registeredBusinessName,
+      };
     }
+
+    setSettings(loadedSettings);
   }, []);
 
   /* =======================================================
      APPLY GLOBAL SETTINGS
-     ======================================================= */
+  ======================================================= */
 
   useEffect(() => {
-    const root = document.documentElement;
+    const root =
+      document.documentElement;
 
-    /* -----------------------------------------------
+    /* -------------------------------------------------------
        THEME
-       ----------------------------------------------- */
+    ------------------------------------------------------- */
 
-    let theme = settings.appearance;
+    let theme =
+      settings.appearance;
 
-    if (settings.appearance === "system") {
+    if (
+      settings.appearance ===
+      "system"
+    ) {
       const prefersDark =
         window.matchMedia(
           "(prefers-color-scheme: dark)"
@@ -220,18 +396,18 @@ export default function Settings() {
       theme
     );
 
-    /* -----------------------------------------------
-       LAYOUT DENSITY
-       ----------------------------------------------- */
+    /* -------------------------------------------------------
+       DENSITY
+    ------------------------------------------------------- */
 
     root.setAttribute(
       "data-density",
       settings.layoutDensity
     );
 
-    /* -----------------------------------------------
+    /* -------------------------------------------------------
        CURRENCY
-       ----------------------------------------------- */
+    ------------------------------------------------------- */
 
     root.setAttribute(
       "data-currency",
@@ -243,9 +419,9 @@ export default function Settings() {
       settings.currency
     );
 
-    /* -----------------------------------------------
+    /* -------------------------------------------------------
        DATE FORMAT
-       ----------------------------------------------- */
+    ------------------------------------------------------- */
 
     root.setAttribute(
       "data-date-format",
@@ -257,9 +433,9 @@ export default function Settings() {
       settings.dateFormat
     );
 
-    /* -----------------------------------------------
-       GLOBAL SETTINGS EVENT
-       ----------------------------------------------- */
+    /* -------------------------------------------------------
+       SETTINGS EVENT
+    ------------------------------------------------------- */
 
     window.dispatchEvent(
       new CustomEvent(
@@ -272,48 +448,44 @@ export default function Settings() {
       )
     );
 
-    /* -----------------------------------------------
+    /* -------------------------------------------------------
        CURRENCY EVENT
-       ----------------------------------------------- */
+    ------------------------------------------------------- */
 
     window.dispatchEvent(
       new CustomEvent(
         "ledgerly-currency-changed",
         {
-          detail: settings.currency,
+          detail:
+            settings.currency,
         }
       )
     );
 
-    /* -----------------------------------------------
-       DATE FORMAT EVENT
-       ----------------------------------------------- */
+    /* -------------------------------------------------------
+       DATE EVENT
+    ------------------------------------------------------- */
 
     window.dispatchEvent(
       new CustomEvent(
         "ledgerly-date-format-changed",
         {
-          detail: settings.dateFormat,
+          detail:
+            settings.dateFormat,
         }
       )
     );
-  }, [
-    settings.appearance,
-    settings.layoutDensity,
-    settings.currency,
-    settings.dateFormat,
-    settings.dashboardView,
-    settings.showFinancialSummary,
-    settings.confirmDelete,
-    settings.businessName,
-  ]);
+  }, [settings]);
 
   /* =======================================================
      SYSTEM THEME LISTENER
-     ======================================================= */
+  ======================================================= */
 
   useEffect(() => {
-    if (settings.appearance !== "system") {
+    if (
+      settings.appearance !==
+      "system"
+    ) {
       return;
     }
 
@@ -322,7 +494,9 @@ export default function Settings() {
         "(prefers-color-scheme: dark)"
       );
 
-    const handleThemeChange = (event) => {
+    const handleThemeChange = (
+      event
+    ) => {
       document.documentElement.setAttribute(
         "data-theme",
         event.matches
@@ -346,9 +520,12 @@ export default function Settings() {
 
   /* =======================================================
      HANDLE SETTING CHANGE
-     ======================================================= */
+  ======================================================= */
 
-  function handleChange(field, value) {
+  function handleChange(
+    field,
+    value
+  ) {
     setSettings((previous) => ({
       ...previous,
       [field]: value,
@@ -359,48 +536,55 @@ export default function Settings() {
 
   /* =======================================================
      SAVE SETTINGS
-     ======================================================= */
+  ======================================================= */
 
   function saveSettings(event) {
     if (event) {
       event.preventDefault();
     }
 
+    /*
+      Get the current registered business name
+      again before saving.
+
+      This guarantees that the registration
+      business name is retained.
+    */
+
+    const currentUser =
+      getStoredUser();
+
+    const registeredBusinessName =
+      getRegisteredBusinessName(
+        currentUser
+      );
+
     const normalizedSettings =
-      normalizeSettings(settings);
+      normalizeSettings(
+        settings,
+        registeredBusinessName
+      );
 
-    setSettings(normalizedSettings);
-
-    /* -----------------------------------------------
-       SAVE COMPLETE SETTINGS
-       ----------------------------------------------- */
+    setSettings(
+      normalizedSettings
+    );
 
     localStorage.setItem(
       SETTINGS_KEY,
-      JSON.stringify(normalizedSettings)
+      JSON.stringify(
+        normalizedSettings
+      )
     );
-
-    /* -----------------------------------------------
-       SAVE CURRENCY
-       ----------------------------------------------- */
 
     localStorage.setItem(
       CURRENCY_KEY,
       normalizedSettings.currency
     );
 
-    /* -----------------------------------------------
-       SAVE DATE FORMAT
-       ----------------------------------------------- */
-
     localStorage.setItem(
       DATE_FORMAT_KEY,
       normalizedSettings.dateFormat
     );
-
-    /* -----------------------------------------------
-       HTML DATA ATTRIBUTES
-       ----------------------------------------------- */
 
     document.documentElement.setAttribute(
       "data-currency",
@@ -412,22 +596,15 @@ export default function Settings() {
       normalizedSettings.dateFormat
     );
 
-    /* -----------------------------------------------
-       SETTINGS EVENT
-       ----------------------------------------------- */
-
     window.dispatchEvent(
       new CustomEvent(
         "ledgerly-settings-updated",
         {
-          detail: normalizedSettings,
+          detail:
+            normalizedSettings,
         }
       )
     );
-
-    /* -----------------------------------------------
-       CURRENCY EVENT
-       ----------------------------------------------- */
 
     window.dispatchEvent(
       new CustomEvent(
@@ -438,10 +615,6 @@ export default function Settings() {
         }
       )
     );
-
-    /* -----------------------------------------------
-       DATE FORMAT EVENT
-       ----------------------------------------------- */
 
     window.dispatchEvent(
       new CustomEvent(
@@ -462,7 +635,7 @@ export default function Settings() {
 
   /* =======================================================
      RESET SETTINGS
-     ======================================================= */
+  ======================================================= */
 
   function resetSettings() {
     const confirmed =
@@ -474,35 +647,43 @@ export default function Settings() {
       return;
     }
 
-    const resetSettings = {
+    /*
+      IMPORTANT:
+
+      Reset preferences but DO NOT replace the
+      registered business name with "Ledgerly".
+    */
+
+    const currentUser =
+      getStoredUser();
+
+    const registeredBusinessName =
+      getRegisteredBusinessName(
+        currentUser
+      );
+
+    const reset = {
       ...DEFAULT_SETTINGS,
-      dashboardView: "overview",
+      businessName:
+        registeredBusinessName,
     };
 
-    setSettings(resetSettings);
-
-    /* -----------------------------------------------
-       SAVE SETTINGS
-       ----------------------------------------------- */
+    setSettings(reset);
 
     localStorage.setItem(
       SETTINGS_KEY,
-      JSON.stringify(resetSettings)
+      JSON.stringify(reset)
     );
 
     localStorage.setItem(
       CURRENCY_KEY,
-      resetSettings.currency
+      reset.currency
     );
 
     localStorage.setItem(
       DATE_FORMAT_KEY,
-      resetSettings.dateFormat
+      reset.dateFormat
     );
-
-    /* -----------------------------------------------
-       APPLY ATTRIBUTES
-       ----------------------------------------------- */
 
     document.documentElement.setAttribute(
       "data-theme",
@@ -524,22 +705,14 @@ export default function Settings() {
       "DD/MM/YYYY"
     );
 
-    /* -----------------------------------------------
-       GLOBAL SETTINGS EVENT
-       ----------------------------------------------- */
-
     window.dispatchEvent(
       new CustomEvent(
         "ledgerly-settings-updated",
         {
-          detail: resetSettings,
+          detail: reset,
         }
       )
     );
-
-    /* -----------------------------------------------
-       CURRENCY EVENT
-       ----------------------------------------------- */
 
     window.dispatchEvent(
       new CustomEvent(
@@ -549,10 +722,6 @@ export default function Settings() {
         }
       )
     );
-
-    /* -----------------------------------------------
-       DATE EVENT
-       ----------------------------------------------- */
 
     window.dispatchEvent(
       new CustomEvent(
@@ -572,7 +741,7 @@ export default function Settings() {
 
   /* =======================================================
      CLEAR PREFERENCES
-     ======================================================= */
+  ======================================================= */
 
   function clearPreferences() {
     const confirmed =
@@ -596,16 +765,28 @@ export default function Settings() {
       DATE_FORMAT_KEY
     );
 
+    /*
+      Keep registered business name even when
+      clearing preferences.
+    */
+
+    const currentUser =
+      getStoredUser();
+
+    const registeredBusinessName =
+      getRegisteredBusinessName(
+        currentUser
+      );
+
     const clearedSettings = {
       ...DEFAULT_SETTINGS,
-      dashboardView: "overview",
+      businessName:
+        registeredBusinessName,
     };
 
-    setSettings(clearedSettings);
-
-    /* -----------------------------------------------
-       APPLY DEFAULT VALUES
-       ----------------------------------------------- */
+    setSettings(
+      clearedSettings
+    );
 
     document.documentElement.setAttribute(
       "data-theme",
@@ -627,22 +808,15 @@ export default function Settings() {
       "DD/MM/YYYY"
     );
 
-    /* -----------------------------------------------
-       GLOBAL EVENT
-       ----------------------------------------------- */
-
     window.dispatchEvent(
       new CustomEvent(
         "ledgerly-settings-updated",
         {
-          detail: clearedSettings,
+          detail:
+            clearedSettings,
         }
       )
     );
-
-    /* -----------------------------------------------
-       CURRENCY EVENT
-       ----------------------------------------------- */
 
     window.dispatchEvent(
       new CustomEvent(
@@ -652,10 +826,6 @@ export default function Settings() {
         }
       )
     );
-
-    /* -----------------------------------------------
-       DATE EVENT
-       ----------------------------------------------- */
 
     window.dispatchEvent(
       new CustomEvent(
@@ -675,18 +845,24 @@ export default function Settings() {
 
   /* =======================================================
      EXPORT SETTINGS
-     ======================================================= */
+  ======================================================= */
 
   function exportSettings() {
     const normalizedSettings =
-      normalizeSettings(settings);
+      normalizeSettings(
+        settings,
+        getRegisteredBusinessName(
+          getStoredUser()
+        )
+      );
 
     const data = {
       application: "Ledgerly",
       version: "1.0.0",
       exportedAt:
         new Date().toISOString(),
-      settings: normalizedSettings,
+      settings:
+        normalizedSettings,
     };
 
     const blob = new Blob(
@@ -728,7 +904,7 @@ export default function Settings() {
 
   /* =======================================================
      LOGOUT
-     ======================================================= */
+  ======================================================= */
 
   function logout() {
     const confirmed =
@@ -741,7 +917,7 @@ export default function Settings() {
     }
 
     localStorage.removeItem(
-      "token"
+      "access"
     );
 
     localStorage.removeItem(
@@ -749,33 +925,49 @@ export default function Settings() {
     );
 
     localStorage.removeItem(
+      "refresh"
+    );
+
+    localStorage.removeItem(
+      "refresh_token"
+    );
+
+    localStorage.removeItem(
+      "token"
+    );
+
+    localStorage.removeItem(
       "user"
     );
+
+    localStorage.removeItem(
+      "userEmail"
+    );
+
+    sessionStorage.clear();
 
     window.location.href =
       "/login";
   }
 
   /* =======================================================
-     USER NAME
-     ======================================================= */
+     DISPLAY VALUES
+  ======================================================= */
 
-  const userName =
-    user?.name ||
-    user?.username ||
-    user?.email ||
-    "Ledgerly User";
+  const displayBusinessName =
+    settings.businessName ||
+    "Your Business";
 
   /* =======================================================
      RENDER
-     ======================================================= */
+  ======================================================= */
 
   return (
     <div className="settings-page">
 
-      {/* ===================================================
+      {/* =================================================
           HEADER
-          =================================================== */}
+      ================================================= */}
 
       <div className="settings-header">
 
@@ -815,9 +1007,9 @@ export default function Settings() {
 
       </div>
 
-      {/* ===================================================
-          SUCCESS
-          =================================================== */}
+      {/* =================================================
+          SUCCESS MESSAGE
+      ================================================= */}
 
       {saved && (
         <div className="settings-success">
@@ -831,9 +1023,9 @@ export default function Settings() {
         </div>
       )}
 
-      {/* ===================================================
-          FORM
-          =================================================== */}
+      {/* =================================================
+          SETTINGS FORM
+      ================================================= */}
 
       <form
         className="settings-layout"
@@ -842,7 +1034,7 @@ export default function Settings() {
 
         {/* =================================================
             GENERAL
-            ================================================= */}
+        ================================================= */}
 
         <section className="settings-panel">
 
@@ -853,12 +1045,16 @@ export default function Settings() {
             </div>
 
             <div>
-              <h2>General</h2>
+
+              <h2>
+                General
+              </h2>
 
               <p>
                 Configure your bookkeeping
                 workspace information.
               </p>
+
             </div>
 
           </div>
@@ -881,7 +1077,10 @@ export default function Settings() {
                   id="businessName"
                   type="text"
                   value={
-                    settings.businessName
+                    displayBusinessName ===
+                    "Your Business"
+                      ? ""
+                      : settings.businessName
                   }
                   onChange={(e) =>
                     handleChange(
@@ -895,8 +1094,8 @@ export default function Settings() {
               </div>
 
               <small>
-                This name is used throughout
-                your bookkeeping workspace.
+                Your registered business name
+                is used by default.
               </small>
 
             </div>
@@ -911,7 +1110,9 @@ export default function Settings() {
 
               <div className="settings-input-icon">
 
-                <CircleDollarSign size={17} />
+                <CircleDollarSign
+                  size={17}
+                />
 
                 <select
                   id="currency"
@@ -955,46 +1156,53 @@ export default function Settings() {
 
             {/* DATE FORMAT */}
 
-           {/* DATE FORMAT */}
+            <div className="settings-field">
 
-<div className="settings-field">
+              <label htmlFor="dateFormat">
+                Date format
+              </label>
 
-  <label htmlFor="dateFormat">
-    Date format
-  </label>
+              <div className="settings-input-icon">
 
-  <div className="settings-input-icon">
+                <CalendarDays
+                  size={17}
+                />
 
-    <CalendarDays size={17} />
+                <select
+                  id="dateFormat"
+                  value={
+                    settings.dateFormat
+                  }
+                  onChange={(e) =>
+                    handleChange(
+                      "dateFormat",
+                      e.target.value
+                    )
+                  }
+                >
 
-    <select
-      id="dateFormat"
-      name="dateFormat"
-      value={settings.dateFormat || "DD/MM/YYYY"}
-      onChange={(e) => {
-        handleChange("dateFormat", e.target.value);
-      }}
-    >
-      <option value="DD/MM/YYYY">
-        DD/MM/YYYY
-      </option>
+                  <option value="DD/MM/YYYY">
+                    DD/MM/YYYY
+                  </option>
 
-      <option value="MM/DD/YYYY">
-        MM/DD/YYYY
-      </option>
+                  <option value="MM/DD/YYYY">
+                    MM/DD/YYYY
+                  </option>
 
-      <option value="YYYY-MM-DD">
-        YYYY-MM-DD
-      </option>
-    </select>
+                  <option value="YYYY-MM-DD">
+                    YYYY-MM-DD
+                  </option>
 
-  </div>
+                </select>
 
-  <small>
-    Choose how dates are displayed throughout Ledgerly.
-  </small>
+              </div>
 
-</div>
+              <small>
+                Choose how dates are displayed
+                throughout Ledgerly.
+              </small>
+
+            </div>
 
           </div>
 
@@ -1002,7 +1210,7 @@ export default function Settings() {
 
         {/* =================================================
             APPEARANCE
-            ================================================= */}
+        ================================================= */}
 
         <section className="settings-panel">
 
@@ -1035,6 +1243,8 @@ export default function Settings() {
 
             <div className="settings-choice-grid">
 
+              {/* LIGHT */}
+
               <button
                 type="button"
                 className={`settings-choice ${
@@ -1054,6 +1264,7 @@ export default function Settings() {
                 <Sun />
 
                 <span>
+
                   <strong>
                     Light
                   </strong>
@@ -1061,6 +1272,7 @@ export default function Settings() {
                   <small>
                     Clean and bright
                   </small>
+
                 </span>
 
                 {settings.appearance ===
@@ -1072,6 +1284,8 @@ export default function Settings() {
                 )}
 
               </button>
+
+              {/* DARK */}
 
               <button
                 type="button"
@@ -1092,6 +1306,7 @@ export default function Settings() {
                 <Moon />
 
                 <span>
+
                   <strong>
                     Dark
                   </strong>
@@ -1099,6 +1314,7 @@ export default function Settings() {
                   <small>
                     Comfortable in low light
                   </small>
+
                 </span>
 
                 {settings.appearance ===
@@ -1110,6 +1326,8 @@ export default function Settings() {
                 )}
 
               </button>
+
+              {/* SYSTEM */}
 
               <button
                 type="button"
@@ -1130,6 +1348,7 @@ export default function Settings() {
                 <Monitor />
 
                 <span>
+
                   <strong>
                     System
                   </strong>
@@ -1137,6 +1356,7 @@ export default function Settings() {
                   <small>
                     Follow device preference
                   </small>
+
                 </span>
 
                 {settings.appearance ===
@@ -1150,6 +1370,8 @@ export default function Settings() {
               </button>
 
             </div>
+
+            {/* DENSITY */}
 
             <div className="settings-density">
 
@@ -1188,7 +1410,7 @@ export default function Settings() {
 
         {/* =================================================
             WORKSPACE PREFERENCES
-            ================================================= */}
+        ================================================= */}
 
         <section className="settings-panel">
 
@@ -1215,13 +1437,17 @@ export default function Settings() {
 
           <div className="settings-options">
 
+            {/* DASHBOARD VIEW */}
+
             <div className="settings-option">
 
               <div className="settings-option-info">
 
                 <div className="option-title">
 
-                  <LayoutDashboard size={17} />
+                  <LayoutDashboard
+                    size={17}
+                  />
 
                   <strong>
                     Dashboard view
@@ -1230,7 +1456,8 @@ export default function Settings() {
                 </div>
 
                 <span>
-                  Choose the default dashboard section.
+                  Choose the default dashboard
+                  section.
                 </span>
 
               </div>
@@ -1267,13 +1494,17 @@ export default function Settings() {
 
             </div>
 
+            {/* FINANCIAL SUMMARY */}
+
             <label className="settings-option">
 
               <div className="settings-option-info">
 
                 <div className="option-title">
 
-                  <CircleDollarSign size={17} />
+                  <CircleDollarSign
+                    size={17}
+                  />
 
                   <strong>
                     Financial summary
@@ -1282,8 +1513,8 @@ export default function Settings() {
                 </div>
 
                 <span>
-                  Show financial summary information
-                  on the dashboard.
+                  Show financial summary
+                  information on the dashboard.
                 </span>
 
               </div>
@@ -1303,6 +1534,8 @@ export default function Settings() {
               />
 
             </label>
+
+            {/* DELETE CONFIRMATION */}
 
             <label className="settings-option">
 
@@ -1346,84 +1579,8 @@ export default function Settings() {
         </section>
 
         {/* =================================================
-            ACCOUNT
-            ================================================= */}
-
-        <section className="settings-panel">
-
-          <div className="settings-panel-header">
-
-            <div className="settings-panel-icon">
-              <User />
-            </div>
-
-            <div>
-
-              <h2>
-                Account
-              </h2>
-
-              <p>
-                View the account currently
-                connected to Ledgerly.
-              </p>
-
-            </div>
-
-          </div>
-
-          <div className="settings-account-card">
-
-            <div className="account-avatar">
-              <User size={22} />
-            </div>
-
-            <div className="account-information">
-
-              <strong>
-                {userName}
-              </strong>
-
-              {user?.email && (
-                <span>
-                  {user.email}
-                </span>
-              )}
-
-              <small>
-                Authenticated Ledgerly user
-              </small>
-
-            </div>
-
-          </div>
-
-          <div className="settings-security-note">
-
-            <Shield size={18} />
-
-            <div>
-
-              <strong>
-                Secure authentication
-              </strong>
-
-              <span>
-                Your account uses the existing
-                secure authentication system.
-                Authentication settings are not
-                exposed here.
-              </span>
-
-            </div>
-
-          </div>
-
-        </section>
-
-        {/* =================================================
             DATA & PREFERENCES
-            ================================================= */}
+        ================================================= */}
 
         <section className="settings-panel">
 
@@ -1491,8 +1648,8 @@ export default function Settings() {
         </section>
 
         {/* =================================================
-            HELP
-            ================================================= */}
+            HELP & USER GUIDE
+        ================================================= */}
 
         <section className="settings-panel">
 
@@ -1570,8 +1727,8 @@ export default function Settings() {
         </section>
 
         {/* =================================================
-            ABOUT
-            ================================================= */}
+            ABOUT LEDGERLY
+        ================================================= */}
 
         <section className="settings-panel">
 
@@ -1598,6 +1755,7 @@ export default function Settings() {
           <div className="settings-about">
 
             <div className="settings-about-row">
+
               <span>
                 Application
               </span>
@@ -1605,9 +1763,11 @@ export default function Settings() {
               <strong>
                 Ledgerly
               </strong>
+
             </div>
 
             <div className="settings-about-row">
+
               <span>
                 Version
               </span>
@@ -1615,9 +1775,11 @@ export default function Settings() {
               <strong>
                 1.0.0
               </strong>
+
             </div>
 
             <div className="settings-about-row">
+
               <span>
                 Purpose
               </span>
@@ -1625,9 +1787,23 @@ export default function Settings() {
               <strong>
                 Bookkeeping & Financial Management
               </strong>
+
             </div>
 
             <div className="settings-about-row">
+
+              <span>
+                Business
+              </span>
+
+              <strong>
+                {displayBusinessName}
+              </strong>
+
+            </div>
+
+            <div className="settings-about-row">
+
               <span>
                 Currency
               </span>
@@ -1635,9 +1811,11 @@ export default function Settings() {
               <strong>
                 {settings.currency}
               </strong>
+
             </div>
 
             <div className="settings-about-row">
+
               <span>
                 Date format
               </span>
@@ -1645,9 +1823,11 @@ export default function Settings() {
               <strong>
                 {settings.dateFormat}
               </strong>
+
             </div>
 
             <div className="settings-about-row">
+
               <span>
                 Theme
               </span>
@@ -1658,9 +1838,11 @@ export default function Settings() {
                   .toUpperCase() +
                   settings.appearance.slice(1)}
               </strong>
+
             </div>
 
             <div className="settings-about-row">
+
               <span>
                 Layout
               </span>
@@ -1671,6 +1853,7 @@ export default function Settings() {
                   .toUpperCase() +
                   settings.layoutDensity.slice(1)}
               </strong>
+
             </div>
 
           </div>
@@ -1679,7 +1862,7 @@ export default function Settings() {
 
         {/* =================================================
             SAVE / RESET
-            ================================================= */}
+        ================================================= */}
 
         <div className="settings-actions">
 
@@ -1710,7 +1893,7 @@ export default function Settings() {
 
         {/* =================================================
             LOGOUT
-            ================================================= */}
+        ================================================= */}
 
         <div className="settings-logout-section">
 

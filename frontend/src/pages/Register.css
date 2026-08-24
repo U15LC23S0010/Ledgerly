@@ -1197,3 +1197,211 @@
     font-size: 10px;
   }
 }
+
+/* =========================================================
+   MOBILE RESPONSIVE — REGISTER ONLY
+   Does not affect desktop
+========================================================= */
+
+@media (max-width: 768px) {
+  .register-page {
+    width: 100%;
+    min-height: 100dvh;
+    padding: 20px 16px;
+    overflow-x: hidden;
+  }
+
+  .register-container {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .register-card {
+    width: 100%;
+    padding: 24px 20px;
+    border-radius: 16px;
+    box-sizing: border-box;
+  }
+
+  .register-header {
+    text-align: center;
+  }
+
+  .register-header h1 {
+    font-size: 24px;
+    line-height: 1.25;
+  }
+
+  .register-header p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .register-form {
+    width: 100%;
+  }
+
+  .register-field {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  .register-field label {
+    font-size: 13px;
+  }
+
+  .register-field input,
+  .register-field select,
+  .register-field textarea {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    font-size: 16px;
+    box-sizing: border-box;
+    border-radius: 10px;
+  }
+
+  .register-input-wrapper {
+    width: 100%;
+  }
+
+  .register-input-wrapper input {
+    width: 100%;
+  }
+
+  /* Prevent desktop two-column form from breaking */
+  .register-form-row,
+  .register-fields-row,
+  .register-grid,
+  .register-form-grid {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .register-form-row > *,
+  .register-fields-row > *,
+  .register-grid > *,
+  .register-form-grid > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .register-button,
+  .register-submit,
+  .register-form button[type="submit"] {
+    width: 100%;
+    min-height: 48px;
+    font-size: 15px;
+    border-radius: 10px;
+    touch-action: manipulation;
+  }
+
+  .register-footer {
+    width: 100%;
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .register-options {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 480px) {
+  .register-page {
+    padding: 14px 12px;
+  }
+
+  .register-container {
+    max-width: 100%;
+  }
+
+  .register-card {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .register-header h1 {
+    font-size: 22px;
+  }
+
+  .register-header p {
+    font-size: 13px;
+  }
+
+  .register-field {
+    margin-bottom: 13px;
+  }
+
+  .register-field input,
+  .register-field select,
+  .register-field textarea {
+    min-height: 46px;
+    font-size: 16px;
+  }
+
+  .register-button,
+  .register-submit,
+  .register-form button[type="submit"] {
+    min-height: 46px;
+  }
+}
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media (max-width: 360px) {
+  .register-page {
+    padding: 10px 8px;
+  }
+
+  .register-card {
+    padding: 18px 13px;
+  }
+
+  .register-header h1 {
+    font-size: 20px;
+  }
+}
+
+/* =========================================================
+   REGISTER LOGO — MOBILE SIZE FIX
+========================================================= */
+
+@media (max-width: 768px) {
+  .register-header img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin: 0 auto 8px;
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-header img {
+    width: 65px;
+    height: 65px;
+    margin-bottom: 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .register-header img {
+    width: 55px;
+    height: 55px;
+    margin-bottom: 5px;
+  }
+}

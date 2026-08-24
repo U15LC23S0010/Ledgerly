@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const SETTINGS_KEY = "ledgerflow_settings";
+const SETTINGS_KEY = "ledgerly_settings";
 
 export default function ThemeProvider({ children }) {
   useEffect(() => {
@@ -16,13 +16,13 @@ export default function ThemeProvider({ children }) {
     };
 
     window.addEventListener(
-      "ledgerflow-settings-updated",
+      "ledgerly-settings-updated",
       handleSettingsUpdate
     );
 
     return () => {
       window.removeEventListener(
-        "ledgerflow-settings-updated",
+        "ledgerly-settings-updated",
         handleSettingsUpdate
       );
     };
@@ -31,10 +31,6 @@ export default function ThemeProvider({ children }) {
   function applyTheme(savedAppearance = null) {
     let appearance = savedAppearance;
 
-    /*
-     * If no appearance was supplied,
-     * load it from saved settings.
-     */
     if (!appearance) {
       const storedSettings =
         localStorage.getItem(SETTINGS_KEY);
@@ -55,9 +51,6 @@ export default function ThemeProvider({ children }) {
       }
     }
 
-    /*
-     * System theme
-     */
     if (appearance === "system") {
       const prefersDark =
         window.matchMedia(
@@ -70,17 +63,12 @@ export default function ThemeProvider({ children }) {
           : "light";
     }
 
-    /*
-     * Apply theme globally
-     */
     document.documentElement.setAttribute(
       "data-theme",
       appearance
     );
 
-    /*
-     * Keep a simple copy too.
-     */
+    
     localStorage.setItem(
       "ledgerflow_theme",
       appearance

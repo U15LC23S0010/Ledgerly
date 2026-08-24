@@ -149,15 +149,15 @@ export default function Login() {
           meResponse.data
         );
 
-        const currentUser =
-          meResponse.data?.user;
+       const currentUser =
+       meResponse.data?.user || meResponse.data;
 
-        if (currentUser) {
-          localStorage.setItem(
-            "user",
-            JSON.stringify(currentUser)
-          );
-        }
+       if (currentUser) {
+       localStorage.setItem(
+        "user",
+       JSON.stringify(currentUser)
+      );
+    }
       } catch (meError) {
         console.error(
           "Unable to load current user:",

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 
 import {
@@ -19,7 +20,6 @@ import {
 } from "lucide-react";
 
 import "./Sidebar.css";
-
 
 /* =========================================================
    SIDEBAR SECTIONS
@@ -124,31 +124,126 @@ const sections = [
   },
 ];
 
+/* =========================================================
+   HELPER
+========================================================= */
+
+function getStoredUser() {
+  try {
+    const storedUser = localStorage.getItem("user");
+
+    if (!storedUser) {
+      return null;
+    }
+
+    return JSON.parse(storedUser);
+  } catch (error) {
+    console.error("Unable to read stored user:", error);
+    return null;
+  }
+}
+
 
 export default function Sidebar() {
-
   const navigate = useNavigate();
 
+  const [user, setUser] = useState(() => getStoredUser());
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setUser(getStoredUser());
+    };
+
+    window.addEventListener(
+      "storage",
+      handleStorageChange
+    );
+
+    return () => {
+      window.removeEventListener(
+        "storage",
+        handleStorageChange
+      );
+    };
+  }, []);
+
+  /* =========================================================
+     USER INFORMATION
+  ========================================================= */
+
+  const fullName =
+    user?.full_name ||
+    user?.name ||
+    user?.username ||
+    user?.first_name ||
+    user?.email?.split("@")[0] ||
+    "User";
+
+  const email =
+    user?.email ||
+    "";
+
+  const role =
+    user?.role ||
+    "Administrator";
+
+  const initials = fullName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) =>
+      part.charAt(0).toUpperCase()
+    )
+    .join("") || "U";
+
+
+  const handleSettings = () => {
+    navigate("/settings");
+  };
 
   /* =========================================================
      LOGOUT
   ========================================================= */
 
   const handleLogout = () => {
-
+    localStorage.removeItem("access");
     localStorage.removeItem("access_token");
+
+    localStorage.removeItem("refresh");
+    localStorage.removeItem("refresh_token");
+
+    localStorage.removeItem("token");
+
+    localStorage.removeItem("user");
     localStorage.removeItem("userEmail");
+
+    sessionStorage.removeItem(
+      "ledgerly_registration"
+    );
+
+    sessionStorage.removeItem(
+      "ledgerly_registration_email"
+    );
+
+    sessionStorage.removeItem(
+      "ledgerly_registration_mobile"
+    );
+
+    sessionStorage.removeItem(
+      "ledgerly_show_welcome"
+    );
+
+    /*
+     * Go back to login.
+     */
 
     navigate("/login", {
       replace: true,
     });
-
   };
-
 
   return (
     <aside className="sidebar">
-
 
       {/* =====================================================
           BRAND
@@ -157,20 +252,8 @@ export default function Sidebar() {
       <button
         type="button"
         className="sidebar-brand"
-
-        /*
-          IMPORTANT:
-          Use /workspace instead of /.
-
-          /workspace reads the saved Dashboard View:
-          Overview  -> Dashboard
-          Expenses  -> Expenses
-          Analytics -> Analytics
-        */
-
         onClick={() => navigate("/dashboard")}
-
-        aria-label="Go to Ledgerly workspace"
+        aria-label="Go to Ledgerly dashboard"
       >
 
         <div className="login-logo">
@@ -181,7 +264,6 @@ export default function Sidebar() {
           />
 
         </div>
-
 
         <div className="brand-copy">
 
@@ -218,7 +300,6 @@ export default function Sidebar() {
               {section.title}
             </div>
 
-
             {section.items.map((item) => {
 
               const Icon = item.icon;
@@ -230,7 +311,9 @@ export default function Sidebar() {
                   end
                   className={({ isActive }) =>
                     `nav-item ${
-                      isActive ? "active" : ""
+                      isActive
+                        ? "active"
+                        : ""
                     }`
                   }
                 >
@@ -266,14 +349,18 @@ export default function Sidebar() {
       <div className="sidebar-bottom">
 
 
-        {/* SETTINGS */}
+        {/* ===================================================
+            SETTINGS
+        =================================================== */}
 
         <NavLink
           to="/settings"
           end
           className={({ isActive }) =>
             `nav-item settings-link ${
-              isActive ? "active" : ""
+              isActive
+                ? "active"
+                : ""
             }`
           }
         >
@@ -287,32 +374,49 @@ export default function Sidebar() {
         </NavLink>
 
 
-        {/* USER */}
+        {/* ===================================================
+            USER INFORMATION
+        =================================================== */}
 
         <div className="sidebar-user">
 
-          <div className="avatar">
-            VK
+          {/* AVATAR */}
+
+          <div
+            className="avatar"
+            title={fullName}
+          >
+            {initials}
           </div>
 
 
-          <div className="user-copy">
+          {/* USER DETAILS */}
+
+          <button
+            type="button"
+            className="user-copy"
+            onClick={handleSettings}
+            title="Open Settings"
+          >
 
             <strong>
-              Vinayak
+              {fullName}
             </strong>
 
             <span>
-              Administrator
+              {email || role}
             </span>
 
-          </div>
+          </button>
 
+
+          {/* LOGOUT */}
 
           <button
             type="button"
             className="logout-button"
             aria-label="Logout"
+            title="Sign out"
             onClick={handleLogout}
           >
 

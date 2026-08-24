@@ -51,10 +51,6 @@ def generate_insight(
         }
 
 
-    # =====================================================
-    # AVERAGE EXPENSE
-    # =====================================================
-
     average_expense = (
         total_amount / expense_count
     )
@@ -128,11 +124,6 @@ def generate_insight(
         else 0
     )
 
-
-    # =====================================================
-    # AI ADVICE
-    # =====================================================
-
     if monthly_budget <= 0:
 
         advice = (
@@ -173,10 +164,6 @@ def generate_insight(
         )
 
 
-    # =====================================================
-    # CATEGORY ADVICE
-    # =====================================================
-
     category_advice = None
 
     if top_category:
@@ -203,10 +190,6 @@ def generate_insight(
                 f"category at ₹{top_amount:.2f}."
             )
 
-
-    # =====================================================
-    # FINAL RESPONSE
-    # =====================================================
 
     return {
         "message": (

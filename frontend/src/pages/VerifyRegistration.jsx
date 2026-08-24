@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/api";
 import {
   ArrowLeft,
   ArrowRight,
@@ -13,7 +13,6 @@ import {
 
 import "./VerifyRegistration.css";
 
-const API_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function VerifyRegistration() {
   const navigate = useNavigate();
@@ -175,14 +174,9 @@ export default function VerifyRegistration() {
         otp: "******",
       });
 
-      const response = await axios.post(
-        `${API_URL}/auth/verify-registration`,
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+       const response = await api.post(
+       "/auth/verify-registration",
+       payload
       );
 
       console.log(
@@ -294,19 +288,13 @@ export default function VerifyRegistration() {
     try {
       setResending(true);
 
-      const response = await axios.post(
-        `${API_URL}/auth/resend-otp`,
-        {
-          email: registrationData.email,
-          mobile_number:
-            registrationData.mobile_number,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+         const response = await api.post(
+         "/auth/resend-otp",
+       {
+           email: registrationData.email,
+           mobile_number: registrationData.mobile_number,
+       }
+     );
 
       console.log(
         "RESEND OTP RESPONSE:",

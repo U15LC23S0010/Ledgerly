@@ -27,9 +27,6 @@ def admin_dashboard(
     db: Session = Depends(get_db),
     admin=Depends(get_current_admin)
 ):
-    # -----------------------------
-    # USER STATISTICS
-    # -----------------------------
 
     total_users = db.query(User).count()
 
@@ -67,9 +64,6 @@ def admin_dashboard(
         for expense in total_expense_amount
     )
 
-    # -----------------------------
-    # RESPONSE
-    # -----------------------------
 
     return {
         "status": "success",
@@ -111,7 +105,7 @@ def get_all_users(
         for user in users
     ]
 
-    # -----------------------------------------
+# -----------------------------------------
 # VIEW SINGLE USER
 # -----------------------------------------
 
@@ -140,7 +134,7 @@ def get_user(
         }
     }
 
-    # -----------------------------------------
+# -----------------------------------------
 # ACTIVATE / DEACTIVATE USER
 # -----------------------------------------
 
@@ -183,7 +177,7 @@ def update_user_status(
         }
     }
 
-    # -----------------------------------------
+ # -----------------------------------------
 # CHANGE USER ROLE
 # -----------------------------------------
 
@@ -210,7 +204,7 @@ def update_user_role(
             "message": "Invalid role. Allowed roles: user, admin"
         }
 
-    # Prevent admin from removing their own admin role
+    
     if user.id == admin.id and role != "admin":
         return {
             "status": "error",

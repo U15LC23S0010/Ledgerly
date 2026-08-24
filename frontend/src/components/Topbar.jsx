@@ -23,174 +23,202 @@ export default function Topbar() {
   const searchInputRef = useRef(null);
   const searchWrapperRef = useRef(null);
 
+  /* =========================================================
+     SEARCH STATE
+  ========================================================= */
+
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showSearchResults, setShowSearchResults] =
+    useState(false);
+
+  /* =========================================================
+     PROFILE STATE
+  ========================================================= */
 
   const [profileOpen, setProfileOpen] = useState(false);
 
+  /* =========================================================
+     USER STATE
+  ========================================================= */
+
   const [user, setUser] = useState(() => {
     try {
-      const storedUser = localStorage.getItem("user");
+      const storedUser =
+        localStorage.getItem("user");
 
       if (storedUser) {
         return JSON.parse(storedUser);
       }
     } catch (error) {
-      console.error("Unable to read user:", error);
+      console.error(
+        "Unable to read stored user:",
+        error
+      );
     }
 
     return null;
   });
 
-  /*
-   * ---------------------------------------------------------
-   * CURRENT PAGE TITLE
-   * ---------------------------------------------------------
-   */
+  /* =========================================================
+     PAGE TITLE
+  ========================================================= */
 
   function getPageTitle() {
-  const pathname = location.pathname;
+    const pathname = location.pathname;
 
-  if (pathname === "/" || pathname === "/dashboard") {
+    if (
+      pathname === "/" ||
+      pathname === "/dashboard"
+    ) {
+      return "Dashboard";
+    }
+
+    if (pathname.startsWith("/transactions")) {
+      return "Transactions";
+    }
+
+    if (pathname.startsWith("/expenses")) {
+      return "Expenses";
+    }
+
+    if (pathname.startsWith("/income")) {
+      return "Income";
+    }
+
+    if (pathname.startsWith("/accounts")) {
+      return "Accounts";
+    }
+
+    if (pathname.startsWith("/analytics")) {
+      return "Analytics";
+    }
+
+    if (pathname.startsWith("/auto-expense")) {
+      return "Auto Expense";
+    }
+
+    if (pathname.startsWith("/budget")) {
+      return "Budget";
+    }
+
+    if (pathname.startsWith("/categories")) {
+      return "Categories";
+    }
+
+    if (pathname.startsWith("/customers")) {
+      return "Customers";
+    }
+
+    if (pathname.startsWith("/vendors")) {
+      return "Vendors";
+    }
+
+    if (pathname.startsWith("/invoices")) {
+      return "Invoices";
+    }
+
+    if (pathname.startsWith("/reports")) {
+      return "Reports";
+    }
+
+    if (pathname.startsWith("/insights")) {
+      return "AI Insights";
+    }
+
+    if (pathname.startsWith("/notifications")) {
+      return "Notifications";
+    }
+
+    if (pathname.startsWith("/settings")) {
+      return "Settings";
+    }
+
+    if (pathname.startsWith("/profile")) {
+      return "Settings";
+    }
+
+    if (pathname.startsWith("/guide")) {
+      return "User Guide";
+    }
+
     return "Dashboard";
   }
 
-  if (pathname.startsWith("/transactions")) {
-    return "Transactions";
-  }
-
-  if (pathname.startsWith("/expenses")) {
-    return "Expenses";
-  }
-
-  if (pathname.startsWith("/income")) {
-    return "Income";
-  }
-
-  if (pathname.startsWith("/accounts")) {
-    return "Accounts";
-  }
-
-  if (pathname.startsWith("/analytics")) {
-    return "Analytics";
-  }
-
-  if (pathname.startsWith("/auto-expense")) {
-    return "Auto Expense";
-  }
-
-  if (pathname.startsWith("/budget")) {
-    return "Budget";
-  }
-
-  if (pathname.startsWith("/categories")) {
-    return "Categories";
-  }
-
-  if (pathname.startsWith("/customers")) {
-    return "Customers";
-  }
-
-  if (pathname.startsWith("/vendors")) {
-    return "Vendors";
-  }
-
-  if (pathname.startsWith("/invoices")) {
-    return "Invoices";
-  }
-
-  if (pathname.startsWith("/reports")) {
-    return "Reports";
-  }
-
-  if (pathname.startsWith("/insights")) {
-    return "AI Insights";
-  }
-
-  if (pathname.startsWith("/notifications")) {
-    return "Notifications";
-  }
-
-  if (pathname.startsWith("/settings")) {
-    return "Settings";
-  }
-
-  if (pathname.startsWith("/profile")) {
-    return "Profile";
-  }
-
-  return "Dashboard";
-}
-  /*
-   * ---------------------------------------------------------
-   * USER INFORMATION
-   * ---------------------------------------------------------
-   */
+  /* =========================================================
+     USER INFORMATION
+  ========================================================= */
 
   const username =
-    user?.username ||
     user?.name ||
+    user?.username ||
+    user?.full_name ||
     user?.first_name ||
     user?.email?.split("@")[0] ||
     "User";
 
-  const email = user?.email || "";
+  const email =
+    user?.email || "";
 
-  const initials = username
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join("") || "U";
+  const initials =
+    (
+      user?.first_name &&
+      user?.last_name
+        ? `${user.first_name} ${user.last_name}`
+        : username
+    )
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) =>
+        part.charAt(0).toUpperCase()
+      )
+      .join("") || "U";
 
-  /*
-   * ---------------------------------------------------------
-   * LOAD USER IF NOT ALREADY AVAILABLE
-   * ---------------------------------------------------------
-   */
+  /* =========================================================
+     LOAD CURRENT USER
+  ========================================================= */
 
   useEffect(() => {
     async function loadUser() {
       try {
-        /*
-         * If your application already stores the user in localStorage,
-         * this request is unnecessary.
-         *
-         * The endpoint is intentionally attempted only when there
-         * is no user in localStorage.
-         */
-        if (user) return;
+        const response =
+          await api.get("/auth/me");
 
-        const response = await api.get("/auth/me");
+        const currentUser =
+          response.data?.user ||
+          response.data;
 
-        if (response.data) {
-          setUser(response.data.user);
+        if (currentUser) {
+          setUser(currentUser);
 
-           localStorage.setItem(
-         "user",
-         JSON.stringify(response.data.user)
+          localStorage.setItem(
+            "user",
+            JSON.stringify(currentUser)
           );
         }
       } catch (error) {
-        /*
-         * Do not break the Topbar if this endpoint doesn't exist.
-         * The fallback "User" will still be displayed.
-         */
-        console.warn("Unable to load current user:", error);
+        console.warn(
+          "Unable to load current user:",
+          error
+        );
       }
     }
 
+    /*
+     * Always try to refresh the user information
+     * when Topbar loads.
+     *
+     * This makes newly registered information
+     * available in Settings.
+     */
     loadUser();
-  }, [user]);
+  }, []);
 
-  /*
-   * ---------------------------------------------------------
-   * SEARCH SHORTCUT
-   * Ctrl + K / Cmd + K
-   * ---------------------------------------------------------
-   */
+  /* =========================================================
+     SEARCH KEYBOARD SHORTCUT
+     ========================================================= */
 
   useEffect(() => {
     function handleKeyboardShortcut(event) {
@@ -209,6 +237,8 @@ export default function Topbar() {
 
       if (event.key === "Escape") {
         setShowSearchResults(false);
+        setProfileOpen(false);
+
         searchInputRef.current?.blur();
       }
     }
@@ -226,19 +256,13 @@ export default function Topbar() {
     };
   }, [search]);
 
-  /*
-   * ---------------------------------------------------------
-   * SEARCH TRANSACTIONS
-   * ---------------------------------------------------------
-   *
-   * We fetch transactions and filter them locally.
-   *
-   * This makes the Topbar search work even if your backend
-   * doesn't currently have a dedicated search endpoint.
-   */
+  /* =========================================================
+     SEARCH TRANSACTIONS
+  ========================================================= */
 
   useEffect(() => {
-    const query = search.trim().toLowerCase();
+    const query =
+      search.trim().toLowerCase();
 
     if (!query) {
       setSearchResults([]);
@@ -252,39 +276,46 @@ export default function Topbar() {
       try {
         setSearchLoading(true);
 
-        const response = await api.get("/transactions/");
+        const response =
+          await api.get("/transactions/");
 
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
 
-        const transactions = Array.isArray(response.data)
-          ? response.data
-          : response.data?.results || [];
+        const transactions =
+          Array.isArray(response.data)
+            ? response.data
+            : response.data?.results || [];
 
-        const filtered = transactions
-          .filter((transaction) => {
-            const searchableText = [
-              transaction.description,
-              transaction.title,
-              transaction.category_name,
-              transaction.category,
-              transaction.account_name,
-              transaction.account_type,
-              transaction.transaction_type,
-              transaction.date,
-              transaction.amount,
-              transaction.id,
-            ]
-              .filter(
-                (value) =>
-                  value !== null &&
-                  value !== undefined
-              )
-              .join(" ")
-              .toLowerCase();
+        const filtered =
+          transactions
+            .filter((transaction) => {
+              const searchableText = [
+                transaction.description,
+                transaction.title,
+                transaction.category_name,
+                transaction.category,
+                transaction.account_name,
+                transaction.account_type,
+                transaction.transaction_type,
+                transaction.date,
+                transaction.amount,
+                transaction.id,
+              ]
+                .filter(
+                  (value) =>
+                    value !== null &&
+                    value !== undefined
+                )
+                .join(" ")
+                .toLowerCase();
 
-            return searchableText.includes(query);
-          })
-          .slice(0, 8);
+              return searchableText.includes(
+                query
+              );
+            })
+            .slice(0, 8);
 
         setSearchResults(filtered);
       } catch (error) {
@@ -314,16 +345,15 @@ export default function Topbar() {
     };
   }, [search]);
 
-  /*
-   * ---------------------------------------------------------
-   * SEARCH SUBMIT
-   * ---------------------------------------------------------
-   */
+  /* =========================================================
+     SEARCH SUBMIT
+  ========================================================= */
 
   function handleSearchSubmit(event) {
     event.preventDefault();
 
-    const query = search.trim();
+    const query =
+      search.trim();
 
     if (!query) {
       navigate("/transactions");
@@ -334,28 +364,30 @@ export default function Topbar() {
     setShowSearchResults(false);
 
     navigate(
-      `/transactions?search=${encodeURIComponent(query)}`
+      `/transactions?search=${encodeURIComponent(
+        query
+      )}`
     );
   }
 
-  /*
-   * ---------------------------------------------------------
-   * SEARCH INPUT
-   * ---------------------------------------------------------
-   */
+  /* =========================================================
+     SEARCH CHANGE
+  ========================================================= */
 
   function handleSearchChange(event) {
-    const value = event.target.value;
+    const value =
+      event.target.value;
 
     setSearch(value);
-    setShowSearchResults(Boolean(value.trim()));
+
+    setShowSearchResults(
+      Boolean(value.trim())
+    );
   }
 
-  /*
-   * ---------------------------------------------------------
-   * CLEAR SEARCH
-   * ---------------------------------------------------------
-   */
+  /* =========================================================
+     CLEAR SEARCH
+  ========================================================= */
 
   function clearSearch() {
     setSearch("");
@@ -365,13 +397,13 @@ export default function Topbar() {
     searchInputRef.current?.focus();
   }
 
-  /*
-   * ---------------------------------------------------------
-   * CLICK SEARCH RESULT
-   * ---------------------------------------------------------
-   */
+  /* =========================================================
+     SEARCH RESULT CLICK
+  ========================================================= */
 
-  function handleSearchResultClick(transaction) {
+  function handleSearchResultClick(
+    transaction
+  ) {
     const query =
       transaction.description ||
       transaction.title ||
@@ -381,21 +413,23 @@ export default function Topbar() {
     setShowSearchResults(false);
 
     navigate(
-      `/transactions?search=${encodeURIComponent(query)}`
+      `/transactions?search=${encodeURIComponent(
+        query
+      )}`
     );
   }
 
-  /*
-   * ---------------------------------------------------------
-   * CLOSE SEARCH WHEN CLICKING OUTSIDE
-   * ---------------------------------------------------------
-   */
+  /* =========================================================
+     CLOSE SEARCH WHEN CLICKING OUTSIDE
+  ========================================================= */
 
   useEffect(() => {
     function handleOutsideClick(event) {
       if (
         searchWrapperRef.current &&
-        !searchWrapperRef.current.contains(event.target)
+        !searchWrapperRef.current.contains(
+          event.target
+        )
       ) {
         setShowSearchResults(false);
       }
@@ -414,59 +448,74 @@ export default function Topbar() {
     };
   }, []);
 
-  /*
-   * ---------------------------------------------------------
-   * PROFILE
-   * ---------------------------------------------------------
-   */
+  /* =========================================================
+     PROFILE DROPDOWN
+  ========================================================= */
 
   function toggleProfile() {
-    setProfileOpen((previous) => !previous);
+    setProfileOpen(
+      (previous) => !previous
+    );
   }
 
   function closeProfile() {
     setProfileOpen(false);
   }
 
-  function goToSettings() {
-    closeProfile();
-    navigate("/settings");
-  }
-
+  /*
+   * Profile does NOT have a separate page.
+   * Profile opens Settings because Settings now
+   * contains the user's complete information.
+   */
   function goToProfile() {
     closeProfile();
     navigate("/profile");
   }
 
   /*
-   * ---------------------------------------------------------
-   * LOGOUT
-   * ---------------------------------------------------------
+   * Settings also opens the same Settings page.
    */
+  function goToSettings() {
+    closeProfile();
+    navigate("/settings");
+  }
+
+  /* =========================================================
+     LOGOUT
+  ========================================================= */
 
   async function handleLogout() {
     try {
-      /*
-       * If your backend has a logout endpoint,
-       * it will be called here.
-       */
       await api.post("/auth/logout/");
     } catch (error) {
-      /*
-       * Logout should still work even if the backend
-       * doesn't provide this endpoint.
-       */
       console.warn(
         "Logout endpoint unavailable:",
         error
       );
     } finally {
+      /*
+       * Remove all authentication information.
+       */
+
       localStorage.removeItem("access");
+      localStorage.removeItem(
+        "access_token"
+      );
+
       localStorage.removeItem("refresh");
+      localStorage.removeItem(
+        "refresh_token"
+      );
+
       localStorage.removeItem("token");
+
       localStorage.removeItem("user");
+      localStorage.removeItem("userEmail");
 
       sessionStorage.clear();
+
+      setUser(null);
+      setProfileOpen(false);
 
       navigate("/login", {
         replace: true,
@@ -474,28 +523,36 @@ export default function Topbar() {
     }
   }
 
-  /*
-   * ---------------------------------------------------------
-   * FORMAT SEARCH RESULT
-   * ---------------------------------------------------------
-   */
+  /* =========================================================
+     FORMAT AMOUNT
+  ========================================================= */
 
   function formatAmount(value) {
-    return `₹${Number(value || 0).toLocaleString(
-      "en-IN",
-      {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }
-    )}`;
+    return `₹${Number(
+      value || 0
+    ).toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   }
 
+  /* =========================================================
+     FORMAT DATE
+  ========================================================= */
+
   function formatDate(value) {
-    if (!value) return "";
+    if (!value) {
+      return "";
+    }
 
-    const date = new Date(value);
+    const date =
+      new Date(value);
 
-    if (Number.isNaN(date.getTime())) {
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
       return String(value);
     }
 
@@ -509,6 +566,10 @@ export default function Topbar() {
     );
   }
 
+  /* =========================================================
+     RENDER
+  ========================================================= */
+
   return (
     <header className="topbar">
 
@@ -517,13 +578,19 @@ export default function Topbar() {
       ===================================================== */}
 
       <div className="topbar-title">
-        <span>Ledgerly</span>
 
-        <b>/</b>
+        <span>
+          Ledgerly
+        </span>
+
+        <b>
+          /
+        </b>
 
         <strong>
           {getPageTitle()}
         </strong>
+
       </div>
 
       {/* =====================================================
@@ -534,24 +601,32 @@ export default function Topbar() {
         className="topbar-search-wrapper"
         ref={searchWrapperRef}
       >
+
         <form
           className={`topbar-search ${
             showSearchResults
               ? "search-open"
               : ""
           }`}
-          onSubmit={handleSearchSubmit}
+          onSubmit={
+            handleSearchSubmit
+          }
         >
+
           <Search />
 
           <input
             ref={searchInputRef}
             type="search"
             value={search}
-            onChange={handleSearchChange}
+            onChange={
+              handleSearchChange
+            }
             onFocus={() => {
               if (search.trim()) {
-                setShowSearchResults(true);
+                setShowSearchResults(
+                  true
+                );
               }
             }}
             placeholder="Search transactions, accounts..."
@@ -563,7 +638,9 @@ export default function Topbar() {
             <button
               type="button"
               className="search-clear"
-              onClick={clearSearch}
+              onClick={
+                clearSearch
+              }
               aria-label="Clear search"
             >
               <X />
@@ -573,9 +650,12 @@ export default function Topbar() {
           {!search && (
             <kbd>
               <Command />
-              <span>K</span>
+              <span>
+                K
+              </span>
             </kbd>
           )}
+
         </form>
 
         {/* ===================================================
@@ -587,29 +667,38 @@ export default function Topbar() {
 
             {searchLoading ? (
               <div className="search-status">
+
                 <span className="search-spinner" />
+
                 <span>
                   Searching transactions...
                 </span>
+
               </div>
             ) : searchResults.length > 0 ? (
               <>
+
                 <div className="search-results-header">
+
                   <span>
                     Matching transactions
                   </span>
 
                   <small>
                     {searchResults.length}
-                    {searchResults.length === 8
+                    {searchResults.length ===
+                      8
                       ? "+"
                       : ""}
                   </small>
+
                 </div>
 
                 <div className="search-results-list">
+
                   {searchResults.map(
                     (transaction) => {
+
                       const isIncome =
                         transaction.transaction_type ===
                         "income";
@@ -618,18 +707,22 @@ export default function Topbar() {
                         <button
                           type="button"
                           className="search-result"
-                          key={transaction.id}
+                          key={
+                            transaction.id
+                          }
                           onClick={() =>
                             handleSearchResultClick(
                               transaction
                             )
                           }
                         >
+
                           <span className="search-result-icon">
                             <ReceiptIcon />
                           </span>
 
                           <span className="search-result-content">
+
                             <strong>
                               {transaction.description ||
                                 transaction.title ||
@@ -637,6 +730,7 @@ export default function Topbar() {
                             </strong>
 
                             <small>
+
                               {transaction.category_name ||
                                 transaction.category ||
                                 transaction.transaction_type ||
@@ -646,7 +740,9 @@ export default function Topbar() {
                                 ` • ${formatDate(
                                   transaction.date
                                 )}`}
+
                             </small>
+
                           </span>
 
                           <span
@@ -656,7 +752,10 @@ export default function Topbar() {
                                 : "expense"
                             }`}
                           >
-                            {isIncome ? "+" : "-"}
+                            {isIncome
+                              ? "+"
+                              : "-"}
+
                             {formatAmount(
                               Math.abs(
                                 Number(
@@ -666,23 +765,33 @@ export default function Topbar() {
                               )
                             )}
                           </span>
+
                         </button>
                       );
                     }
                   )}
+
                 </div>
 
                 <button
                   type="button"
                   className="search-view-all"
-                  onClick={handleSearchSubmit}
+                  onClick={
+                    handleSearchSubmit
+                  }
                 >
                   View all results
-                  <span>Enter ↵</span>
+
+                  <span>
+                    Enter ↵
+                  </span>
+
                 </button>
+
               </>
             ) : (
               <div className="search-no-results">
+
                 <Search />
 
                 <strong>
@@ -691,12 +800,16 @@ export default function Topbar() {
 
                 <span>
                   No transactions match "
-                  {search.trim()}"
+                  {search.trim()}
+                  "
                 </span>
+
               </div>
             )}
+
           </div>
         )}
+
       </div>
 
       {/* =====================================================
@@ -705,38 +818,52 @@ export default function Topbar() {
 
       <div className="topbar-actions">
 
-        {/* QUICK ADD */}
+        {/* ===================================================
+            QUICK ADD
+        =================================================== */}
 
         <button
           type="button"
           className="quick-add"
           onClick={() =>
-            navigate("/transactions")
+            navigate(
+              "/transactions"
+            )
           }
         >
+
           <Plus />
 
           <span>
             Quick Add
           </span>
+
         </button>
 
-        {/* NOTIFICATION */}
+        {/* ===================================================
+            NOTIFICATIONS
+        =================================================== */}
 
         <button
           type="button"
           className="top-icon"
           aria-label="Notifications"
           onClick={() =>
-            navigate("/notifications")
+            navigate(
+              "/notifications"
+            )
           }
         >
+
           <Bell />
 
           <i />
+
         </button>
 
-        {/* PROFILE */}
+        {/* ===================================================
+            PROFILE
+        =================================================== */}
 
         <div className="profile-wrapper">
 
@@ -747,22 +874,30 @@ export default function Topbar() {
                 ? "profile-open"
                 : ""
             }`}
-            onClick={toggleProfile}
-            aria-expanded={profileOpen}
+            onClick={
+              toggleProfile
+            }
+            aria-expanded={
+              profileOpen
+            }
             aria-haspopup="menu"
           >
+
             <span className="profile-avatar">
               {initials}
             </span>
 
             <span className="profile-copy">
+
               <strong>
                 {username}
               </strong>
 
               <small>
-                {email || "Personal account"}
+                {email ||
+                  "Personal account"}
               </small>
+
             </span>
 
             <ChevronDown
@@ -772,15 +907,21 @@ export default function Topbar() {
                   : ""
               }
             />
+
           </button>
 
-          {/* PROFILE DROPDOWN */}
+          {/* =================================================
+              PROFILE DROPDOWN
+          ================================================= */}
 
           {profileOpen && (
             <div
               className="profile-dropdown"
               role="menu"
             >
+
+              {/* PROFILE HEADER */}
+
               <div className="profile-dropdown-header">
 
                 <div className="dropdown-avatar">
@@ -788,6 +929,7 @@ export default function Topbar() {
                 </div>
 
                 <div>
+
                   <strong>
                     {username}
                   </strong>
@@ -796,60 +938,84 @@ export default function Topbar() {
                     {email ||
                       "Personal account"}
                   </span>
+
                 </div>
+
               </div>
 
               <div className="dropdown-divider" />
 
+              {/* PROFILE */}
+
               <button
                 type="button"
                 className="dropdown-item"
-                onClick={goToProfile}
+                onClick={
+                  goToProfile
+                }
               >
-                <User />
+
+                <User size={18} />
 
                 <span>
                   Profile
                 </span>
+
               </button>
+
+              {/* SETTINGS */}
 
               <button
                 type="button"
                 className="dropdown-item"
-                onClick={goToSettings}
+                onClick={
+                  goToSettings
+                }
               >
-                <Settings />
+
+                <Settings size={18} />
 
                 <span>
                   Settings
                 </span>
+
               </button>
 
               <div className="dropdown-divider" />
 
+              {/* LOGOUT */}
+
               <button
                 type="button"
                 className="dropdown-item logout-item"
-                onClick={handleLogout}
+                onClick={
+                  handleLogout
+                }
               >
-                <LogOut />
+
+                <LogOut size={18} />
 
                 <span>
                   Sign out
                 </span>
+
               </button>
+
             </div>
           )}
+
         </div>
+
       </div>
+
     </header>
   );
 }
 
-/*
- * Small icon component used for search results.
- * Kept separate so the main imports stay clean.
- */
+/* =========================================================
+   SEARCH RESULT ICON
+========================================================= */
+
 function ReceiptIcon() {
   return (
     <svg
@@ -863,10 +1029,15 @@ function ReceiptIcon() {
       strokeLinejoin="round"
       aria-hidden="true"
     >
+
       <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1Z" />
+
       <path d="M8 8h8" />
+
       <path d="M8 12h8" />
+
       <path d="M8 16h5" />
+
     </svg>
   );
 }

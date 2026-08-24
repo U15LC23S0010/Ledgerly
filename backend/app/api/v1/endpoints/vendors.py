@@ -75,9 +75,6 @@ def get_vendors(
 
 # =========================================================
 # BULK DELETE VENDORS
-#
-# IMPORTANT:
-# This route MUST come before /{vendor_id}
 # =========================================================
 
 @router.post(
@@ -95,10 +92,8 @@ def delete_selected_vendors(
             detail="No vendors selected.",
         )
 
-    # Remove duplicate IDs
     vendor_ids = list(set(vendor_ids))
 
-    # Find only vendors belonging to current user
     vendors = (
         db.query(Vendor)
         .filter(
@@ -122,7 +117,6 @@ def delete_selected_vendors(
         if vendor_id not in found_ids
     ]
 
-    # Delete only user's vendors
     for vendor in vendors:
         db.delete(vendor)
 

@@ -19,10 +19,7 @@ function Welcome() {
   const navigate = useNavigate();
 
   const finishWelcome = () => {
-    // This login's welcome screen has been completed
     sessionStorage.removeItem("ledgerly_show_welcome");
-
-    // Go to the user's preferred dashboard
     navigate("/dashboard", { replace: true });
   };
 
@@ -68,7 +65,10 @@ function Welcome() {
           <div className="welcome-logo-ring" />
 
           <div className="welcome-logo">
-            LF
+            <img
+          src="/pwa-70x70.png"
+          alt="Ledgerly"
+          />
           </div>
         </div>
 
