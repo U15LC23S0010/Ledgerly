@@ -46,31 +46,20 @@
   animation: authCardEnter 0.35s ease-out;
 }
 
-.auth-loading-logo {
-  width: 58px;
-  height: 58px;
-
+  .auth-loading-logo {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 20px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
 
-  margin-bottom: 18px;
-
+.auth-loading-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   border-radius: 16px;
-
-  background: linear-gradient(
-    135deg,
-    #3157d5,
-    #4f46e5
-  );
-
-  color: #ffffff;
-
-  font-size: 26px;
-  font-weight: 800;
-
-  box-shadow:
-    0 10px 25px rgba(49, 87, 213, 0.25);
 }
 
 .auth-loading-spinner {

@@ -99,10 +99,14 @@ export default function ProtectedRoute() {
 
         <div className="auth-loading-card">
 
-          <div className="auth-loading-logo">
-            L
-          </div>
+         <div className="auth-loading-logo">
+          <img
+          src="/pwa-192x192.png"
+          alt="Ledgerly"
+          />
+        </div>
 
+        
           <div className="auth-loading-spinner" />
 
           <h2>Ledgerly</h2>
