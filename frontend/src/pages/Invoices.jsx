@@ -27,14 +27,35 @@ export default function Invoices() {
 
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState([]);
   const [deletingSelected, setDeletingSelected] = useState(false);
 
-
   const [showForm, setShowForm] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
-
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+
+  /*
+   * Currency selected from Settings.
+   *
+   * IMPORTANT:
+   * Invoice amounts are still stored/sent to the backend
+   * in the application's base currency (INR).
+   *
+   * Currency conversion here is for DISPLAY only.
+   */
+  const [currency, setCurrency] = useState("INR");
+
+  /*
+   * Date format selected from Settings.
+   *
+   * Supported:
+   * DD/MM/YYYY
+   * MM/DD/YYYY
+   * YYYY-MM-DD
+   */
+  const [dateFormat, setDateFormat] =
+    useState("DD/MM/YYYY");
 
   const [form, setForm] = useState({
     customer_id: "",
@@ -52,21 +73,875 @@ export default function Invoices() {
     ],
   });
 
+  // ============================================================
+  // CURRENCY CONFIGURATION
+  // ============================================================
+
+  const CURRENCY_CONFIG = {
+    INR: {
+      code: "INR",
+      locale: "en-IN",
+      rate: 1,
+    },
+
+    USD: {
+      code: "USD",
+      locale: "en-US",
+      rate: 0.01167,
+    },
+
+    EUR: {
+      code: "EUR",
+      locale: "de-DE",
+      rate: 0.00996,
+    },
+
+    GBP: {
+      code: "GBP",
+      locale: "en-GB",
+      rate: 0.00861,
+    },
+
+    JPY: {
+      code: "JPY",
+      locale: "ja-JP",
+      rate: 1.72,
+    },
+
+    AUD: {
+      code: "AUD",
+      locale: "en-AU",
+      rate: 0.0178,
+    },
+
+    CAD: {
+      code: "CAD",
+      locale: "en-CA",
+      rate: 0.0159,
+    },
+
+    SGD: {
+      code: "SGD",
+      locale: "en-SG",
+      rate: 0.0149,
+    },
+
+    AED: {
+      code: "AED",
+      locale: "en-AE",
+      rate: 0.0429,
+    },
+  };
+
+  // ============================================================
+  // NORMALIZE CURRENCY
+  // ============================================================
+
+  function normalizeCurrency(value) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    let normalized = String(value)
+      .trim()
+      .toUpperCase();
+
+    if (!normalized) {
+      return null;
+    }
+
+    const aliases = {
+      "$": "USD",
+      "US$": "USD",
+      "USDOLLAR": "USD",
+      "US DOLLAR": "USD",
+      "UNITED STATES DOLLAR": "USD",
+      "DOLLAR": "USD",
+
+      "€": "EUR",
+      "EURO": "EUR",
+      "EUROS": "EUR",
+
+      "£": "GBP",
+      "POUND": "GBP",
+      "POUNDS": "GBP",
+      "BRITISH POUND": "GBP",
+
+      "₹": "INR",
+      "RUPEE": "INR",
+      "RUPEES": "INR",
+      "INDIAN RUPEE": "INR",
+      "INDIAN RUPEES": "INR",
+
+      "¥": "JPY",
+      "YEN": "JPY",
+      "JAPANESE YEN": "JPY",
+
+      "AUSTRALIAN DOLLAR": "AUD",
+      "CANADIAN DOLLAR": "CAD",
+      "SINGAPORE DOLLAR": "SGD",
+      "UAE DIRHAM": "AED",
+      "DIRHAM": "AED",
+    };
+
+    if (aliases[normalized]) {
+      normalized = aliases[normalized];
+    }
+
+    const extractedCode = normalized.match(
+      /\b(INR|USD|EUR|GBP|JPY|AUD|CAD|SGD|AED)\b/
+    );
+
+    if (extractedCode) {
+      normalized = extractedCode[1];
+    }
+
+    return CURRENCY_CONFIG[normalized]
+      ? normalized
+      : null;
+  }
+
+  // ============================================================
+  // EXTRACT CURRENCY FROM OBJECT
+  // ============================================================
+
+  function findCurrencyInObject(object, depth = 0) {
+    if (!object || typeof object !== "object") {
+      return null;
+    }
+
+    if (depth > 5) {
+      return null;
+    }
+
+    const directKeys = [
+      "currency",
+      "currency_code",
+      "currencyCode",
+      "selectedCurrency",
+      "preferredCurrency",
+      "defaultCurrency",
+      "displayCurrency",
+      "baseCurrency",
+      "currencySymbol",
+    ];
+
+    for (const key of directKeys) {
+      if (
+        Object.prototype.hasOwnProperty.call(
+          object,
+          key
+        )
+      ) {
+        const found = normalizeCurrency(
+          object[key]
+        );
+
+        if (found) {
+          return found;
+        }
+      }
+    }
+
+    const nestedKeys = [
+      "settings",
+      "userSettings",
+      "appSettings",
+      "preferences",
+      "user",
+      "profile",
+      "data",
+    ];
+
+    for (const key of nestedKeys) {
+      if (
+        object[key] &&
+        typeof object[key] === "object"
+      ) {
+        const found = findCurrencyInObject(
+          object[key],
+          depth + 1
+        );
+
+        if (found) {
+          return found;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  // ============================================================
+  // GET CURRENCY FROM LOCAL STORAGE
+  // ============================================================
+
+  function getCurrencyFromStorage() {
+    const directKeys = [
+      "currency",
+      "selectedCurrency",
+      "preferredCurrency",
+      "userCurrency",
+      "currency_code",
+      "currencyCode",
+      "displayCurrency",
+      "defaultCurrency",
+    ];
+
+    for (const key of directKeys) {
+      try {
+        const value = localStorage.getItem(key);
+
+        const normalized = normalizeCurrency(value);
+
+        if (normalized) {
+          return normalized;
+        }
+      } catch (storageError) {
+        console.warn(
+          `Unable to read localStorage key "${key}"`,
+          storageError
+        );
+      }
+    }
+
+    const objectKeys = [
+      "settings",
+      "userSettings",
+      "appSettings",
+      "preferences",
+      "userPreferences",
+      "profile",
+      "user",
+    ];
+
+    for (const key of objectKeys) {
+      try {
+        const raw = localStorage.getItem(key);
+
+        if (!raw) {
+          continue;
+        }
+
+        let parsed;
+
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          const directValue =
+            normalizeCurrency(raw);
+
+          if (directValue) {
+            return directValue;
+          }
+
+          continue;
+        }
+
+        const found =
+          findCurrencyInObject(parsed);
+
+        if (found) {
+          return found;
+        }
+      } catch (storageError) {
+        console.warn(
+          `Unable to read settings key "${key}"`,
+          storageError
+        );
+      }
+    }
+
+    try {
+      for (
+        let index = 0;
+        index < localStorage.length;
+        index++
+      ) {
+        const key = localStorage.key(index);
+
+        if (!key) {
+          continue;
+        }
+
+        const lowerKey = key.toLowerCase();
+
+        if (
+          !lowerKey.includes("setting") &&
+          !lowerKey.includes("preference") &&
+          !lowerKey.includes("currency")
+        ) {
+          continue;
+        }
+
+        const raw =
+          localStorage.getItem(key);
+
+        if (!raw) {
+          continue;
+        }
+
+        const directValue =
+          normalizeCurrency(raw);
+
+        if (directValue) {
+          return directValue;
+        }
+
+        try {
+          const parsed =
+            JSON.parse(raw);
+
+          const found =
+            findCurrencyInObject(parsed);
+
+          if (found) {
+            return found;
+          }
+        } catch {
+          // Ignore invalid JSON.
+        }
+      }
+    } catch (storageError) {
+      console.warn(
+        "Unable to inspect localStorage.",
+        storageError
+      );
+    }
+
+    return "INR";
+  }
+
+  // ============================================================
+  // DATE FORMAT
+  // ============================================================
+
+  function normalizeDateFormat(value) {
+    const allowedFormats = [
+      "DD/MM/YYYY",
+      "MM/DD/YYYY",
+      "YYYY-MM-DD",
+    ];
+
+    if (
+      typeof value !== "string"
+    ) {
+      return "DD/MM/YYYY";
+    }
+
+    const normalized =
+      value.trim().toUpperCase();
+
+    return allowedFormats.includes(
+      normalized
+    )
+      ? normalized
+      : "DD/MM/YYYY";
+  }
+
+  function getDateFormatFromStorage() {
+    /*
+     * Primary Settings storage used by Ledgerly.
+     *
+     * ledgerly_settings = {
+     *   ...
+     *   dateFormat: "DD/MM/YYYY"
+     * }
+     */
+    try {
+      const raw =
+        localStorage.getItem(
+          "ledgerly_settings"
+        );
+
+      if (raw) {
+        try {
+          const settings =
+            JSON.parse(raw);
+
+          const selected =
+            normalizeDateFormat(
+              settings?.dateFormat
+            );
+
+          if (
+            settings?.dateFormat &&
+            selected
+          ) {
+            return selected;
+          }
+        } catch {
+          // Ignore malformed JSON.
+        }
+      }
+    } catch (storageError) {
+      console.warn(
+        "Unable to read ledgerly_settings.",
+        storageError
+      );
+    }
+
+    /*
+     * Compatibility with existing date-format storage.
+     */
+    try {
+      const direct =
+        localStorage.getItem(
+          "ledgerly_date_format"
+        );
+
+      if (direct) {
+        return normalizeDateFormat(
+          direct
+        );
+      }
+    } catch (storageError) {
+      console.warn(
+        "Unable to read ledgerly_date_format.",
+        storageError
+      );
+    }
+
+    /*
+     * Root HTML data attribute compatibility.
+     */
+    try {
+      const rootFormat =
+        document.documentElement.getAttribute(
+          "data-date-format"
+        );
+
+      if (rootFormat) {
+        return normalizeDateFormat(
+          rootFormat
+        );
+      }
+    } catch {
+      // Ignore.
+    }
+
+    return "DD/MM/YYYY";
+  }
+
+  function loadDateFormat() {
+    const selectedFormat =
+      getDateFormatFromStorage();
+
+    setDateFormat(
+      (previous) =>
+        previous === selectedFormat
+          ? previous
+          : selectedFormat
+    );
+  }
+
+ // ============================================================
+// LOAD CURRENCY
+// ============================================================
+
+function loadCurrency() {
+  const selectedCurrency = getCurrencyFromStorage();
+
+  setCurrency((previous) =>
+    previous === selectedCurrency
+      ? previous
+      : selectedCurrency
+  );
+}
+
+// ============================================================
+// SETTINGS DISPLAY
+// ============================================================
+
+function loadSettingsDisplay() {
+  loadCurrency();
+}
+
+// ============================================================
+// CURRENCY CHANGE LISTENERS
+// ============================================================
+
+useEffect(() => {
+  loadSettingsDisplay();
+
+  const handleStorageChange = (event) => {
+    if (
+      !event ||
+      !event.key ||
+      event.key === "currency" ||
+      event.key === "selectedCurrency" ||
+      event.key === "preferredCurrency" ||
+      event.key === "userCurrency" ||
+      event.key === "currency_code" ||
+      event.key === "currencyCode" ||
+      event.key === "displayCurrency" ||
+      event.key === "defaultCurrency" ||
+      event.key === "settings" ||
+      event.key === "userSettings" ||
+      event.key === "appSettings" ||
+      event.key === "preferences"
+    ) {
+      loadSettingsDisplay();
+    }
+  };
+
+  const handleCurrencyChange = (event) => {
+    const eventCurrency =
+      event?.detail?.currency ??
+      event?.detail?.currency_code ??
+      event?.detail?.currencyCode;
+
+    const normalized = normalizeCurrency(eventCurrency);
+
+    if (normalized) {
+      setCurrency(normalized);
+    } else {
+      loadSettingsDisplay();
+    }
+  };
+
+  window.addEventListener(
+    "storage",
+    handleStorageChange
+  );
+
+  window.addEventListener(
+    "currencyChanged",
+    handleCurrencyChange
+  );
+
+  window.addEventListener(
+    "currency-change",
+    handleCurrencyChange
+  );
+
+  window.addEventListener(
+    "settingsChanged",
+    handleCurrencyChange
+  );
+
+  window.addEventListener(
+    "settings-changed",
+    handleCurrencyChange
+  );
+
+  const interval = setInterval(() => {
+    const current = getCurrencyFromStorage();
+
+    setCurrency((previous) =>
+      previous === current
+        ? previous
+        : current
+    );
+  }, 500);
+
+  return () => {
+    window.removeEventListener(
+      "storage",
+      handleStorageChange
+    );
+
+    window.removeEventListener(
+      "currencyChanged",
+      handleCurrencyChange
+    );
+
+    window.removeEventListener(
+      "currency-change",
+      handleCurrencyChange
+    );
+
+    window.removeEventListener(
+      "settingsChanged",
+      handleCurrencyChange
+    );
+
+    window.removeEventListener(
+      "settings-changed",
+      handleCurrencyChange
+    );
+
+    clearInterval(interval);
+  };
+}, []);
+
+  
+
+  // ============================================================
+  // CURRENCY + DATE LISTENERS
+  // ============================================================
+
+  useEffect(() => {
+    loadSettingsDisplay();
+
+    const handleStorageChange = (
+      event
+    ) => {
+      if (
+        !event ||
+        !event.key ||
+        event.key === "currency" ||
+        event.key === "selectedCurrency" ||
+        event.key === "preferredCurrency" ||
+        event.key === "userCurrency" ||
+        event.key === "currency_code" ||
+        event.key === "currencyCode" ||
+        event.key === "settings" ||
+        event.key === "userSettings" ||
+        event.key === "appSettings" ||
+        event.key === "preferences" ||
+        event.key === "ledgerly_settings" ||
+        event.key === "ledgerly_date_format"
+      ) {
+        loadSettingsDisplay();
+      }
+    };
+
+    const handleCurrencyChange = (
+      event
+    ) => {
+      const eventCurrency =
+        event?.detail?.currency ??
+        event?.detail?.currency_code ??
+        event?.detail?.currencyCode;
+
+      const normalized =
+        normalizeCurrency(
+          eventCurrency
+        );
+
+      if (normalized) {
+        setCurrency(normalized);
+      } else {
+        loadCurrency();
+      }
+    };
+
+    /*
+     * Settings event.
+     *
+     * Supports:
+     * ledgerly-settings-updated
+     *
+     * detail can contain:
+     * { dateFormat: "MM/DD/YYYY" }
+     */
+    const handleSettingsUpdated = (
+      event
+    ) => {
+      const eventFormat =
+        event?.detail?.dateFormat ??
+        event?.detail?.settings?.dateFormat;
+
+      if (eventFormat) {
+        setDateFormat(
+          normalizeDateFormat(
+            eventFormat
+          )
+        );
+      } else {
+        loadDateFormat();
+      }
+
+      const eventCurrency =
+        event?.detail?.currency ??
+        event?.detail?.settings?.currency;
+
+      const normalized =
+        normalizeCurrency(
+          eventCurrency
+        );
+
+      if (normalized) {
+        setCurrency(normalized);
+      } else {
+        loadCurrency();
+      }
+    };
+
+    /*
+     * Direct date-format event.
+     */
+    const handleDateFormatChange = (
+      event
+    ) => {
+      const eventFormat =
+        event?.detail?.dateFormat ??
+        event?.detail?.format ??
+        event?.detail;
+
+      if (
+        typeof eventFormat ===
+        "string"
+      ) {
+        setDateFormat(
+          normalizeDateFormat(
+            eventFormat
+          )
+        );
+      } else {
+        loadDateFormat();
+      }
+    };
+
+    window.addEventListener(
+      "storage",
+      handleStorageChange
+    );
+
+    window.addEventListener(
+      "currencyChanged",
+      handleCurrencyChange
+    );
+
+    window.addEventListener(
+      "currency-change",
+      handleCurrencyChange
+    );
+
+    window.addEventListener(
+      "settingsChanged",
+      handleCurrencyChange
+    );
+
+    window.addEventListener(
+      "settings-changed",
+      handleCurrencyChange
+    );
+
+    window.addEventListener(
+      "ledgerly-settings-updated",
+      handleSettingsUpdated
+    );
+
+    window.addEventListener(
+      "ledgerly-date-format-changed",
+      handleDateFormatChange
+    );
+
+    /*
+     * Same-tab fallback.
+     *
+     * localStorage storage events do not fire in the same
+     * tab that changed localStorage.
+     */
+    const interval = setInterval(() => {
+      const currentCurrency =
+        getCurrencyFromStorage();
+
+      const currentDateFormat =
+        getDateFormatFromStorage();
+
+      setCurrency((previous) =>
+        previous === currentCurrency
+          ? previous
+          : currentCurrency
+      );
+
+      setDateFormat((previous) =>
+        previous === currentDateFormat
+          ? previous
+          : currentDateFormat
+      );
+    }, 500);
+
+    return () => {
+      window.removeEventListener(
+        "storage",
+        handleStorageChange
+      );
+
+      window.removeEventListener(
+        "currencyChanged",
+        handleCurrencyChange
+      );
+
+      window.removeEventListener(
+        "currency-change",
+        handleCurrencyChange
+      );
+
+      window.removeEventListener(
+        "settingsChanged",
+        handleCurrencyChange
+      );
+
+      window.removeEventListener(
+        "settings-changed",
+        handleCurrencyChange
+      );
+
+      window.removeEventListener(
+        "ledgerly-settings-updated",
+        handleSettingsUpdated
+      );
+
+      window.removeEventListener(
+        "ledgerly-date-format-changed",
+        handleDateFormatChange
+      );
+
+      clearInterval(interval);
+    };
+  }, []);
+
+  // ============================================================
+  // CURRENCY HELPERS
+  // ============================================================
+
+  function getCurrencyConfig() {
+    return (
+      CURRENCY_CONFIG[currency] ||
+      CURRENCY_CONFIG.INR
+    );
+  }
+
+  function currencyCode() {
+    return getCurrencyConfig().code;
+  }
+
+  function convertFromINR(value) {
+    const amount = Number(value || 0);
+
+    return (
+      amount * getCurrencyConfig().rate
+    );
+  }
+
+  function money(value) {
+    const converted =
+      convertFromINR(value);
+
+    const config =
+      getCurrencyConfig();
+
+    return new Intl.NumberFormat(
+      config.locale,
+      {
+        style: "currency",
+        currency: config.code,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }
+    ).format(converted);
+  }
+
+  // ============================================================
+  // LOAD DATA
+  // ============================================================
+
   useEffect(() => {
     loadInvoices();
     loadCustomers();
   }, []);
-
-  // =====================================================
-  // LOAD INVOICES
-  // =====================================================
 
   async function loadInvoices() {
     try {
       setLoading(true);
       setError("");
 
-      const response = await api.get("/invoices/");
+      const response =
+        await api.get("/invoices/");
 
       setInvoices(
         Array.isArray(response.data)
@@ -74,7 +949,10 @@ export default function Invoices() {
           : []
       );
     } catch (err) {
-      console.error("Invoices error:", err);
+      console.error(
+        "Invoices error:",
+        err
+      );
 
       setError(
         getErrorMessage(
@@ -87,13 +965,10 @@ export default function Invoices() {
     }
   }
 
-  // =====================================================
-  // LOAD CUSTOMERS
-  // =====================================================
-
   async function loadCustomers() {
     try {
-      const response = await api.get("/customers/");
+      const response =
+        await api.get("/customers/");
 
       setCustomers(
         Array.isArray(response.data)
@@ -108,12 +983,16 @@ export default function Invoices() {
     }
   }
 
-  // =====================================================
-  // ERROR MESSAGE
-  // =====================================================
+  // ============================================================
+  // ERROR HANDLING
+  // ============================================================
 
-  function getErrorMessage(err, fallback) {
-    const detail = err.response?.data?.detail;
+  function getErrorMessage(
+    err,
+    fallback
+  ) {
+    const detail =
+      err.response?.data?.detail;
 
     if (Array.isArray(detail)) {
       return detail
@@ -148,9 +1027,9 @@ export default function Invoices() {
     return fallback;
   }
 
-  // =====================================================
+  // ============================================================
   // FORM HELPERS
-  // =====================================================
+  // ============================================================
 
   function updateForm(field, value) {
     setForm((previous) => ({
@@ -159,9 +1038,15 @@ export default function Invoices() {
     }));
   }
 
-  function updateItem(index, field, value) {
+  function updateItem(
+    index,
+    field,
+    value
+  ) {
     setForm((previous) => {
-      const items = [...previous.items];
+      const items = [
+        ...previous.items,
+      ];
 
       items[index] = {
         ...items[index],
@@ -197,10 +1082,11 @@ export default function Invoices() {
 
       return {
         ...previous,
-        items: previous.items.filter(
-          (_, itemIndex) =>
-            itemIndex !== index
-        ),
+        items:
+          previous.items.filter(
+            (_, itemIndex) =>
+              itemIndex !== index
+          ),
       };
     });
   }
@@ -231,6 +1117,8 @@ export default function Invoices() {
     setShowInvoice(false);
     setSelectedInvoice(null);
     setShowForm(true);
+
+    loadSettingsDisplay();
   }
 
   function closeForm() {
@@ -239,9 +1127,9 @@ export default function Invoices() {
     }
   }
 
-  // =====================================================
+  // ============================================================
   // CREATE INVOICE
-  // =====================================================
+  // ============================================================
 
   async function createInvoice(event) {
     event.preventDefault();
@@ -267,6 +1155,16 @@ export default function Invoices() {
       return;
     }
 
+    if (
+      form.due_date <
+      form.issue_date
+    ) {
+      setError(
+        "Due date cannot be before issue date."
+      );
+      return;
+    }
+
     for (const item of form.items) {
       if (
         !String(
@@ -288,6 +1186,23 @@ export default function Invoices() {
         );
         return;
       }
+    }
+
+    if (
+      formTax < 0 ||
+      formDiscount < 0
+    ) {
+      setError(
+        "Tax and discount cannot be negative."
+      );
+      return;
+    }
+
+    if (formTotal < 0) {
+      setError(
+        "Discount cannot be greater than the subtotal plus tax."
+      );
+      return;
     }
 
     try {
@@ -322,7 +1237,8 @@ export default function Invoices() {
           (item) => ({
             description:
               String(
-                item.description || ""
+                item.description ||
+                  ""
               ).trim(),
 
             quantity: Number(
@@ -337,7 +1253,7 @@ export default function Invoices() {
       };
 
       console.log(
-        "Creating invoice:",
+        "Creating invoice in base currency INR:",
         payload
       );
 
@@ -379,9 +1295,9 @@ export default function Invoices() {
     }
   }
 
-  // =====================================================
+  // ============================================================
   // DELETE
-  // =====================================================
+  // ============================================================
 
   async function deleteInvoice(id) {
     const confirmed =
@@ -407,6 +1323,14 @@ export default function Invoices() {
         )
       );
 
+      setSelectedInvoiceIds(
+        (previous) =>
+          previous.filter(
+            (invoiceId) =>
+              invoiceId !== id
+          )
+      );
+
       if (
         selectedInvoice?.id === id
       ) {
@@ -428,112 +1352,132 @@ export default function Invoices() {
     }
   }
 
-  // =====================================================
-// BULK SELECTION
-// =====================================================
+  // ============================================================
+  // BULK SELECTION
+  // ============================================================
 
-function toggleInvoiceSelection(id) {
-  setSelectedInvoiceIds((previous) => {
-    if (previous.includes(id)) {
-      return previous.filter(
-        (invoiceId) => invoiceId !== id
-      );
-    }
-
-    return [...previous, id];
-  });
-}
-
-function toggleSelectAll() {
-  if (
-    selectedInvoiceIds.length ===
-    filteredInvoices.length
+  function toggleInvoiceSelection(
+    id
   ) {
-    setSelectedInvoiceIds([]);
-    return;
-  }
+    setSelectedInvoiceIds(
+      (previous) => {
+        if (
+          previous.includes(id)
+        ) {
+          return previous.filter(
+            (invoiceId) =>
+              invoiceId !== id
+          );
+        }
 
-  setSelectedInvoiceIds(
-    filteredInvoices.map(
-      (invoice) => invoice.id
-    )
-  );
-}
-
-function clearSelection() {
-  setSelectedInvoiceIds([]);
-}
-
-// =====================================================
-// DELETE SELECTED INVOICES
-// =====================================================
-
-async function deleteSelectedInvoices() {
-  if (selectedInvoiceIds.length === 0) {
-    return;
-  }
-
-  const confirmed = window.confirm(
-    `Are you sure you want to delete ${selectedInvoiceIds.length} selected invoice${
-      selectedInvoiceIds.length !== 1 ? "s" : ""
-    }?`
-  );
-
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-    setDeletingSelected(true);
-    setError("");
-
-    await Promise.all(
-      selectedInvoiceIds.map((id) =>
-        api.delete(`/invoices/${id}`)
-      )
+        return [
+          ...previous,
+          id,
+        ];
+      }
     );
+  }
 
-    setInvoices((previous) =>
-      previous.filter(
-        (invoice) =>
-          !selectedInvoiceIds.includes(
-            invoice.id
-          )
-      )
-    );
-
+  function toggleSelectAll() {
     if (
-      selectedInvoice &&
-      selectedInvoiceIds.includes(
-        selectedInvoice.id
-      )
+      selectedInvoiceIds.length ===
+      filteredInvoices.length
     ) {
-      setSelectedInvoice(null);
-      setShowInvoice(false);
+      setSelectedInvoiceIds([]);
+      return;
     }
 
-    setSelectedInvoiceIds([]);
-  } catch (err) {
-    console.error(
-      "Delete selected invoices error:",
-      err
-    );
-
-    setError(
-      getErrorMessage(
-        err,
-        "Unable to delete selected invoices."
+    setSelectedInvoiceIds(
+      filteredInvoices.map(
+        (invoice) =>
+          invoice.id
       )
     );
-  } finally {
-    setDeletingSelected(false);
   }
-}
 
+  // ============================================================
+  // DELETE SELECTED
+  // ============================================================
 
-  // =====================================================
+  async function deleteSelectedInvoices() {
+    if (
+      selectedInvoiceIds.length ===
+      0
+    ) {
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        `Are you sure you want to delete ${selectedInvoiceIds.length} selected invoice${
+          selectedInvoiceIds.length !==
+          1
+            ? "s"
+            : ""
+        }?`
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingSelected(true);
+      setError("");
+
+      await Promise.all(
+        selectedInvoiceIds.map(
+          (id) =>
+            api.delete(
+              `/invoices/${id}`
+            )
+        )
+      );
+
+      const deletedIds = [
+        ...selectedInvoiceIds,
+      ];
+
+      setInvoices((previous) =>
+        previous.filter(
+          (invoice) =>
+            !deletedIds.includes(
+              invoice.id
+            )
+        )
+      );
+
+      if (
+        selectedInvoice &&
+        deletedIds.includes(
+          selectedInvoice.id
+        )
+      ) {
+        setSelectedInvoice(null);
+        setShowInvoice(false);
+      }
+
+      setSelectedInvoiceIds([]);
+    } catch (err) {
+      console.error(
+        "Delete selected invoices error:",
+        err
+      );
+
+      setError(
+        getErrorMessage(
+          err,
+          "Unable to delete selected invoices."
+        )
+      );
+    } finally {
+      setDeletingSelected(false);
+    }
+  }
+
+  // ============================================================
   // MARK PAID
-  // =====================================================
+  // ============================================================
 
   async function markPaid(id) {
     try {
@@ -573,51 +1517,95 @@ async function deleteSelectedInvoices() {
     }
   }
 
-  // =====================================================
-  // MONEY
-  // =====================================================
-
-  function money(value) {
-    return `₹${Number(
-      value || 0
-    ).toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-  }
-
-  // =====================================================
+  // ============================================================
   // DATE
-  // =====================================================
+  // ============================================================
 
   function formatDate(value) {
     if (!value) {
       return "—";
     }
 
-    const date = new Date(value);
+    /*
+     * Invoice dates from the backend are expected to be
+     * YYYY-MM-DD.
+     *
+     * We intentionally parse the date manually instead of
+     * using new Date(value), preventing timezone-related
+     * one-day shifts.
+     */
+    const match = String(value)
+      .trim()
+      .match(
+        /^(\d{4})-(\d{2})-(\d{2})/
+      );
 
-    if (
-      Number.isNaN(
-        date.getTime()
-      )
-    ) {
-      return value;
+    if (!match) {
+      /*
+       * Fallback for other valid date values.
+       */
+      const date = new Date(value);
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+        return value;
+      }
+
+      const day = String(
+        date.getDate()
+      ).padStart(2, "0");
+
+      const month = String(
+        date.getMonth() + 1
+      ).padStart(2, "0");
+
+      const year = String(
+        date.getFullYear()
+      );
+
+      if (
+        dateFormat ===
+        "MM/DD/YYYY"
+      ) {
+        return `${month}/${day}/${year}`;
+      }
+
+      if (
+        dateFormat ===
+        "YYYY-MM-DD"
+      ) {
+        return `${year}-${month}-${day}`;
+      }
+
+      return `${day}/${month}/${year}`;
     }
 
-    return date.toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
-    );
+    const [, year, month, day] =
+      match;
+
+    if (
+      dateFormat ===
+      "MM/DD/YYYY"
+    ) {
+      return `${month}/${day}/${year}`;
+    }
+
+    if (
+      dateFormat ===
+      "YYYY-MM-DD"
+    ) {
+      return `${year}-${month}-${day}`;
+    }
+
+    return `${day}/${month}/${year}`;
   }
 
-  // =====================================================
+  // ============================================================
   // CUSTOMER
-  // =====================================================
+  // ============================================================
 
   function getCustomer(id) {
     return customers.find(
@@ -637,9 +1625,9 @@ async function deleteSelectedInvoices() {
     );
   }
 
-  // =====================================================
+  // ============================================================
   // INVOICE ITEMS
-  // =====================================================
+  // ============================================================
 
   function getInvoiceItems(
     invoice
@@ -663,9 +1651,9 @@ async function deleteSelectedInvoices() {
     return [];
   }
 
-  // =====================================================
-  // INVOICE CALCULATIONS
-  // =====================================================
+  // ============================================================
+  // CALCULATIONS
+  // ============================================================
 
   function getInvoiceSubtotal(
     invoice
@@ -724,22 +1712,18 @@ async function deleteSelectedInvoices() {
     }
 
     return (
-      getInvoiceSubtotal(
-        invoice
-      ) +
+      getInvoiceSubtotal(invoice) +
       getInvoiceTax(invoice) -
       getInvoiceDiscount(invoice)
     );
   }
 
-  // =====================================================
+  // ============================================================
   // ESCAPE HTML
-  // =====================================================
+  // ============================================================
 
   function escapeHtml(value) {
-    return String(
-      value ?? ""
-    )
+    return String(value ?? "")
       .replaceAll(
         "&",
         "&amp;"
@@ -762,9 +1746,9 @@ async function deleteSelectedInvoices() {
       );
   }
 
-  // =====================================================
-  // DOWNLOAD PDF
-  // =====================================================
+  // ============================================================
+  // PDF
+  // ============================================================
 
   async function downloadInvoicePDF() {
     if (
@@ -797,13 +1781,12 @@ async function deleteSelectedInvoices() {
           "image/png"
         );
 
-      const pdf =
-        new jsPDF({
-          orientation:
-            "portrait",
-          unit: "mm",
-          format: "a4",
-        });
+      const pdf = new jsPDF({
+        orientation:
+          "portrait",
+        unit: "mm",
+        format: "a4",
+      });
 
       const pageWidth = 210;
       const pageHeight = 297;
@@ -825,8 +1808,7 @@ async function deleteSelectedInvoices() {
       let remainingHeight =
         imageHeight;
 
-      let position =
-        margin;
+      let position = margin;
 
       pdf.addImage(
         imageData,
@@ -870,7 +1852,7 @@ async function deleteSelectedInvoices() {
         ).padStart(4, "0")}`;
 
       pdf.save(
-        `${invoiceNumber}.pdf`
+        `${invoiceNumber}-${currencyCode()}.pdf`
       );
     } catch (err) {
       console.error(
@@ -884,9 +1866,9 @@ async function deleteSelectedInvoices() {
     }
   }
 
-  // =====================================================
-  // DOWNLOAD HTML FALLBACK
-  // =====================================================
+  // ============================================================
+  // DOWNLOAD HTML
+  // ============================================================
 
   function downloadInvoice(
     invoice
@@ -905,51 +1887,47 @@ async function deleteSelectedInvoices() {
         invoice.id
       ).padStart(4, "0")}`;
 
-    const rows =
-      items
-        .map(
-          (item, index) => {
-            const quantity =
-              Number(
-                item.quantity || 0
-              );
+    const rows = items
+      .map((item, index) => {
+        const quantity =
+          Number(
+            item.quantity || 0
+          );
 
-            const unitPrice =
-              Number(
-                item.unit_price ??
-                  item.rate ??
-                  0
-              );
+        const unitPrice =
+          Number(
+            item.unit_price ??
+              item.rate ??
+              0
+          );
 
-            return `
-              <tr>
-                <td>${index + 1}</td>
-                <td>${escapeHtml(
-                  item.description ||
-                    ""
-                )}</td>
-                <td>${quantity}</td>
-                <td>${money(
-                  unitPrice
-                )}</td>
-                <td>${money(
-                  quantity *
-                    unitPrice
-                )}</td>
-              </tr>
-            `;
-          }
-        )
-        .join("");
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(
+              item.description || ""
+            )}</td>
+            <td>${quantity}</td>
+            <td>${money(
+              unitPrice
+            )}</td>
+            <td>${money(
+              quantity *
+                unitPrice
+            )}</td>
+          </tr>
+        `;
+      })
+      .join("");
 
-    const html =
-      `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <title>${escapeHtml(
-        invoiceNumber
-      )}</title>
+      invoiceNumber
+    )}</title>
+
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -1049,137 +2027,178 @@ td:nth-child(3) {
 }
 </style>
 </head>
+
 <body>
+
 <div class="invoice">
 
 <div class="header">
+
   <div>
     <div class="muted">
       LEDGERFLOW AI
     </div>
-    <h1>INVOICE</h1>
+
+    <h1>
+      INVOICE
+    </h1>
   </div>
 
   <div class="meta">
-    <strong>${escapeHtml(
-      invoiceNumber
-    )}</strong>
+
+    <strong>
+      ${escapeHtml(
+        invoiceNumber
+      )}
+    </strong>
+
     <br>
+
+    Currency:
+    ${currencyCode()}
+
+    <br>
+
     Issue date:
     ${formatDate(
       invoice.issue_date
     )}
+
     <br>
+
     Due date:
     ${formatDate(
       invoice.due_date
     )}
+
   </div>
+
 </div>
 
 <div class="customer">
+
   <strong>BILL TO</strong>
+
   <br>
+
   ${escapeHtml(
     customer?.name ||
       customerName(
         invoice.customer_id
       )
   )}
+
   <br>
+
   ${escapeHtml(
     customer?.email || ""
   )}
+
   <br>
+
   ${escapeHtml(
     customer?.phone || ""
   )}
+
   <br>
+
   ${escapeHtml(
     customer?.address || ""
   )}
+
 </div>
 
 <table>
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>Description</th>
-      <th>Qty</th>
-      <th>Unit price</th>
-      <th>Amount</th>
-    </tr>
-  </thead>
 
-  <tbody>
-    ${rows}
-  </tbody>
+<thead>
+
+<tr>
+<th>#</th>
+<th>Description</th>
+<th>Qty</th>
+<th>Unit price</th>
+<th>Amount</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+${rows}
+
+</tbody>
+
 </table>
 
 <div class="summary">
 
-  <div>
-    <span>Subtotal</span>
-    <strong>
-      ${money(
-        getInvoiceSubtotal(
-          invoice
-        )
-      )}
-    </strong>
-  </div>
+<div>
+<span>Subtotal</span>
 
-  <div>
-    <span>Tax</span>
-    <strong>
-      ${money(
-        getInvoiceTax(
-          invoice
-        )
-      )}
-    </strong>
-  </div>
+<strong>
+${money(
+  getInvoiceSubtotal(invoice)
+)}
+</strong>
 
-  <div>
-    <span>Discount</span>
-    <strong>
-      -${money(
-        getInvoiceDiscount(
-          invoice
-        )
-      )}
-    </strong>
-  </div>
+</div>
 
-  <div class="total">
-    <span>Total</span>
-    <strong>
-      ${money(
-        getInvoiceTotal(
-          invoice
-        )
-      )}
-    </strong>
-  </div>
+<div>
+<span>Tax</span>
+
+<strong>
+${money(
+  getInvoiceTax(invoice)
+)}
+</strong>
+
+</div>
+
+<div>
+<span>Discount</span>
+
+<strong>
+-${money(
+  getInvoiceDiscount(invoice)
+)}
+</strong>
+
+</div>
+
+<div class="total">
+
+<span>Total</span>
+
+<strong>
+${money(
+  getInvoiceTotal(invoice)
+)}
+</strong>
+
+</div>
 
 </div>
 
 ${
   invoice.notes
     ? `
-      <div class="notes">
-        <strong>Notes</strong>
-        <p>
-          ${escapeHtml(
-            invoice.notes
-          )}
-        </p>
-      </div>
-    `
+<div class="notes">
+
+<strong>Notes</strong>
+
+<p>
+${escapeHtml(
+  invoice.notes
+)}
+</p>
+
+</div>
+`
     : ""
 }
 
 </div>
+
 </body>
 </html>`;
 
@@ -1203,8 +2222,9 @@ ${
       );
 
     link.href = url;
+
     link.download =
-      `${invoiceNumber}.html`;
+      `${invoiceNumber}-${currencyCode()}.html`;
 
     document.body.appendChild(
       link
@@ -1214,14 +2234,12 @@ ${
 
     link.remove();
 
-    URL.revokeObjectURL(
-      url
-    );
+    URL.revokeObjectURL(url);
   }
 
-  // =====================================================
-  // FILTERED INVOICES
-  // =====================================================
+  // ============================================================
+  // FILTER
+  // ============================================================
 
   const filteredInvoices =
     invoices.filter(
@@ -1242,9 +2260,9 @@ ${
       }
     );
 
-  // =====================================================
+  // ============================================================
   // FORM TOTALS
-  // =====================================================
+  // ============================================================
 
   const formSubtotal =
     form.items.reduce(
@@ -1272,14 +2290,13 @@ ${
     formTax -
     formDiscount;
 
-  // =====================================================
+  // ============================================================
   // LOADING
-  // =====================================================
+  // ============================================================
 
   if (loading) {
     return (
       <div className="invoices-page">
-
         <div className="invoice-loading">
 
           <div className="loading-spinner" />
@@ -1294,21 +2311,18 @@ ${
           </p>
 
         </div>
-
       </div>
     );
   }
 
-  // =====================================================
+  // ============================================================
   // MAIN UI
-  // =====================================================
+  // ============================================================
 
   return (
     <div className="invoices-page">
 
-      {/* =================================================
-          HEADER
-      ================================================= */}
+      {/* HEADER */}
 
       <div className="invoices-header">
 
@@ -1328,6 +2342,20 @@ ${
             for your customers.
           </p>
 
+          <small
+            style={{
+              display: "block",
+              marginTop: "6px",
+              opacity: 0.65,
+            }}
+          >
+            Display currency:{" "}
+            {currencyCode()}
+            {" • "}
+            Date format:{" "}
+            {dateFormat}
+          </small>
+
         </div>
 
         <button
@@ -1343,10 +2371,7 @@ ${
 
       </div>
 
-
-      {/* =================================================
-          ERROR
-      ================================================= */}
+      {/* ERROR */}
 
       {error && (
         <div className="invoice-error">
@@ -1367,75 +2392,70 @@ ${
         </div>
       )}
 
-
-      {/* =================================================
-          SEARCH
-      ================================================= */}
+      {/* SEARCH */}
 
       <div className="invoice-toolbar">
 
-  <div className="search-box">
+        <div className="search-box">
 
-    <Search size={18} />
+          <Search size={18} />
 
-    <input
-      type="text"
-      placeholder="Search invoices..."
-      value={search}
-      onChange={(event) =>
-        setSearch(
-          event.target.value
-        )
-      }
-    />
+          <input
+            type="text"
+            placeholder="Search invoices..."
+            value={search}
+            onChange={(event) =>
+              setSearch(
+                event.target.value
+              )
+            }
+          />
 
-  </div>
+        </div>
 
-  <div className="invoice-toolbar-right">
+        <div className="invoice-toolbar-right">
 
-    <div className="invoice-count">
+          <div className="invoice-count">
 
-      {filteredInvoices.length}
+            {filteredInvoices.length}{" "}
+            invoice
+            {filteredInvoices.length !==
+            1
+              ? "s"
+              : ""}
 
-      {" "}
+          </div>
 
-      invoice
-      {filteredInvoices.length !== 1
-        ? "s"
-        : ""}
+          {selectedInvoiceIds.length >
+            0 && (
+            <button
+              type="button"
+              className="bulk-delete-button"
+              onClick={
+                deleteSelectedInvoices
+              }
+              disabled={
+                deletingSelected
+              }
+            >
+              <Trash2 size={16} />
 
-    </div>
+              {deletingSelected
+                ? "Deleting..."
+                : `Delete selected (${selectedInvoiceIds.length})`}
+            </button>
+          )}
 
-    {selectedInvoiceIds.length > 0 && (
-      <button
-        type="button"
-        className="bulk-delete-button"
-        onClick={
-          deleteSelectedInvoices
-        }
-        disabled={deletingSelected}
-      >
-        <Trash2 size={16} />
+        </div>
 
-        {deletingSelected
-          ? "Deleting..."
-          : `Delete selected (${selectedInvoiceIds.length})`}
-      </button>
-    )}
+      </div>
 
-  </div>
-
-</div>
-
-      {/* =================================================
-          INVOICE TABLE
-      ================================================= */}
+      {/* TABLE */}
 
       <section className="invoice-panel">
 
         {filteredInvoices.length ===
         0 ? (
-
           <div className="invoice-empty">
 
             <div className="empty-icon">
@@ -1465,31 +2485,30 @@ ${
             </button>
 
           </div>
-
         ) : (
-
           <div className="invoice-table">
 
             <div className="invoice-table-head">
 
-  <span className="invoice-select-column">
+              <span className="invoice-select-column">
+                <input
+                  type="checkbox"
+                  checked={
+                    filteredInvoices.length >
+                      0 &&
+                    selectedInvoiceIds.length ===
+                      filteredInvoices.length
+                  }
+                  onChange={
+                    toggleSelectAll
+                  }
+                  aria-label="Select all invoices"
+                />
+              </span>
 
-    <input
-      type="checkbox"
-      checked={
-        filteredInvoices.length > 0 &&
-        selectedInvoiceIds.length ===
-          filteredInvoices.length
-      }
-      onChange={toggleSelectAll}
-      aria-label="Select all invoices"
-    />
-
-  </span>
-
-  <span>
-    Invoice
-  </span>
+              <span>
+                Invoice
+              </span>
 
               <span>
                 Customer
@@ -1517,34 +2536,33 @@ ${
 
             </div>
 
-
             {filteredInvoices.map(
               (invoice) => (
-
                 <div
                   className="invoice-row"
                   key={invoice.id}
                 >
 
-              <span className="invoice-select-column">
+                  <span className="invoice-select-column">
 
-  <input
-    type="checkbox"
-    checked={selectedInvoiceIds.includes(
-      invoice.id
-    )}
-    onChange={() =>
-      toggleInvoiceSelection(
-        invoice.id
-      )
-    }
-    aria-label={`Select ${
-      invoice.invoice_number ||
-      `INV-${invoice.id}`
-    }`}
-  />
+                    <input
+                      type="checkbox"
+                      checked={selectedInvoiceIds.includes(
+                        invoice.id
+                      )}
+                      onChange={() =>
+                        toggleInvoiceSelection(
+                          invoice.id
+                        )
+                      }
+                      aria-label={`Select ${
+                        invoice.invoice_number ||
+                        `INV-${invoice.id}`
+                      }`}
+                    />
 
-</span>
+                  </span>
+
                   <strong>
                     {invoice.invoice_number ||
                       `INV-${String(
@@ -1595,12 +2613,10 @@ ${
                     )}
                   </b>
 
-
                   <div className="invoice-actions">
 
                     {invoice.status !==
                       "paid" && (
-
                       <button
                         type="button"
                         title="Mark as paid"
@@ -1614,9 +2630,7 @@ ${
                           size={17}
                         />
                       </button>
-
                     )}
-
 
                     <button
                       type="button"
@@ -1629,11 +2643,12 @@ ${
                         setShowInvoice(
                           true
                         );
+
+                        loadSettingsDisplay();
                       }}
                     >
                       <Eye size={17} />
                     </button>
-
 
                     <button
                       type="button"
@@ -1648,6 +2663,8 @@ ${
                           true
                         );
 
+                        loadSettingsDisplay();
+
                         setTimeout(
                           () => {
                             downloadInvoicePDF();
@@ -1660,7 +2677,6 @@ ${
                         size={17}
                       />
                     </button>
-
 
                     <button
                       type="button"
@@ -1680,36 +2696,28 @@ ${
                   </div>
 
                 </div>
-
               )
             )}
 
           </div>
-
         )}
 
       </section>
 
-
-      {/* =================================================
+      {/* ========================================================
           CREATE INVOICE MODAL
-      ================================================= */}
+      ======================================================== */}
 
       {showForm && (
-
         <div
           className="invoice-modal-overlay"
-          onMouseDown={(
-            event
-          ) => {
+          onMouseDown={(event) => {
             if (
               event.target ===
                 event.currentTarget &&
               !saving
             ) {
-              setShowForm(
-                false
-              );
+              setShowForm(false);
             }
           }}
         >
@@ -1742,7 +2750,6 @@ ${
 
             </div>
 
-
             <form
               className="invoice-form"
               onSubmit={
@@ -1763,13 +2770,10 @@ ${
                   value={
                     form.customer_id
                   }
-                  onChange={(
-                    event
-                  ) =>
+                  onChange={(event) =>
                     updateForm(
                       "customer_id",
-                      event.target
-                        .value
+                      event.target.value
                     )
                   }
                   required
@@ -1781,7 +2785,6 @@ ${
 
                   {customers.map(
                     (customer) => (
-
                       <option
                         key={
                           customer.id
@@ -1794,14 +2797,12 @@ ${
                           customer.name
                         }
                       </option>
-
                     )
                   )}
 
                 </select>
 
               </div>
-
 
               {/* DATES */}
 
@@ -1819,20 +2820,16 @@ ${
                     value={
                       form.issue_date
                     }
-                    onChange={(
-                      event
-                    ) =>
+                    onChange={(event) =>
                       updateForm(
                         "issue_date",
-                        event.target
-                          .value
+                        event.target.value
                       )
                     }
                     required
                   />
 
                 </div>
-
 
                 <div className="form-group">
 
@@ -1849,13 +2846,10 @@ ${
                     min={
                       form.issue_date
                     }
-                    onChange={(
-                      event
-                    ) =>
+                    onChange={(event) =>
                       updateForm(
                         "due_date",
-                        event.target
-                          .value
+                        event.target.value
                       )
                     }
                     required
@@ -1864,7 +2858,6 @@ ${
                 </div>
 
               </div>
-
 
               {/* ITEMS */}
 
@@ -1897,7 +2890,6 @@ ${
 
               </div>
 
-
               <div className="invoice-items-form">
 
                 {form.items.map(
@@ -1905,7 +2897,6 @@ ${
                     item,
                     index
                   ) => (
-
                     <div
                       className="invoice-item-form-row"
                       key={index}
@@ -1923,21 +2914,17 @@ ${
                             item.description
                           }
                           placeholder="Product or service"
-                          onChange={(
-                            event
-                          ) =>
+                          onChange={(event) =>
                             updateItem(
                               index,
                               "description",
-                              event.target
-                                .value
+                              event.target.value
                             )
                           }
                           required
                         />
 
                       </div>
-
 
                       <div className="form-group item-quantity">
 
@@ -1952,14 +2939,11 @@ ${
                           value={
                             item.quantity
                           }
-                          onChange={(
-                            event
-                          ) =>
+                          onChange={(event) =>
                             updateItem(
                               index,
                               "quantity",
-                              event.target
-                                .value
+                              event.target.value
                             )
                           }
                           required
@@ -1967,11 +2951,12 @@ ${
 
                       </div>
 
-
                       <div className="form-group item-price">
 
                         <label>
-                          Unit price
+                          Unit price (
+                          {currencyCode()}
+                          )
                         </label>
 
                         <input
@@ -1981,21 +2966,17 @@ ${
                           value={
                             item.unit_price
                           }
-                          onChange={(
-                            event
-                          ) =>
+                          onChange={(event) =>
                             updateItem(
                               index,
                               "unit_price",
-                              event.target
-                                .value
+                              event.target.value
                             )
                           }
                           required
                         />
 
                       </div>
-
 
                       <div className="item-line-total">
 
@@ -2018,7 +2999,6 @@ ${
 
                       </div>
 
-
                       <button
                         type="button"
                         className="remove-item-button"
@@ -2040,12 +3020,10 @@ ${
                       </button>
 
                     </div>
-
                   )
                 )}
 
               </div>
-
 
               {/* TAX / DISCOUNT */}
 
@@ -2065,19 +3043,15 @@ ${
                     value={
                       form.tax
                     }
-                    onChange={(
-                      event
-                    ) =>
+                    onChange={(event) =>
                       updateForm(
                         "tax",
-                        event.target
-                          .value
+                        event.target.value
                       )
                     }
                   />
 
                 </div>
-
 
                 <div className="form-group">
 
@@ -2093,13 +3067,10 @@ ${
                     value={
                       form.discount
                     }
-                    onChange={(
-                      event
-                    ) =>
+                    onChange={(event) =>
                       updateForm(
                         "discount",
-                        event.target
-                          .value
+                        event.target.value
                       )
                     }
                   />
@@ -2107,7 +3078,6 @@ ${
                 </div>
 
               </div>
-
 
               {/* NOTES */}
 
@@ -2124,25 +3094,22 @@ ${
                     form.notes
                   }
                   placeholder="Optional notes for the customer"
-                  onChange={(
-                    event
-                  ) =>
+                  onChange={(event) =>
                     updateForm(
                       "notes",
-                      event.target
-                        .value
+                      event.target.value
                     )
                   }
                 />
 
               </div>
 
-
-              {/* FORM SUMMARY */}
+              {/* SUMMARY */}
 
               <div className="invoice-form-summary">
 
                 <div>
+
                   <span>
                     Subtotal
                   </span>
@@ -2152,9 +3119,11 @@ ${
                       formSubtotal
                     )}
                   </strong>
+
                 </div>
 
                 <div>
+
                   <span>
                     Tax
                   </span>
@@ -2164,9 +3133,11 @@ ${
                       formTax
                     )}
                   </strong>
+
                 </div>
 
                 <div>
+
                   <span>
                     Discount
                   </span>
@@ -2176,6 +3147,7 @@ ${
                       formDiscount
                     )}
                   </strong>
+
                 </div>
 
                 <div className="form-summary-total">
@@ -2194,8 +3166,7 @@ ${
 
               </div>
 
-
-              {/* FORM ACTIONS */}
+              {/* ACTIONS */}
 
               <div className="invoice-form-actions">
 
@@ -2219,11 +3190,9 @@ ${
                     saving
                   }
                 >
-
                   {saving
                     ? "Creating..."
                     : "Create invoice"}
-
                 </button>
 
               </div>
@@ -2233,22 +3202,17 @@ ${
           </div>
 
         </div>
-
       )}
 
-
-      {/* =================================================
-          PRINTABLE INVOICE
-      ================================================= */}
+      {/* ========================================================
+          INVOICE PREVIEW
+      ======================================================== */}
 
       {showInvoice &&
         selectedInvoice && (
-
           <div className="invoice-modal-overlay">
 
             <div className="invoice-preview-wrapper">
-
-              {/* PREVIEW TOOLBAR */}
 
               <div className="invoice-preview-toolbar">
 
@@ -2268,8 +3232,15 @@ ${
                       )}`}
                   </h2>
 
-                </div>
+                  <small>
+                    Currency:{" "}
+                    {currencyCode()}
+                    {" • "}
+                    Date format:{" "}
+                    {dateFormat}
+                  </small>
 
+                </div>
 
                 <div className="invoice-preview-actions">
 
@@ -2280,6 +3251,7 @@ ${
                       setShowInvoice(
                         false
                       );
+
                       setSelectedInvoice(
                         null
                       );
@@ -2288,7 +3260,6 @@ ${
                     <X size={17} />
                     Close
                   </button>
-
 
                   <button
                     type="button"
@@ -2300,7 +3271,6 @@ ${
                     <Printer size={17} />
                     Print
                   </button>
-
 
                   <button
                     type="button"
@@ -2319,8 +3289,7 @@ ${
 
               </div>
 
-
-              {/* PRINTABLE DOCUMENT */}
+              {/* PRINTABLE INVOICE */}
 
               <div
                 className="printable-invoice"
@@ -2328,8 +3297,6 @@ ${
                   invoicePrintRef
                 }
               >
-
-                {/* HEADER */}
 
                 <div className="printable-invoice-header">
 
@@ -2345,7 +3312,6 @@ ${
 
                   </div>
 
-
                   <div className="invoice-number-block">
 
                     <strong>
@@ -2357,6 +3323,11 @@ ${
                           "0"
                         )}`}
                     </strong>
+
+                    <div>
+                      Currency:{" "}
+                      {currencyCode()}
+                    </div>
 
                     <div>
                       Issue date:{" "}
@@ -2375,7 +3346,6 @@ ${
                   </div>
 
                 </div>
-
 
                 {/* CUSTOMER */}
 
@@ -2396,7 +3366,6 @@ ${
                     {getCustomer(
                       selectedInvoice.customer_id
                     )?.email && (
-
                       <p>
                         {
                           getCustomer(
@@ -2404,13 +3373,11 @@ ${
                           ).email
                         }
                       </p>
-
                     )}
 
                     {getCustomer(
                       selectedInvoice.customer_id
                     )?.phone && (
-
                       <p>
                         {
                           getCustomer(
@@ -2418,13 +3385,11 @@ ${
                           ).phone
                         }
                       </p>
-
                     )}
 
                     {getCustomer(
                       selectedInvoice.customer_id
                     )?.address && (
-
                       <p>
                         {
                           getCustomer(
@@ -2432,15 +3397,13 @@ ${
                           ).address
                         }
                       </p>
-
                     )}
 
                   </div>
 
                 </div>
 
-
-                {/* ITEMS TABLE */}
+                {/* ITEMS */}
 
                 <table className="professional-invoice-table">
 
@@ -2472,13 +3435,11 @@ ${
 
                   </thead>
 
-
                   <tbody>
 
                     {getInvoiceItems(
                       selectedInvoice
                     ).length > 0 ? (
-
                       getInvoiceItems(
                         selectedInvoice
                       ).map(
@@ -2525,9 +3486,7 @@ ${
                               </td>
 
                               <td>
-                                {
-                                  quantity
-                                }
+                                {quantity}
                               </td>
 
                               <td>
@@ -2546,9 +3505,7 @@ ${
                           );
                         }
                       )
-
                     ) : (
-
                       <tr>
 
                         <td colSpan="5">
@@ -2556,13 +3513,11 @@ ${
                         </td>
 
                       </tr>
-
                     )}
 
                   </tbody>
 
                 </table>
-
 
                 {/* SUMMARY */}
 
@@ -2584,7 +3539,6 @@ ${
 
                   </div>
 
-
                   <div className="summary-row">
 
                     <span>
@@ -2600,7 +3554,6 @@ ${
                     </strong>
 
                   </div>
-
 
                   <div className="summary-row">
 
@@ -2618,7 +3571,6 @@ ${
                     </strong>
 
                   </div>
-
 
                   <div className="summary-total">
 
@@ -2638,11 +3590,9 @@ ${
 
                 </div>
 
-
                 {/* NOTES */}
 
                 {selectedInvoice.notes && (
-
                   <div className="printable-invoice-notes">
 
                     <h4>
@@ -2656,9 +3606,7 @@ ${
                     </p>
 
                   </div>
-
                 )}
-
 
                 {/* FOOTER */}
 
@@ -2669,7 +3617,7 @@ ${
                   </div>
 
                   <div>
-                    Generated by LedgerFlow AI
+                    Generated by Ledgerly
                   </div>
 
                 </div>
@@ -2679,7 +3627,6 @@ ${
             </div>
 
           </div>
-
         )}
 
     </div>

@@ -22,34 +22,233 @@ import {
   bulkDeleteTransactions,
 } from "../api/transactionsApi";
 
-import {
-  getCategories,
-} from "../api/categoriesApi";
+import { getCategories } from "../api/categoriesApi";
+import { getAccounts } from "../api/accountsApi";
 
-import {
-  getAccounts,
-} from "../api/accountsApi";
+const SETTINGS_KEY = "ledgerly_settings";
+const CURRENCY_KEY = "ledgerly_currency";
+const EXCHANGE_RATES_KEY = "ledgerly_exchange_rates";
+
+const VALID_CURRENCIES = ["INR", "USD", "EUR", "GBP"];
+
+// -----------------------------------------------------------------------------
+// CURRENCY CONFIGURATION
+// -----------------------------------------------------------------------------
+
+const CURRENCY_CONFIG = {
+  INR: {
+    locale: "en-IN",
+    symbol: "₹",
+    name: "Indian Rupee",
+  },
+
+  USD: {
+    locale: "en-US",
+    symbol: "$",
+    name: "US Dollar",
+  },
+
+  EUR: {
+    locale: "en-DE",
+    symbol: "€",
+    name: "Euro",
+  },
+
+  GBP: {
+    locale: "en-GB",
+    symbol: "£",
+    name: "British Pound",
+  },
+};
+
+// -----------------------------------------------------------------------------
+// STORAGE
+// -----------------------------------------------------------------------------
+
+function getStoredCurrency() {
+  try {
+    const savedCurrency =
+      localStorage.getItem(CURRENCY_KEY);
+
+    if (VALID_CURRENCIES.includes(savedCurrency)) {
+      return savedCurrency;
+    }
+
+    const savedSettings =
+      localStorage.getItem(SETTINGS_KEY);
+
+    if (savedSettings) {
+      const parsedSettings =
+        JSON.parse(savedSettings);
+
+      if (
+        VALID_CURRENCIES.includes(
+          parsedSettings?.currency
+        )
+      ) {
+        return parsedSettings.currency;
+      }
+    }
+  } catch (error) {
+    console.error(
+      "Unable to read currency settings:",
+      error
+    );
+  }
+
+  return "INR";
+}
+
+// -----------------------------------------------------------------------------
+// EXCHANGE RATE CACHE
+// -----------------------------------------------------------------------------
+
+function getCachedExchangeRates() {
+  try {
+    const saved =
+      localStorage.getItem(
+        EXCHANGE_RATES_KEY
+      );
+
+    if (!saved) {
+      return null;
+    }
+
+    const parsed = JSON.parse(saved);
+
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      !parsed.rates
+    ) {
+      return null;
+    }
+
+    return parsed;
+  } catch (error) {
+    console.error(
+      "Unable to read exchange rates:",
+      error
+    );
+
+    return null;
+  }
+}
+
+function saveExchangeRates(data) {
+  try {
+    localStorage.setItem(
+      EXCHANGE_RATES_KEY,
+      JSON.stringify(data)
+    );
+  } catch (error) {
+    console.error(
+      "Unable to save exchange rates:",
+      error
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// FETCH EXCHANGE RATES
+// -----------------------------------------------------------------------------
+
+async function fetchExchangeRates() {
+  const cached =
+    getCachedExchangeRates();
+
+  // Cache for 6 hours.
+  const CACHE_DURATION =
+    6 * 60 * 60 * 1000;
+
+  if (
+    cached?.timestamp &&
+    Date.now() - cached.timestamp <
+      CACHE_DURATION
+  ) {
+    return cached.rates;
+  }
+
+  try {
+    const response = await fetch(
+      "https://api.frankfurter.app/latest?from=INR&to=USD,EUR,GBP"
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        "Unable to fetch exchange rates."
+      );
+    }
+
+    const data = await response.json();
+
+    const rates = {
+      INR: 1,
+      USD: Number(data?.rates?.USD || 0),
+      EUR: Number(data?.rates?.EUR || 0),
+      GBP: Number(data?.rates?.GBP || 0),
+    };
+
+    if (
+      !rates.USD ||
+      !rates.EUR ||
+      !rates.GBP
+    ) {
+      throw new Error(
+        "Invalid exchange rate response."
+      );
+    }
+
+    saveExchangeRates({
+      timestamp: Date.now(),
+      rates,
+    });
+
+    return rates;
+  } catch (error) {
+    console.error(
+      "Exchange rate API error:",
+      error
+    );
+
+    // Use cached rates if API is temporarily unavailable.
+    if (cached?.rates) {
+      return cached.rates;
+    }
+
+    // Last-resort fallback.
+    return {
+      INR: 1,
+      USD: 0.0117,
+      EUR: 0.0100,
+      GBP: 0.0087,
+    };
+  }
+}
+
+// -----------------------------------------------------------------------------
+// COMPONENT
+// -----------------------------------------------------------------------------
 
 export default function Transactions() {
+  const today = new Date()
+    .toISOString()
+    .split("T")[0];
 
-  const today =
-    new Date()
-      .toISOString()
-      .split("T")[0];
-
-
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // STATE
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   const [transactions, setTransactions] =
     useState([]);
 
-  const [editingTransaction, setEditingTransaction] =
-    useState(null);
+  const [
+    editingTransaction,
+    setEditingTransaction,
+  ] = useState(null);
 
   const [categories, setCategories] =
-  useState([]);
+    useState([]);
 
   const [accounts, setAccounts] =
     useState([]);
@@ -78,59 +277,249 @@ export default function Transactions() {
   const [showModal, setShowModal] =
     useState(false);
 
-  const [selectedTransactions, setSelectedTransactions] =
-    useState([]);
+  const [
+    selectedTransactions,
+    setSelectedTransactions,
+  ] = useState([]);
 
+  // ---------------------------------------------------------------------------
+  // CURRENCY
+  // ---------------------------------------------------------------------------
 
-  // =========================================================
+  const [currency, setCurrency] =
+    useState(getStoredCurrency());
+
+  const [exchangeRates, setExchangeRates] =
+    useState({
+      INR: 1,
+      USD: 0.0117,
+      EUR: 0.0100,
+      GBP: 0.0087,
+    });
+
+  const [ratesLoading, setRatesLoading] =
+    useState(false);
+
+  // ---------------------------------------------------------------------------
+  // LOAD CURRENCY
+  // ---------------------------------------------------------------------------
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadRates() {
+      try {
+        setRatesLoading(true);
+
+        const rates =
+          await fetchExchangeRates();
+
+        if (mounted && rates) {
+          setExchangeRates(rates);
+        }
+      } catch (error) {
+        console.error(
+          "Unable to load exchange rates:",
+          error
+        );
+      } finally {
+        if (mounted) {
+          setRatesLoading(false);
+        }
+      }
+    }
+
+    loadRates();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // LISTEN FOR SETTINGS CURRENCY CHANGES
+  // ---------------------------------------------------------------------------
+
+  useEffect(() => {
+    function handleCurrencyChange(event) {
+      let newCurrency =
+        event?.detail;
+
+      if (
+        typeof newCurrency ===
+        "object"
+      ) {
+        newCurrency =
+          newCurrency?.currency;
+      }
+
+      if (
+        !VALID_CURRENCIES.includes(
+          newCurrency
+        )
+      ) {
+        newCurrency =
+          getStoredCurrency();
+      }
+
+      setCurrency(newCurrency);
+    }
+
+    function handleSettingsUpdate(event) {
+      let newCurrency =
+        event?.detail?.currency;
+
+      if (
+        !VALID_CURRENCIES.includes(
+          newCurrency
+        )
+      ) {
+        newCurrency =
+          getStoredCurrency();
+      }
+
+      setCurrency(newCurrency);
+    }
+
+    function handleStorageChange(event) {
+      if (
+        event.key ===
+          CURRENCY_KEY ||
+        event.key ===
+          SETTINGS_KEY
+      ) {
+        setCurrency(
+          getStoredCurrency()
+        );
+      }
+    }
+
+    window.addEventListener(
+      "ledgerly-currency-changed",
+      handleCurrencyChange
+    );
+
+    window.addEventListener(
+      "ledgerly-settings-updated",
+      handleSettingsUpdate
+    );
+
+    window.addEventListener(
+      "currencyChanged",
+      handleCurrencyChange
+    );
+
+    window.addEventListener(
+      "storage",
+      handleStorageChange
+    );
+
+    return () => {
+      window.removeEventListener(
+        "ledgerly-currency-changed",
+        handleCurrencyChange
+      );
+
+      window.removeEventListener(
+        "ledgerly-settings-updated",
+        handleSettingsUpdate
+      );
+
+      window.removeEventListener(
+        "currencyChanged",
+        handleCurrencyChange
+      );
+
+      window.removeEventListener(
+        "storage",
+        handleStorageChange
+      );
+    };
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // MONEY CONVERSION
+  // ---------------------------------------------------------------------------
+
+  function convertAmount(value) {
+    const amount = Number(value || 0);
+
+    if (!Number.isFinite(amount)) {
+      return 0;
+    }
+
+    const rate =
+      Number(exchangeRates[currency]) || 1;
+
+    return amount * rate;
+  }
+
+  // ---------------------------------------------------------------------------
+  // MONEY FORMATTER
+  // ---------------------------------------------------------------------------
+
+  function money(value) {
+    const convertedAmount =
+      convertAmount(value);
+
+    const config =
+      CURRENCY_CONFIG[currency] ||
+      CURRENCY_CONFIG.INR;
+
+    try {
+      return new Intl.NumberFormat(
+        config.locale,
+        {
+          style: "currency",
+          currency,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }
+      ).format(convertedAmount);
+    } catch {
+      return `${config.symbol}${convertedAmount.toFixed(
+        2
+      )}`;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // FORM
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
-  const [form, setForm] = useState({
+  const [form, setForm] =
+    useState({
+      description: "",
+      amount: "",
+      transaction_type: "expense",
+      date: today,
+      account_id: "",
+      destination_account_id: "",
+      category_id: null,
+    });
 
-    description: "",
-
-    amount: "",
-
-    transaction_type: "expense",
-
-    date: today,
-
-    account_id: "",
-
-    destination_account_id: "",
-
-    category_id: null,
-
-  });
-
-
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // ERROR MESSAGE
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   function getErrorMessage(
     err,
     fallback
   ) {
-
     const detail =
       err?.response?.data?.detail;
 
-
     if (Array.isArray(detail)) {
-
       return detail
         .map((item) => {
-
           if (
-            typeof item === "string"
+            typeof item ===
+            "string"
           ) {
             return item;
           }
 
           if (item?.msg) {
-
             const field =
               Array.isArray(item.loc)
                 ? item.loc[
@@ -144,83 +533,73 @@ export default function Transactions() {
           }
 
           return "";
-
         })
         .filter(Boolean)
         .join(", ");
     }
 
-
     if (
-      typeof detail === "string"
+      typeof detail ===
+      "string"
     ) {
-
       return detail;
     }
-
 
     return fallback;
   }
 
+  // ---------------------------------------------------------------------------
+  // LOAD TRANSACTIONS
+  // ---------------------------------------------------------------------------
 
- // =========================================================
-// LOAD TRANSACTIONS
-// =========================================================
+  async function loadTransactions() {
+    try {
+      setLoading(true);
 
-async function loadTransactions() {
-  try {
-    setLoading(true);
+      const response =
+        await getTransactions();
 
-    const response = await getTransactions();
+      console.log(
+        "Transactions API Response:",
+        response.data
+      );
 
-    console.log(
-      "Transactions API Response:",
-      response.data
-    );
+      setTransactions(
+        Array.isArray(
+          response.data?.transactions
+        )
+          ? response.data.transactions
+          : []
+      );
 
-    // Backend response:
-    //
-    // {
-    //   transactions: [...],
-    //   pagination: {...}
-    // }
+      setSelectedTransactions(
+        []
+      );
 
-    setTransactions(
-      Array.isArray(response.data?.transactions)
-        ? response.data.transactions
-        : []
-    );
+      setError("");
+    } catch (err) {
+      console.error(
+        "Load transactions error:",
+        err
+      );
 
-    setSelectedTransactions([]);
-
-    setError("");
-
-  } catch (err) {
-    console.error(
-      "Load transactions error:",
-      err
-    );
-
-    setError(
-      getErrorMessage(
-        err,
-        "Unable to load transactions."
-      )
-    );
-
-  } finally {
-    setLoading(false);
+      setError(
+        getErrorMessage(
+          err,
+          "Unable to load transactions."
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
   }
-}
 
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // LOAD ACCOUNTS
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   async function loadAccounts() {
-
     try {
-
       const response =
         await getAccounts();
 
@@ -231,9 +610,7 @@ async function loadTransactions() {
           ? response.data
           : []
       );
-
     } catch (err) {
-
       console.error(
         "Load accounts error:",
         err
@@ -248,108 +625,85 @@ async function loadTransactions() {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // LOAD CATEGORIES
+  // ---------------------------------------------------------------------------
+
   async function loadCategories() {
-  try {
-    const response =
-      await getCategories();
+    try {
+      const response =
+        await getCategories();
 
-    setCategories(
-      Array.isArray(response.data)
-        ? response.data
-        : []
-    );
-  } catch (err) {
-    console.error(
-      "Load categories error:",
-      err
-    );
+      setCategories(
+        Array.isArray(
+          response.data
+        )
+          ? response.data
+          : []
+      );
+    } catch (err) {
+      console.error(
+        "Load categories error:",
+        err
+      );
 
-    setError(
-      getErrorMessage(
-        err,
-        "Unable to load categories."
-      )
-    );
+      setError(
+        getErrorMessage(
+          err,
+          "Unable to load categories."
+        )
+      );
+    }
   }
-}
 
-
-
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // INITIAL LOAD
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   useEffect(() => {
-
     loadTransactions();
-
     loadAccounts();
-
     loadCategories();
-
   }, []);
 
-
-  // =========================================================
-  // OPEN ADD MODAL
-  // =========================================================
+  // ---------------------------------------------------------------------------
+  // ADD MODAL
+  // ---------------------------------------------------------------------------
 
   function openAddModal() {
-
     setError("");
-
     setSuccess("");
-
     setEditingTransaction(null);
 
     setForm({
-
       description: "",
-
       amount: "",
-
-      transaction_type:
-        "expense",
-
+      transaction_type: "expense",
       date: today,
-
-      account_id:
-        accounts.length
-          ? String(
-              accounts[0].id
-            )
-          : "",
-
-      destination_account_id:
-        "",
-
-      category_id:
-        null,
-
+      account_id: accounts.length
+        ? String(accounts[0].id)
+        : "",
+      destination_account_id: "",
+      category_id: null,
     });
 
     setShowModal(true);
   }
 
-
-  // =========================================================
-  // OPEN EDIT MODAL
-  // =========================================================
+  // ---------------------------------------------------------------------------
+  // EDIT MODAL
+  // ---------------------------------------------------------------------------
 
   function openEditModal(
     transaction
   ) {
-
     setError("");
-
     setSuccess("");
-
     setEditingTransaction(
       transaction
     );
 
     setForm({
-
       description:
         transaction.description ||
         "",
@@ -383,80 +737,64 @@ async function loadTransactions() {
       category_id:
         transaction.category_id ||
         null,
-
     });
 
     setShowModal(true);
   }
 
-
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // CLOSE MODAL
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   function closeModal() {
-
     if (saving) {
       return;
     }
 
     setShowModal(false);
-
     setEditingTransaction(null);
-
     setError("");
   }
 
-
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // FORM CHANGE
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   function handleChange(event) {
-
     const {
       name,
       value,
     } = event.target;
 
+    setForm((previous) => ({
+      ...previous,
 
-    setForm(
-      (previous) => ({
+      [name]: value,
 
-        ...previous,
-
-        [name]: value,
-
-        ...(name ===
-          "transaction_type" &&
-        value !== "transfer"
-          ? {
-              destination_account_id:
-                "",
-            }
-          : {}),
-
-      })
-    );
+      ...(name ===
+        "transaction_type" &&
+      value !== "transfer"
+        ? {
+            destination_account_id:
+              "",
+          }
+        : {}),
+    }));
 
     setError("");
   }
 
-
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // CREATE / UPDATE
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   async function handleSubmit(
     event
   ) {
-
     event.preventDefault();
 
     setError("");
-
     setSuccess("");
-
 
     const description =
       form.description.trim();
@@ -474,119 +812,102 @@ async function loadTransactions() {
           )
         : null;
 
-
     if (!description) {
-
       setError(
         "Description is required."
       );
-
       return;
     }
-
 
     if (
       description.length < 2
     ) {
-
       setError(
         "Description must contain at least 2 characters."
       );
-
       return;
     }
-
 
     if (
       !form.amount ||
       Number.isNaN(amount) ||
       amount <= 0
     ) {
-
       setError(
         "Amount must be greater than 0."
       );
-
       return;
     }
 
-
     if (!form.date) {
-
       setError(
         "Date is required."
       );
-
       return;
     }
-
 
     if (
       !form.account_id ||
       Number.isNaN(accountId)
     ) {
-
       setError(
         "Please select an account."
       );
-
       return;
     }
-
 
     if (
       form.transaction_type ===
       "transfer"
     ) {
-
       if (
         !form.destination_account_id ||
         Number.isNaN(
           destinationAccountId
         )
       ) {
-
         setError(
           "Please select a destination account."
         );
-
         return;
       }
-
 
       if (
         accountId ===
         destinationAccountId
       ) {
-
         setError(
           "Source and destination accounts must be different."
         );
-
         return;
       }
     }
 
-
     try {
-
       setSaving(true);
 
+      /*
+       * IMPORTANT:
+       *
+       * We SEND the ORIGINAL amount to the backend.
+       *
+       * If the database is storing INR:
+       *
+       * ₹500 is stored as 500.
+       *
+       * We do NOT send converted USD/EUR/GBP
+       * values to the backend.
+       *
+       * Conversion is only for DISPLAY.
+       */
 
       const payload = {
-
         description,
-
         amount,
-
         transaction_type:
           form.transaction_type,
-
-        date:
-          form.date,
-
-        account_id:
-          accountId,
+        date: form.date,
+        account_id: accountId,
 
         destination_account_id:
           form.transaction_type ===
@@ -596,44 +917,32 @@ async function loadTransactions() {
 
         category_id:
           form.category_id || null,
-
       };
 
-
-     if (editingTransaction) {
-
-  await updateTransaction(
-    editingTransaction.id,
-    payload
-  );
-
-} else {
-
-  await createTransaction(
-    payload
-  );
-}
+      if (editingTransaction) {
+        await updateTransaction(
+          editingTransaction.id,
+          payload
+        );
+      } else {
+        await createTransaction(
+          payload
+        );
+      }
 
       setShowModal(false);
 
       setSuccess(
-
         editingTransaction
           ? "Transaction updated successfully."
           : "Transaction created successfully."
-
       );
 
       setEditingTransaction(null);
 
-
       await loadTransactions();
-
       await loadAccounts();
-
-
     } catch (err) {
-
       console.error(
         "Save transaction error:",
         err
@@ -645,49 +954,37 @@ async function loadTransactions() {
           "Unable to save transaction."
         )
       );
-
     } finally {
-
       setSaving(false);
     }
   }
 
-
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // SINGLE DELETE
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   async function handleDelete(
     transaction
   ) {
-
     const confirmed =
       window.confirm(
-
         `Delete "${transaction.description}"?\n\nThis action cannot be undone.`
       );
-
 
     if (!confirmed) {
       return;
     }
 
-
     try {
-
       setError("");
-
       setSuccess("");
-
 
       await deleteTransaction(
         transaction.id
       );
 
-
       setTransactions(
         (previous) =>
-
           previous.filter(
             (item) =>
               item.id !==
@@ -695,28 +992,20 @@ async function loadTransactions() {
           )
       );
 
-
       setSelectedTransactions(
         (previous) =>
-
           previous.filter(
             (id) =>
-              id !==
-              transaction.id
+              id !== transaction.id
           )
       );
 
-
       await loadAccounts();
-
 
       setSuccess(
         "Transaction deleted successfully."
       );
-
-
     } catch (err) {
-
       console.error(
         "Delete transaction error:",
         err
@@ -731,34 +1020,25 @@ async function loadTransactions() {
     }
   }
 
-  // =========================================================
-  // FILTERED TRANSACTIONS
-  // =========================================================
+  // ---------------------------------------------------------------------------
+  // FILTER
+  // ---------------------------------------------------------------------------
 
   const filteredTransactions =
     transactions.filter(
       (transaction) => {
-
         const query =
           search
             .trim()
             .toLowerCase();
 
-
         const searchableText = [
-
           transaction.description,
-
           transaction.transaction_type,
-
           transaction.account_name,
-
           transaction.category_name,
-
           transaction.date,
-
           transaction.amount,
-
         ]
           .filter(
             (value) =>
@@ -768,19 +1048,16 @@ async function loadTransactions() {
           .join(" ")
           .toLowerCase();
 
-
         const matchesSearch =
           !query ||
           searchableText.includes(
             query
           );
 
-
         const matchesType =
           typeFilter === "all" ||
           transaction.transaction_type ===
             typeFilter;
-
 
         return (
           matchesSearch &&
@@ -789,31 +1066,26 @@ async function loadTransactions() {
       }
     );
 
-
-  // =========================================================
-  // SELECT SINGLE
-  // =========================================================
+  // ---------------------------------------------------------------------------
+  // SELECT
+  // ---------------------------------------------------------------------------
 
   function toggleTransactionSelection(
     transactionId
   ) {
-
     setSelectedTransactions(
       (previous) => {
-
         if (
           previous.includes(
             transactionId
           )
         ) {
-
           return previous.filter(
             (id) =>
               id !==
               transactionId
           );
         }
-
 
         return [
           ...previous,
@@ -823,19 +1095,16 @@ async function loadTransactions() {
     );
   }
 
-
-  // =========================================================
-  // SELECT ALL VISIBLE
-  // =========================================================
+  // ---------------------------------------------------------------------------
+  // SELECT ALL
+  // ---------------------------------------------------------------------------
 
   function toggleSelectAll() {
-
     const visibleIds =
       filteredTransactions.map(
         (transaction) =>
           transaction.id
       );
-
 
     const allSelected =
       visibleIds.length > 0 &&
@@ -846,12 +1115,9 @@ async function loadTransactions() {
           )
       );
 
-
     if (allSelected) {
-
       setSelectedTransactions(
         (previous) =>
-
           previous.filter(
             (id) =>
               !visibleIds.includes(
@@ -859,36 +1125,27 @@ async function loadTransactions() {
               )
           )
       );
-
     } else {
-
       setSelectedTransactions(
         (previous) => [
-
           ...new Set([
-
             ...previous,
-
             ...visibleIds,
-
           ]),
-
         ]
       );
     }
   }
 
-
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // SELECTION STATE
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   const visibleTransactionIds =
     filteredTransactions.map(
       (transaction) =>
         transaction.id
     );
-
 
   const allVisibleSelected =
     visibleTransactionIds.length >
@@ -900,22 +1157,11 @@ async function loadTransactions() {
         )
     );
 
-
-  const someVisibleSelected =
-    visibleTransactionIds.some(
-      (id) =>
-        selectedTransactions.includes(
-          id
-        )
-    );
-
-
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // BULK DELETE
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   async function handleBulkDelete() {
-
     if (
       selectedTransactions.length ===
       0
@@ -923,79 +1169,53 @@ async function loadTransactions() {
       return;
     }
 
-
     const selectedCount =
       selectedTransactions.length;
 
-
     const confirmed =
       window.confirm(
-
         `Delete ${selectedCount} selected transaction${
           selectedCount === 1
             ? ""
             : "s"
         }?\n\nThis action cannot be undone. Account balances will also be updated.`
-
       );
-
 
     if (!confirmed) {
       return;
     }
 
-
     try {
-
       setBulkDeleting(true);
-
       setError("");
-
       setSuccess("");
-
 
       await bulkDeleteTransactions(
         selectedTransactions
       );
 
-
-      // Remove deleted transactions
-      // immediately from UI.
-
       setTransactions(
         (previous) =>
-
           previous.filter(
             (transaction) =>
-
               !selectedTransactions.includes(
                 transaction.id
               )
           )
       );
 
-
       setSelectedTransactions([]);
-
-
-      // Refresh account balances.
 
       await loadAccounts();
 
-
       setSuccess(
-
         `${selectedCount} transaction${
           selectedCount === 1
             ? ""
             : "s"
         } deleted successfully.`
-
       );
-
-
     } catch (err) {
-
       console.error(
         "Bulk delete transactions error:",
         err
@@ -1007,86 +1227,70 @@ async function loadTransactions() {
           "Unable to delete selected transactions."
         )
       );
-
     } finally {
-
       setBulkDeleting(false);
     }
   }
 
-
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // SUMMARY
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   const incomeTotal =
     transactions
-
       .filter(
         (item) =>
           item.transaction_type ===
           "income"
       )
-
       .reduce(
         (sum, item) =>
           sum +
           Number(
             item.amount || 0
           ),
-
         0
       );
 
-
   const expenseTotal =
     transactions
-
       .filter(
         (item) =>
           item.transaction_type ===
           "expense"
       )
-
       .reduce(
         (sum, item) =>
           sum +
           Number(
             item.amount || 0
           ),
-
         0
       );
 
-
   const transferTotal =
     transactions
-
       .filter(
         (item) =>
           item.transaction_type ===
           "transfer"
       )
-
       .reduce(
         (sum, item) =>
           sum +
           Number(
             item.amount || 0
           ),
-
         0
       );
 
-
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // ACCOUNT NAME
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   function getAccountName(
     accountId
   ) {
-
     const account =
       accounts.find(
         (item) =>
@@ -1094,44 +1298,20 @@ async function loadTransactions() {
           Number(accountId)
       );
 
-
     return (
       account?.name ||
       `Account #${accountId}`
     );
   }
 
-
-  // =========================================================
-  // MONEY
-  // =========================================================
-
-  function money(value) {
-
-    return `₹${Number(
-      value || 0
-    ).toLocaleString(
-      "en-IN",
-      {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }
-    )}`;
-  }
-
-
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // LOADING
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   if (loading) {
-
     return (
-
       <div className="transactions-page">
-
         <div className="transactions-loading">
-
           <div className="transactions-spinner" />
 
           <h2>
@@ -1141,30 +1321,22 @@ async function loadTransactions() {
           <p>
             Getting your financial activity.
           </p>
-
         </div>
-
       </div>
     );
   }
 
-
-  // =========================================================
+  // ---------------------------------------------------------------------------
   // UI
-  // =========================================================
+  // ---------------------------------------------------------------------------
 
   return (
-
     <div className="transactions-page">
 
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
+      {/* HEADER */}
 
       <div className="transactions-header">
-
         <div>
-
           <div className="transactions-eyebrow">
             LEDGERFLOW WORKSPACE
           </div>
@@ -1178,36 +1350,33 @@ async function loadTransactions() {
             income, expenses and transfers.
           </p>
 
-        </div>
+          <small>
+            Display currency:{" "}
+            <strong>
+              {currency}
+            </strong>
 
+            {ratesLoading &&
+              " · Updating exchange rate..."}
+          </small>
+        </div>
 
         <button
           type="button"
           className="transactions-primary-button"
           onClick={openAddModal}
         >
-
           <Plus size={17} />
-
           Add transaction
-
         </button>
-
       </div>
 
-
-      {/* =====================================================
-          ERROR
-      ===================================================== */}
+      {/* ERROR */}
 
       {error &&
         !showModal && (
-
           <div className="transactions-error">
-
-            <span>
-              {error}
-            </span>
+            <span>{error}</span>
 
             <button
               type="button"
@@ -1217,22 +1386,14 @@ async function loadTransactions() {
             >
               <X size={17} />
             </button>
-
           </div>
         )}
 
-
-      {/* =====================================================
-          SUCCESS
-      ===================================================== */}
+      {/* SUCCESS */}
 
       {success && (
-
         <div className="transactions-success">
-
-          <span>
-            {success}
-          </span>
+          <span>{success}</span>
 
           <button
             type="button"
@@ -1242,25 +1403,19 @@ async function loadTransactions() {
           >
             <X size={17} />
           </button>
-
         </div>
       )}
 
-
-      {/* =====================================================
-          SUMMARY
-      ===================================================== */}
+      {/* SUMMARY */}
 
       <div className="transactions-summary">
 
         <div className="transaction-summary-card">
-
           <div className="transaction-summary-icon">
             <ArrowLeftRight size={21} />
           </div>
 
           <div>
-
             <span>
               Total transactions
             </span>
@@ -1268,20 +1423,15 @@ async function loadTransactions() {
             <strong>
               {transactions.length}
             </strong>
-
           </div>
-
         </div>
 
-
         <div className="transaction-summary-card">
-
           <div className="transaction-summary-icon income">
             <Plus size={21} />
           </div>
 
           <div>
-
             <span>
               Total income
             </span>
@@ -1289,20 +1439,15 @@ async function loadTransactions() {
             <strong>
               {money(incomeTotal)}
             </strong>
-
           </div>
-
         </div>
 
-
         <div className="transaction-summary-card">
-
           <div className="transaction-summary-icon expense">
             <Wallet size={21} />
           </div>
 
           <div>
-
             <span>
               Total expenses
             </span>
@@ -1310,20 +1455,15 @@ async function loadTransactions() {
             <strong>
               {money(expenseTotal)}
             </strong>
-
           </div>
-
         </div>
 
-
         <div className="transaction-summary-card">
-
           <div className="transaction-summary-icon">
             <ArrowLeftRight size={21} />
           </div>
 
           <div>
-
             <span>
               Total transfers
             </span>
@@ -1331,24 +1471,18 @@ async function loadTransactions() {
             <strong>
               {money(transferTotal)}
             </strong>
-
           </div>
-
         </div>
 
       </div>
 
-
-      {/* =====================================================
-          TRANSACTION PANEL
-      ===================================================== */}
+      {/* TRANSACTION PANEL */}
 
       <section className="transactions-panel">
 
         <div className="transactions-toolbar">
 
           <div>
-
             <span className="transactions-panel-eyebrow">
               GENERAL LEDGER
             </span>
@@ -1356,14 +1490,11 @@ async function loadTransactions() {
             <h2>
               All transactions
             </h2>
-
           </div>
-
 
           <div className="transactions-filters">
 
             <div className="transactions-search">
-
               <Search size={17} />
 
               <input
@@ -1376,9 +1507,7 @@ async function loadTransactions() {
                   )
                 }
               />
-
             </div>
-
 
             <select
               value={typeFilter}
@@ -1388,7 +1517,6 @@ async function loadTransactions() {
                 )
               }
             >
-
               <option value="all">
                 All types
               </option>
@@ -1404,53 +1532,36 @@ async function loadTransactions() {
               <option value="transfer">
                 Transfer
               </option>
-
             </select>
 
           </div>
-
         </div>
 
-
-        {/* ===================================================
-            EMPTY STATE
-        =================================================== */}
+        {/* EMPTY */}
 
         {filteredTransactions.length ===
         0 ? (
-
           <div className="transactions-empty">
 
             <ArrowLeftRight size={40} />
 
             <strong>
-
               {search ||
               typeFilter !== "all"
-
                 ? "No transactions found"
-
                 : "No transactions yet"}
-
             </strong>
 
-
             <p>
-
               {search ||
               typeFilter !== "all"
-
                 ? "Try changing your search or filter."
-
                 : "Create your first transaction to start your ledger."}
-
             </p>
-
 
             {!search &&
               typeFilter ===
                 "all" && (
-
                 <button
                   type="button"
                   className="transactions-primary-button"
@@ -1458,28 +1569,20 @@ async function loadTransactions() {
                     openAddModal
                   }
                 >
-
                   <Plus size={16} />
-
                   Add transaction
-
                 </button>
               )}
 
           </div>
-
         ) : (
-
           <div className="transactions-table">
 
-            {/* =================================================
-                TABLE HEADER
-            ================================================= */}
+            {/* TABLE HEADER */}
 
             <div className="transactions-table-header">
 
               <div className="transaction-select-all">
-
                 <button
                   type="button"
                   title={
@@ -1494,29 +1597,17 @@ async function loadTransactions() {
                     bulkDeleting
                   }
                 >
-
                   {allVisibleSelected ? (
-
-                    <CheckSquare
-                      size={17}
-                    />
-
+                    <CheckSquare size={17} />
                   ) : (
-
-                    <Square
-                      size={17}
-                    />
-
+                    <Square size={17} />
                   )}
-
                 </button>
 
                 <span>
                   Select
                 </span>
-
               </div>
-
 
               <span>
                 Description
@@ -1544,18 +1635,13 @@ async function loadTransactions() {
 
             </div>
 
-
-            {/* =================================================
-                BULK ACTION BAR
-            ================================================= */}
+            {/* BULK ACTION */}
 
             {selectedTransactions.length >
               0 && (
-
               <div className="transactions-bulk-bar">
 
                 <div>
-
                   <strong>
                     {
                       selectedTransactions.length
@@ -1563,7 +1649,6 @@ async function loadTransactions() {
                   </strong>
 
                   <span>
-
                     {" "}
                     transaction
                     {selectedTransactions.length ===
@@ -1571,11 +1656,8 @@ async function loadTransactions() {
                       ? ""
                       : "s"}{" "}
                     selected
-
                   </span>
-
                 </div>
-
 
                 <button
                   type="button"
@@ -1587,38 +1669,29 @@ async function loadTransactions() {
                     bulkDeleting
                   }
                 >
-
                   <Trash2 size={16} />
 
                   {bulkDeleting
                     ? "Deleting..."
                     : "Delete selected"}
-
                 </button>
 
               </div>
             )}
 
-
-            {/* =================================================
-                TRANSACTION ROWS
-            ================================================= */}
+            {/* ROWS */}
 
             {filteredTransactions.map(
               (transaction) => {
-
                 const type =
                   transaction.transaction_type;
-
 
                 const isSelected =
                   selectedTransactions.includes(
                     transaction.id
                   );
 
-
                 return (
-
                   <div
                     className={`transaction-row ${
                       isSelected
@@ -1650,30 +1723,18 @@ async function loadTransactions() {
                           bulkDeleting
                         }
                       >
-
                         {isSelected ? (
-
-                          <CheckSquare
-                            size={17}
-                          />
-
+                          <CheckSquare size={17} />
                         ) : (
-
-                          <Square
-                            size={17}
-                          />
-
+                          <Square size={17} />
                         )}
-
                       </button>
 
                     </div>
 
-
                     {/* DESCRIPTION */}
 
                     <div className="transaction-description">
-
                       <strong>
                         {
                           transaction.description
@@ -1681,94 +1742,71 @@ async function loadTransactions() {
                       </strong>
 
                       <small>
-
                         Transaction #
                         {
                           transaction.id
                         }
-
                       </small>
-
                     </div>
-
 
                     {/* TYPE */}
 
                     <div>
-
                       <span
                         className={`transaction-type ${type}`}
                       >
                         {type}
                       </span>
-
                     </div>
-
 
                     {/* DATE */}
 
                     <div className="transaction-date">
-
                       {
                         transaction.date
                       }
-
                     </div>
-
 
                     {/* ACCOUNT */}
 
                     <div className="transaction-account">
 
-                      {
-                        transaction.account_name ||
+                      {transaction.account_name ||
                         getAccountName(
                           transaction.account_id
-                        )
-                      }
-
+                        )}
 
                       {type ===
                         "transfer" &&
                         transaction.destination_account_name && (
-
                           <small>
-
                             →
                             {" "}
-
                             {
                               transaction.destination_account_name
                             }
-
                           </small>
                         )}
 
                     </div>
-
 
                     {/* AMOUNT */}
 
                     <div
                       className={`transaction-amount ${type}`}
                     >
-
                       {type ===
                         "income" &&
                         "+"}
-
 
                       {type ===
                         "expense" &&
                         "-"}
 
-
                       {money(
                         transaction.amount
                       )}
-
                     </div>
-
 
                     {/* ACTIONS */}
 
@@ -1786,11 +1824,8 @@ async function loadTransactions() {
                           bulkDeleting
                         }
                       >
-
                         <Edit size={16} />
-
                       </button>
-
 
                       <button
                         type="button"
@@ -1804,9 +1839,7 @@ async function loadTransactions() {
                           bulkDeleting
                         }
                       >
-
                         <Trash2 size={16} />
-
                       </button>
 
                     </div>
@@ -1821,25 +1854,18 @@ async function loadTransactions() {
 
       </section>
 
-
-      {/* =====================================================
-          ADD / EDIT MODAL
-      ===================================================== */}
+      {/* MODAL */}
 
       {showModal && (
-
         <div
           className="transactions-modal-overlay"
           onMouseDown={(event) => {
-
             if (
               event.target ===
               event.currentTarget
             ) {
-
               closeModal();
             }
-
           }}
         >
 
@@ -1855,38 +1881,32 @@ async function loadTransactions() {
             <div className="transactions-modal-header">
 
               <div>
-
                 <span>
-
                   {editingTransaction
                     ? "EDIT TRANSACTION"
                     : "NEW TRANSACTION"}
-
                 </span>
 
                 <h2>
-
                   {editingTransaction
                     ? "Edit transaction"
                     : "Add transaction"}
-
                 </h2>
-
               </div>
-
 
               <button
                 type="button"
-                onClick={closeModal}
-                disabled={saving}
+                onClick={
+                  closeModal
+                }
+                disabled={
+                  saving
+                }
               >
-
                 <X size={18} />
-
               </button>
 
             </div>
-
 
             {/* FORM */}
 
@@ -1921,7 +1941,6 @@ async function loadTransactions() {
 
               </div>
 
-
               {/* AMOUNT + TYPE */}
 
               <div className="transactions-form-grid">
@@ -1929,7 +1948,7 @@ async function loadTransactions() {
                 <div className="transactions-form-group">
 
                   <label>
-                    Amount
+                    Amount ({currency})
                   </label>
 
                   <input
@@ -1947,8 +1966,12 @@ async function loadTransactions() {
                     required
                   />
 
-                </div>
+                  <small>
+                    Enter the amount in your
+                    account's base currency.
+                  </small>
 
+                </div>
 
                 <div className="transactions-form-group">
 
@@ -1965,7 +1988,6 @@ async function loadTransactions() {
                       handleChange
                     }
                   >
-
                     <option value="expense">
                       Expense
                     </option>
@@ -1977,13 +1999,11 @@ async function loadTransactions() {
                     <option value="transfer">
                       Transfer
                     </option>
-
                   </select>
 
                 </div>
 
               </div>
-
 
               {/* DATE + ACCOUNT */}
 
@@ -2009,18 +2029,14 @@ async function loadTransactions() {
 
                 </div>
 
-
                 <div className="transactions-form-group">
 
                   <label>
-
                     {form.transaction_type ===
                     "transfer"
                       ? "Source account"
                       : "Account"}
-
                   </label>
-
 
                   <select
                     name="account_id"
@@ -2037,10 +2053,8 @@ async function loadTransactions() {
                       Select account
                     </option>
 
-
                     {accounts.map(
                       (account) => (
-
                         <option
                           key={
                             account.id
@@ -2049,13 +2063,10 @@ async function loadTransactions() {
                             account.id
                           }
                         >
-
                           {
                             account.name
                           }
-
                         </option>
-
                       )
                     )}
 
@@ -2064,50 +2075,60 @@ async function loadTransactions() {
                 </div>
 
               </div>
-        {/* CATEGORY */}
 
-<div className="transactions-form-group">
+              {/* CATEGORY */}
 
-  <label>
-    Category
-  </label>
+              <div className="transactions-form-group">
 
-  <select
-    name="category_id"
-    value={form.category_id ?? ""}
-    onChange={handleChange}
-  >
+                <label>
+                  Category
+                </label>
 
-    <option value="">
-      No category
-    </option>
+                <select
+                  name="category_id"
+                  value={
+                    form.category_id ??
+                    ""
+                  }
+                  onChange={
+                    handleChange
+                  }
+                >
 
-    {categories.map(
-      (category) => (
-        <option
-          key={category.id}
-          value={category.id}
-        >
-          {category.name}
-        </option>
-      )
-    )}
+                  <option value="">
+                    No category
+                  </option>
 
-  </select>
+                  {categories.map(
+                    (category) => (
+                      <option
+                        key={
+                          category.id
+                        }
+                        value={
+                          category.id
+                        }
+                      >
+                        {
+                          category.name
+                        }
+                      </option>
+                    )
+                  )}
 
-</div>
+                </select>
+
+              </div>
 
               {/* DESTINATION ACCOUNT */}
 
               {form.transaction_type ===
                 "transfer" && (
-
                 <div className="transactions-form-group">
 
                   <label>
                     Destination account
                   </label>
-
 
                   <select
                     name="destination_account_id"
@@ -2124,12 +2145,9 @@ async function loadTransactions() {
                       Select destination account
                     </option>
 
-
                     {accounts
-
                       .filter(
                         (account) =>
-
                           Number(
                             account.id
                           ) !==
@@ -2137,10 +2155,8 @@ async function loadTransactions() {
                             form.account_id
                           )
                       )
-
                       .map(
                         (account) => (
-
                           <option
                             key={
                               account.id
@@ -2149,35 +2165,27 @@ async function loadTransactions() {
                               account.id
                             }
                           >
-
                             {
                               account.name
                             }
-
                           </option>
-
                         )
                       )}
 
                   </select>
 
-
                   <small>
-
                     Money will be deducted
                     from the source account
                     and added to this account.
-
                   </small>
 
                 </div>
               )}
 
-
               {/* FORM ERROR */}
 
               {error && (
-
                 <div className="transactions-form-error">
 
                   <span>
@@ -2190,14 +2198,11 @@ async function loadTransactions() {
                       setError("")
                     }
                   >
-
                     <X size={14} />
-
                   </button>
 
                 </div>
               )}
-
 
               {/* FORM ACTIONS */}
 
@@ -2213,11 +2218,8 @@ async function loadTransactions() {
                     saving
                   }
                 >
-
                   Cancel
-
                 </button>
-
 
                 <button
                   type="submit"
@@ -2226,15 +2228,11 @@ async function loadTransactions() {
                     saving
                   }
                 >
-
                   {saving
-
                     ? "Saving..."
-
                     : editingTransaction
                     ? "Update transaction"
                     : "Save transaction"}
-
                 </button>
 
               </div>

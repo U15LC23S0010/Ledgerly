@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+
 import {
   BarChart3,
   TrendingUp,
@@ -16,78 +17,288 @@ import {
   getAnalyticsSummary,
   getCategorySummary,
   getMonthlySummary,
-}from "../api/analytics";
+} from "../api/analytics";
+
+import { getCurrency } from "../utils/currency";
+
+// =========================================================
+// CURRENCY CONFIGURATION
+// =========================================================
+
+const BASE_CURRENCY = "INR";
+
+const CURRENCY_CONFIG = {
+  INR: {
+    locale: "en-IN",
+    symbol: "₹",
+    rate: 1,
+  },
+
+  USD: {
+    locale: "en-US",
+    symbol: "$",
+    rate: 0.0104544,
+  },
+
+  EUR: {
+    locale: "de-DE",
+    symbol: "€",
+    rate: 0.0089,
+  },
+
+  GBP: {
+    locale: "en-GB",
+    symbol: "£",
+    rate: 0.0077,
+  },
+};
+
+// =========================================================
+// VALID CURRENCY
+// =========================================================
+
+function getValidCurrency() {
+  const currency = getCurrency();
+
+  if (CURRENCY_CONFIG[currency]) {
+    return currency;
+  }
+
+  return BASE_CURRENCY;
+}
+
+// =========================================================
+// COMPONENT
+// =========================================================
 
 export default function Analytics() {
+  // =======================================================
+  // DATA
+  // =======================================================
+
   const [summary, setSummary] = useState(null);
+
   const [categoryData, setCategoryData] = useState([]);
+
   const [monthlyData, setMonthlyData] = useState([]);
 
+  // =======================================================
+  // UI
+  // =======================================================
+
   const [chartType, setChartType] = useState("pie");
+
   const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState("");
 
-  // =========================================================
-  // FETCH DATA
-  // =========================================================
+  // =======================================================
+  // CURRENCY
+  // =======================================================
 
-  const fetchAnalytics = async () => {
-  try {
-    setLoading(true);
-    setError("");
+  const [currency, setCurrency] = useState(
+    getValidCurrency
+  );
 
-    const [
-      summaryResponse,
-      categoryResponse,
-      monthlyResponse,
-    ] = await Promise.all([
-      getAnalyticsSummary(),
-      getCategorySummary(),
-      getMonthlySummary(),
-    ]);
+  // =======================================================
+  // GET CURRENT EXCHANGE RATE
+  // =======================================================
 
-    setSummary(summaryResponse.data);
+  const exchangeRate =
+    CURRENCY_CONFIG[currency]?.rate ??
+    CURRENCY_CONFIG[BASE_CURRENCY].rate;
 
-    setCategoryData(
-      Array.isArray(categoryResponse.data)
-        ? categoryResponse.data
-        : []
+  // =======================================================
+  // LISTEN FOR SETTINGS CURRENCY CHANGES
+  // =======================================================
+
+  useEffect(() => {
+    const updateCurrency = () => {
+      const newCurrency = getValidCurrency();
+
+      console.log(
+        "Ledgerly currency changed:",
+        newCurrency
+      );
+
+      setCurrency(newCurrency);
+    };
+
+    window.addEventListener(
+      "ledgerly-currency-changed",
+      updateCurrency
     );
 
-    setMonthlyData(
-      Array.isArray(monthlyResponse.data)
-        ? monthlyResponse.data
-        : []
+    window.addEventListener(
+      "ledgerly-settings-updated",
+      updateCurrency
     );
 
-  } catch (err) {
-    console.error("Analytics error:", err);
-
-    setError(
-      err?.response?.data?.detail ||
-        "Unable to load analytics data."
+    window.addEventListener(
+      "currencyChanged",
+      updateCurrency
     );
 
-  } finally {
-    setLoading(false);
+    window.addEventListener(
+      "settingsChanged",
+      updateCurrency
+    );
+
+    window.addEventListener(
+      "storage",
+      updateCurrency
+    );
+
+    return () => {
+      window.removeEventListener(
+        "ledgerly-currency-changed",
+        updateCurrency
+      );
+
+      window.removeEventListener(
+        "ledgerly-settings-updated",
+        updateCurrency
+      );
+
+      window.removeEventListener(
+        "currencyChanged",
+        updateCurrency
+      );
+
+      window.removeEventListener(
+        "settingsChanged",
+        updateCurrency
+      );
+
+      window.removeEventListener(
+        "storage",
+        updateCurrency
+      );
+    };
+  }, []);
+
+  // =======================================================
+  // FETCH ANALYTICS
+  // =======================================================
+
+  async function fetchAnalytics() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const [
+        summaryResponse,
+        categoryResponse,
+        monthlyResponse,
+      ] = await Promise.all([
+        getAnalyticsSummary(),
+        getCategorySummary(),
+        getMonthlySummary(),
+      ]);
+
+      setSummary(
+        summaryResponse?.data ?? null
+      );
+
+      setCategoryData(
+        Array.isArray(categoryResponse?.data)
+          ? categoryResponse.data
+          : []
+      );
+
+      setMonthlyData(
+        Array.isArray(monthlyResponse?.data)
+          ? monthlyResponse.data
+          : []
+      );
+    } catch (err) {
+      console.error(
+        "Analytics error:",
+        err
+      );
+
+      setError(
+        err?.response?.data?.detail ||
+          "Unable to load analytics data."
+      );
+    } finally {
+      setLoading(false);
+    }
   }
-};
 
   useEffect(() => {
     fetchAnalytics();
   }, []);
 
-  // =========================================================
+  // =======================================================
+  // CONVERT INR -> SELECTED CURRENCY
+  // =======================================================
+
+  function convertAmount(value) {
+    const amount = Number(value) || 0;
+
+    return amount * exchangeRate;
+  }
+
+  // =======================================================
   // FORMAT MONEY
-  // =========================================================
+  // =======================================================
 
-  const formatMoney = (value) => {
-    return `₹${Number(value || 0).toLocaleString("en-IN")}`;
-  };
+  function formatMoney(value) {
+    const converted = convertAmount(value);
 
-  // =========================================================
+    const config =
+      CURRENCY_CONFIG[currency] ||
+      CURRENCY_CONFIG[BASE_CURRENCY];
+
+    try {
+      return new Intl.NumberFormat(
+        config.locale,
+        {
+          style: "currency",
+          currency,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }
+      ).format(converted);
+    } catch (err) {
+      return `${config.symbol}${converted.toFixed(
+        2
+      )}`;
+    }
+  }
+
+  // =======================================================
+  // FORMAT AXIS MONEY
+  // =======================================================
+
+  function formatAxisMoney(value) {
+    const converted = convertAmount(value);
+
+    const config =
+      CURRENCY_CONFIG[currency] ||
+      CURRENCY_CONFIG[BASE_CURRENCY];
+
+    try {
+      return new Intl.NumberFormat(
+        config.locale,
+        {
+          style: "currency",
+          currency,
+          notation: "compact",
+          maximumFractionDigits: 1,
+        }
+      ).format(converted);
+    } catch (err) {
+      return `${config.symbol}${Math.round(
+        converted
+      ).toLocaleString(config.locale)}`;
+    }
+  }
+
+  // =======================================================
   // MONTH NAMES
-  // =========================================================
+  // =======================================================
 
   const monthNames = [
     "Jan",
@@ -104,9 +315,9 @@ export default function Analytics() {
     "Dec",
   ];
 
-  // =========================================================
-  // SUMMARY
-  // =========================================================
+  // =======================================================
+  // SUMMARY VALUES
+  // =======================================================
 
   const totalIncome = Number(
     summary?.total_income || 0
@@ -120,36 +331,51 @@ export default function Analytics() {
     summary?.balance || 0
   );
 
-  // =========================================================
+  // =======================================================
   // CATEGORY DATA
-  // =========================================================
+  // =======================================================
 
   const categories = useMemo(() => {
     return categoryData
       .map((item) => ({
-        name: item.category || "Uncategorized",
-        amount: Number(item.total || 0),
+        name:
+          item?.category ||
+          "Uncategorized",
+
+        amount:
+          Number(item?.total) || 0,
       }))
-      .filter((item) => item.amount > 0);
+      .filter(
+        (item) => item.amount > 0
+      );
   }, [categoryData]);
 
-  // =========================================================
+  // =======================================================
   // MONTHLY DATA
-  // =========================================================
+  // =======================================================
 
   const months = useMemo(() => {
     return monthlyData
       .map((item) => {
-        const year = Number(item.year);
-        const month = Number(item.month);
-        const total = Number(item.total || 0);
+        const year = Number(
+          item?.year
+        );
+
+        const month = Number(
+          item?.month
+        );
+
+        const total =
+          Number(item?.total) || 0;
 
         return {
           year,
           month,
           total,
+
           label:
-            month >= 1 && month <= 12
+            month >= 1 &&
+            month <= 12
               ? `${monthNames[month - 1]} ${year}`
               : `${month}/${year}`,
         };
@@ -169,23 +395,27 @@ export default function Analytics() {
       });
   }, [monthlyData]);
 
-  // =========================================================
+  // =======================================================
   // CATEGORY TOTAL
-  // =========================================================
+  // =======================================================
 
   const categoryTotal = useMemo(() => {
     return categories.reduce(
-      (sum, item) => sum + item.amount,
+      (sum, item) =>
+        sum + item.amount,
       0
     );
   }, [categories]);
 
-  // =========================================================
+  // =======================================================
   // PIE CHART
-  // =========================================================
+  // =======================================================
 
   const pieGradient = useMemo(() => {
-    if (!categories.length || categoryTotal <= 0) {
+    if (
+      !categories.length ||
+      categoryTotal <= 0
+    ) {
       return "conic-gradient(#e5e7eb 0deg 360deg)";
     }
 
@@ -202,30 +432,37 @@ export default function Analytics() {
       "#6366f1",
     ];
 
-    let currentDegree = 0;
+    let current = 0;
 
     const sections = categories.map(
       (item, index) => {
-        const percentage =
-          item.amount / categoryTotal;
+        const degree =
+          (item.amount /
+            categoryTotal) *
+          360;
 
-        const degree = percentage * 360;
+        const start = current;
 
-        const start = currentDegree;
-        const end = currentDegree + degree;
+        const end =
+          current + degree;
 
-        currentDegree = end;
+        current = end;
 
         return `${colors[index % colors.length]} ${start}deg ${end}deg`;
       }
     );
 
-    return `conic-gradient(${sections.join(", ")})`;
-  }, [categories, categoryTotal]);
+    return `conic-gradient(${sections.join(
+      ", "
+    )})`;
+  }, [
+    categories,
+    categoryTotal,
+  ]);
 
-  // =========================================================
+  // =======================================================
   // BAR CHART
-  // =========================================================
+  // =======================================================
 
   const maxCategoryAmount = useMemo(() => {
     if (!categories.length) {
@@ -239,48 +476,51 @@ export default function Analytics() {
     );
   }, [categories]);
 
-  // =========================================================
-  // LINE CHART SETTINGS
-  // =========================================================
+  // =======================================================
+  // LINE CHART
+  // =======================================================
 
   const lineChart = useMemo(() => {
     const width = 900;
+
     const height = 360;
 
     const paddingLeft = 65;
+
     const paddingRight = 30;
+
     const paddingTop = 35;
+
     const paddingBottom = 65;
 
     const chartWidth =
-      width - paddingLeft - paddingRight;
+      width -
+      paddingLeft -
+      paddingRight;
 
     const chartHeight =
-      height - paddingTop - paddingBottom;
+      height -
+      paddingTop -
+      paddingBottom;
 
-    const maxValue =
-      months.length > 0
-        ? Math.max(
-            ...months.map(
-              (item) => item.total
-            ),
-            1
-          )
-        : 1;
+    const maxValue = months.length
+      ? Math.max(
+          ...months.map(
+            (item) => item.total
+          ),
+          1
+        )
+      : 1;
 
     const points = months.map(
       (item, index) => {
-        let x;
-
-        if (months.length === 1) {
-          x = width / 2;
-        } else {
-          x =
-            paddingLeft +
-            (index /
-              (months.length - 1)) *
-              chartWidth;
-        }
+        const x =
+          months.length === 1
+            ? width / 2
+            : paddingLeft +
+              (index /
+                (months.length - 1)) *
+                chartWidth;
 
         const y =
           paddingTop +
@@ -296,13 +536,6 @@ export default function Analytics() {
       }
     );
 
-    const polylinePoints = points
-      .map(
-        (point) =>
-          `${point.x},${point.y}`
-      )
-      .join(" ");
-
     return {
       width,
       height,
@@ -314,16 +547,24 @@ export default function Analytics() {
       chartHeight,
       maxValue,
       points,
-      polylinePoints,
+
+      polylinePoints:
+        points
+          .map(
+            (p) =>
+              `${p.x},${p.y}`
+          )
+          .join(" "),
     };
   }, [months]);
 
-  // =========================================================
-  // LINE Y AXIS
-  // =========================================================
+  // =======================================================
+  // Y AXIS
+  // =======================================================
 
   const yAxisValues = useMemo(() => {
-    const max = lineChart.maxValue;
+    const max =
+      lineChart.maxValue;
 
     return [
       max,
@@ -334,9 +575,9 @@ export default function Analytics() {
     ];
   }, [lineChart.maxValue]);
 
-  // =========================================================
+  // =======================================================
   // LOADING
-  // =========================================================
+  // =======================================================
 
   if (loading) {
     return (
@@ -347,15 +588,17 @@ export default function Analytics() {
             className="loading-icon"
           />
 
-          <p>Loading analytics...</p>
+          <p>
+            Loading analytics...
+          </p>
         </div>
       </div>
     );
   }
 
-  // =========================================================
+  // =======================================================
   // ERROR
-  // =========================================================
+  // =======================================================
 
   if (error) {
     return (
@@ -381,25 +624,49 @@ export default function Analytics() {
     );
   }
 
-  // =========================================================
+  // =======================================================
   // UI
-  // =========================================================
+  // =======================================================
 
   return (
     <div className="analytics-page">
 
-      {/* =====================================================
-          HEADER
-      ===================================================== */}
+      {/* HEADER */}
 
       <div className="analytics-header">
         <div>
-          <h1>Analytics</h1>
+          <h1>
+            Analytics
+          </h1>
 
           <p>
-            Track your income, expenses and
-            spending patterns.
+            Track your income,
+            expenses and spending
+            patterns.
           </p>
+
+          <small
+            style={{
+              display: "block",
+              marginTop: "6px",
+              opacity: 0.7,
+            }}
+          >
+            Display currency:{" "}
+
+            <strong>
+              {currency}
+            </strong>
+
+            {currency !==
+              BASE_CURRENCY && (
+              <>
+                {" "}· 1 INR ={" "}
+                {exchangeRate}{" "}
+                {currency}
+              </>
+            )}
+          </small>
         </div>
 
         <button
@@ -411,11 +678,11 @@ export default function Analytics() {
         </button>
       </div>
 
-      {/* =====================================================
-          SUMMARY CARDS
-      ===================================================== */}
+      {/* SUMMARY */}
 
       <div className="analytics-summary-grid">
+
+        {/* INCOME */}
 
         <div className="analytics-summary-card">
           <div className="summary-card-icon income-icon">
@@ -423,13 +690,19 @@ export default function Analytics() {
           </div>
 
           <div>
-            <span>Total Income</span>
+            <span>
+              Total Income
+            </span>
 
             <h2>
-              {formatMoney(totalIncome)}
+              {formatMoney(
+                totalIncome
+              )}
             </h2>
           </div>
         </div>
+
+        {/* EXPENSES */}
 
         <div className="analytics-summary-card">
           <div className="summary-card-icon expense-icon">
@@ -437,13 +710,19 @@ export default function Analytics() {
           </div>
 
           <div>
-            <span>Total Expenses</span>
+            <span>
+              Total Expenses
+            </span>
 
             <h2>
-              {formatMoney(totalExpenses)}
+              {formatMoney(
+                totalExpenses
+              )}
             </h2>
           </div>
         </div>
+
+        {/* BALANCE */}
 
         <div className="analytics-summary-card">
           <div className="summary-card-icon balance-icon">
@@ -451,7 +730,9 @@ export default function Analytics() {
           </div>
 
           <div>
-            <span>Balance</span>
+            <span>
+              Balance
+            </span>
 
             <h2>
               {formatMoney(balance)}
@@ -459,13 +740,17 @@ export default function Analytics() {
           </div>
         </div>
 
+        {/* CATEGORIES */}
+
         <div className="analytics-summary-card">
           <div className="summary-card-icon category-icon">
             <PieChart size={22} />
           </div>
 
           <div>
-            <span>Categories</span>
+            <span>
+              Categories
+            </span>
 
             <h2>
               {categories.length}
@@ -475,9 +760,7 @@ export default function Analytics() {
 
       </div>
 
-      {/* =====================================================
-          CHART CARD
-      ===================================================== */}
+      {/* CHART CARD */}
 
       <div className="analytics-chart-card">
 
@@ -489,12 +772,10 @@ export default function Analytics() {
             </h2>
 
             <p>
-              Analyze your expenses by
-              category and month.
+              Analyze your expenses
+              by category and month.
             </p>
           </div>
-
-          {/* SELECTOR */}
 
           <div className="chart-selector">
 
@@ -546,20 +827,20 @@ export default function Analytics() {
           </div>
         </div>
 
-        {/* ===================================================
+        {/* =================================================
             PIE
-        =================================================== */}
+        ================================================= */}
 
         {chartType === "pie" && (
           <div className="chart-content">
 
-            {categories.length === 0 ? (
+            {!categories.length ? (
               <div className="empty-chart">
                 <PieChart size={42} />
 
                 <p>
-                  No category expense data
-                  available.
+                  No category expense
+                  data available.
                 </p>
               </div>
             ) : (
@@ -575,6 +856,7 @@ export default function Analytics() {
                     }}
                   >
                     <div className="pie-chart-center">
+
                       <span>
                         Total Expenses
                       </span>
@@ -584,6 +866,7 @@ export default function Analytics() {
                           categoryTotal
                         )}
                       </strong>
+
                     </div>
                   </div>
 
@@ -607,13 +890,14 @@ export default function Analytics() {
                       ];
 
                       const percentage =
-                        categoryTotal > 0
+                        categoryTotal >
+                        0
                           ? (
                               (item.amount /
                                 categoryTotal) *
                               100
                             ).toFixed(1)
-                          : 0;
+                          : "0.0";
 
                       return (
                         <div
@@ -650,27 +934,26 @@ export default function Analytics() {
                   )}
 
                 </div>
-
               </div>
             )}
 
           </div>
         )}
 
-        {/* ===================================================
+        {/* =================================================
             BAR
-        =================================================== */}
+        ================================================= */}
 
         {chartType === "bar" && (
           <div className="chart-content">
 
-            {categories.length === 0 ? (
+            {!categories.length ? (
               <div className="empty-chart">
                 <BarChart3 size={42} />
 
                 <p>
-                  No category expense data
-                  available.
+                  No category expense
+                  data available.
                 </p>
               </div>
             ) : (
@@ -679,7 +962,8 @@ export default function Analytics() {
                 {categories.map(
                   (item, index) => {
                     const percentage =
-                      maxCategoryAmount > 0
+                      maxCategoryAmount >
+                      0
                         ? (item.amount /
                             maxCategoryAmount) *
                           100
@@ -690,8 +974,8 @@ export default function Analytics() {
                         className="bar-item"
                         key={`${item.name}-${index}`}
                       >
-
                         <div className="bar-label">
+
                           <span>
                             {item.name}
                           </span>
@@ -701,6 +985,7 @@ export default function Analytics() {
                               item.amount
                             )}
                           </strong>
+
                         </div>
 
                         <div className="bar-track">
@@ -716,7 +1001,6 @@ export default function Analytics() {
                           />
 
                         </div>
-
                       </div>
                     );
                   }
@@ -728,21 +1012,23 @@ export default function Analytics() {
           </div>
         )}
 
-        {/* ===================================================
+        {/* =================================================
             LINE
-        =================================================== */}
+        ================================================= */}
 
         {chartType === "line" && (
           <div className="chart-content">
 
-            {months.length === 0 ? (
+            {!months.length ? (
               <div className="empty-chart">
+
                 <LineChart size={42} />
 
                 <p>
-                  No monthly expense data
-                  available.
+                  No monthly expense
+                  data available.
                 </p>
+
               </div>
             ) : (
               <div className="line-chart-wrapper">
@@ -752,10 +1038,6 @@ export default function Analytics() {
                   className="line-chart"
                   preserveAspectRatio="none"
                 >
-
-                  {/* -----------------------------------------
-                      HORIZONTAL GRID
-                  ----------------------------------------- */}
 
                   {yAxisValues.map(
                     (value, index) => {
@@ -787,11 +1069,8 @@ export default function Analytics() {
                             y={y + 4}
                             className="chart-axis-label"
                           >
-                            ₹
-                            {Math.round(
+                            {formatAxisMoney(
                               value
-                            ).toLocaleString(
-                              "en-IN"
                             )}
                           </text>
 
@@ -799,10 +1078,6 @@ export default function Analytics() {
                       );
                     }
                   )}
-
-                  {/* -----------------------------------------
-                      X AXIS
-                  ----------------------------------------- */}
 
                   <line
                     x1={
@@ -822,10 +1097,6 @@ export default function Analytics() {
                     }
                     className="chart-axis-line"
                   />
-
-                  {/* -----------------------------------------
-                      AREA
-                  ----------------------------------------- */}
 
                   {lineChart.points.length >
                     1 && (
@@ -850,10 +1121,6 @@ export default function Analytics() {
                     />
                   )}
 
-                  {/* -----------------------------------------
-                      LINE
-                  ----------------------------------------- */}
-
                   {lineChart.points.length >
                     1 && (
                     <polyline
@@ -863,10 +1130,6 @@ export default function Analytics() {
                       className="line-path"
                     />
                   )}
-
-                  {/* -----------------------------------------
-                      POINTS
-                  ----------------------------------------- */}
 
                   {lineChart.points.map(
                     (point, index) => (
@@ -892,10 +1155,6 @@ export default function Analytics() {
 
                 </svg>
 
-                {/* -----------------------------------------
-                    MONTH LABELS
-                ----------------------------------------- */}
-
                 <div className="line-labels">
 
                   {months.map(
@@ -916,9 +1175,9 @@ export default function Analytics() {
 
       </div>
 
-      {/* =====================================================
-          CATEGORY BREAKDOWN
-      ===================================================== */}
+      {/* =================================================
+          CATEGORY TABLE
+      ================================================= */}
 
       {categories.length > 0 && (
         <div className="analytics-table-card">
@@ -931,7 +1190,8 @@ export default function Analytics() {
               </h2>
 
               <p>
-                Your spending by category.
+                Your spending by
+                category.
               </p>
             </div>
 
@@ -943,9 +1203,19 @@ export default function Analytics() {
 
               <thead>
                 <tr>
-                  <th>Category</th>
-                  <th>Amount</th>
-                  <th>Percentage</th>
+
+                  <th>
+                    Category
+                  </th>
+
+                  <th>
+                    Amount
+                  </th>
+
+                  <th>
+                    Percentage
+                  </th>
+
                 </tr>
               </thead>
 
@@ -954,7 +1224,8 @@ export default function Analytics() {
                 {categories.map(
                   (item, index) => {
                     const percentage =
-                      categoryTotal > 0
+                      categoryTotal >
+                      0
                         ? (
                             (item.amount /
                               categoryTotal) *
@@ -969,9 +1240,11 @@ export default function Analytics() {
 
                         <td>
                           <div className="category-cell">
+
                             <span className="category-dot" />
 
                             {item.name}
+
                           </div>
                         </td>
 

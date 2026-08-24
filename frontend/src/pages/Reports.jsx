@@ -25,6 +25,189 @@ import {
 import api from "../api/api";
 import "./Reports.css";
 
+/* =========================================================
+   SETTINGS
+   ========================================================= */
+
+const SETTINGS_KEY = "ledgerly_settings";
+const CURRENCY_KEY = "ledgerly_currency";
+
+const DEFAULT_CURRENCY = "INR";
+
+const VALID_CURRENCIES = [
+  "INR",
+  "USD",
+  "EUR",
+  "GBP",
+];
+
+/* =========================================================
+   CURRENCY CONFIGURATION
+   ========================================================= */
+
+/*
+ * Ledgerly stores financial values in INR.
+ *
+ * These rates represent:
+ *
+ * 1 INR = X target currency
+ *
+ * Update these rates whenever you want to use
+ * different exchange rates.
+ *
+ * Current example rates:
+ *
+ * INR -> USD
+ * INR -> EUR
+ * INR -> GBP
+ */
+
+const CURRENCY_RATES = {
+  INR: 1,
+  USD: 0.0117,
+  EUR: 0.0100,
+  GBP: 0.0087,
+};
+
+/* =========================================================
+   CURRENCY LOCALES
+   ========================================================= */
+
+const CURRENCY_LOCALES = {
+  INR: "en-IN",
+  USD: "en-US",
+  EUR: "de-DE",
+  GBP: "en-GB",
+};
+
+/* =========================================================
+   CURRENCY SYMBOLS
+   ========================================================= */
+
+const CURRENCY_SYMBOLS = {
+  INR: "₹",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+};
+
+/* =========================================================
+   GET STORED CURRENCY
+   ========================================================= */
+
+function getStoredCurrency() {
+  try {
+    /* -----------------------------------------------
+       FIRST: COMPLETE SETTINGS OBJECT
+       ----------------------------------------------- */
+
+    const storedSettings =
+      localStorage.getItem(SETTINGS_KEY);
+
+    if (storedSettings) {
+      const parsedSettings =
+        JSON.parse(storedSettings);
+
+      if (
+        VALID_CURRENCIES.includes(
+          parsedSettings?.currency
+        )
+      ) {
+        return parsedSettings.currency;
+      }
+    }
+
+    /* -----------------------------------------------
+       SECOND: DEDICATED CURRENCY KEY
+       ----------------------------------------------- */
+
+    const storedCurrency =
+      localStorage.getItem(CURRENCY_KEY);
+
+    if (
+      VALID_CURRENCIES.includes(storedCurrency)
+    ) {
+      return storedCurrency;
+    }
+  } catch (error) {
+    console.error(
+      "Unable to read currency settings:",
+      error
+    );
+  }
+
+  return DEFAULT_CURRENCY;
+}
+
+/* =========================================================
+   CONVERT INR TO SELECTED CURRENCY
+   ========================================================= */
+
+function convertFromINR(
+  value,
+  currency
+) {
+  const amount = Number(value) || 0;
+
+  const rate =
+    CURRENCY_RATES[currency] ??
+    CURRENCY_RATES[DEFAULT_CURRENCY];
+
+  return amount * rate;
+}
+
+/* =========================================================
+   FORMAT MONEY
+   ========================================================= */
+
+function formatMoney(
+  value,
+  currency
+) {
+  const convertedValue =
+    convertFromINR(
+      value,
+      currency
+    );
+
+  const locale =
+    CURRENCY_LOCALES[currency] ||
+    CURRENCY_LOCALES.INR;
+
+  try {
+    return new Intl.NumberFormat(
+      locale,
+      {
+        style: "currency",
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }
+    ).format(convertedValue);
+  } catch (error) {
+    console.error(
+      "Currency formatting error:",
+      error
+    );
+
+    const symbol =
+      CURRENCY_SYMBOLS[currency] ||
+      CURRENCY_SYMBOLS.INR;
+
+    return `${symbol}${convertedValue.toLocaleString(
+      locale,
+      {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }
+    )}`;
+  }
+}
+
+/* =========================================================
+   APPLICATION
+   ========================================================= */
+
 export default function Reports() {
   const [expenses, setExpenses] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -34,9 +217,16 @@ export default function Reports() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
 
-  // =========================================================
-  // LOAD REPORT DATA
-  // =========================================================
+  /*
+   * Currency selected from Settings.
+   */
+  const [currency, setCurrency] = useState(
+    getStoredCurrency()
+  );
+
+  /* =======================================================
+     LOAD REPORTS
+     ======================================================= */
 
   useEffect(() => {
     loadReports();
@@ -57,37 +247,65 @@ export default function Reports() {
         api.get("/accounts/"),
       ]);
 
-      console.log("EXPENSES:", expensesResponse.data);
-      console.log("TRANSACTIONS:", transactionsResponse.data);
-      console.log("ACCOUNTS:", accountsResponse.data);
-
-      // -----------------------------------------------------
-      // HANDLE DIFFERENT API RESPONSE SHAPES
-      // -----------------------------------------------------
-
-      const expensesData = Array.isArray(
+      console.log(
+        "EXPENSES:",
         expensesResponse.data
-      )
-        ? expensesResponse.data
-        : expensesResponse.data?.expenses || [];
+      );
 
-      const transactionsData = Array.isArray(
+      console.log(
+        "TRANSACTIONS:",
         transactionsResponse.data
-      )
-        ? transactionsResponse.data
-        : transactionsResponse.data?.transactions || [];
+      );
 
-      const accountsData = Array.isArray(
+      console.log(
+        "ACCOUNTS:",
         accountsResponse.data
-      )
-        ? accountsResponse.data
-        : accountsResponse.data?.accounts || [];
+      );
+
+      /* -----------------------------------------------
+         EXPENSES
+         ----------------------------------------------- */
+
+      const expensesData =
+        Array.isArray(
+          expensesResponse.data
+        )
+          ? expensesResponse.data
+          : expensesResponse.data?.expenses ||
+            [];
+
+      /* -----------------------------------------------
+         TRANSACTIONS
+         ----------------------------------------------- */
+
+      const transactionsData =
+        Array.isArray(
+          transactionsResponse.data
+        )
+          ? transactionsResponse.data
+          : transactionsResponse.data
+              ?.transactions || [];
+
+      /* -----------------------------------------------
+         ACCOUNTS
+         ----------------------------------------------- */
+
+      const accountsData =
+        Array.isArray(
+          accountsResponse.data
+        )
+          ? accountsResponse.data
+          : accountsResponse.data?.accounts ||
+            [];
 
       setExpenses(expensesData);
       setTransactions(transactionsData);
       setAccounts(accountsData);
     } catch (err) {
-      console.error("Reports error:", err);
+      console.error(
+        "Reports error:",
+        err
+      );
 
       setError(
         err.response?.data?.detail ||
@@ -98,104 +316,273 @@ export default function Reports() {
     }
   }
 
-  // =========================================================
-  // MONEY FORMAT
-  // =========================================================
+  /* =======================================================
+     LISTEN FOR CURRENCY CHANGES
+     ======================================================= */
+
+  useEffect(() => {
+    /* -----------------------------------------------
+       SETTINGS CURRENCY EVENT
+       ----------------------------------------------- */
+
+    const handleCurrencyChange = (
+      event
+    ) => {
+      const newCurrency =
+        event?.detail;
+
+      if (
+        VALID_CURRENCIES.includes(
+          newCurrency
+        )
+      ) {
+        setCurrency(newCurrency);
+      } else {
+        setCurrency(
+          getStoredCurrency()
+        );
+      }
+    };
+
+    /* -----------------------------------------------
+       SETTINGS UPDATED EVENT
+       ----------------------------------------------- */
+
+    const handleSettingsUpdate = (
+      event
+    ) => {
+      const updatedCurrency =
+        event?.detail?.currency;
+
+      if (
+        VALID_CURRENCIES.includes(
+          updatedCurrency
+        )
+      ) {
+        setCurrency(
+          updatedCurrency
+        );
+      } else {
+        setCurrency(
+          getStoredCurrency()
+        );
+      }
+    };
+
+    window.addEventListener(
+      "ledgerly-currency-changed",
+      handleCurrencyChange
+    );
+
+    window.addEventListener(
+      "ledgerly-settings-updated",
+      handleSettingsUpdate
+    );
+
+    /* -----------------------------------------------
+       STORAGE EVENT
+       ----------------------------------------------- */
+
+    const handleStorageChange = (
+      event
+    ) => {
+      if (
+        event.key === SETTINGS_KEY ||
+        event.key === CURRENCY_KEY
+      ) {
+        setCurrency(
+          getStoredCurrency()
+        );
+      }
+    };
+
+    window.addEventListener(
+      "storage",
+      handleStorageChange
+    );
+
+    /* -----------------------------------------------
+       VISIBILITY CHANGE
+       ----------------------------------------------- */
+
+    const handleVisibilityChange =
+      () => {
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+          setCurrency(
+            getStoredCurrency()
+          );
+        }
+      };
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
+    /* -----------------------------------------------
+       CLEANUP
+       ----------------------------------------------- */
+
+    return () => {
+      window.removeEventListener(
+        "ledgerly-currency-changed",
+        handleCurrencyChange
+      );
+
+      window.removeEventListener(
+        "ledgerly-settings-updated",
+        handleSettingsUpdate
+      );
+
+      window.removeEventListener(
+        "storage",
+        handleStorageChange
+      );
+
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     MONEY
+     ======================================================= */
 
   function money(value) {
-    return `₹${Number(value || 0).toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+    return formatMoney(
+      value,
+      currency
+    );
   }
 
-  // =========================================================
-  // DATE FORMAT
-  // =========================================================
+  /* =======================================================
+     DATE
+     ======================================================= */
 
   function formatDate(value) {
-    if (!value) return "—";
+    if (!value) {
+      return "—";
+    }
 
-    const date = new Date(value);
+    const date =
+      new Date(value);
 
-    if (Number.isNaN(date.getTime())) {
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
       return value;
     }
 
-    return date.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    return date.toLocaleDateString(
+      "en-IN",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
   }
 
-  // =========================================================
-  // FINANCIAL REPORT CALCULATION
-  // =========================================================
+  /* =======================================================
+     FINANCIAL REPORT CALCULATION
+     ======================================================= */
 
   const reportData = useMemo(() => {
-    // -------------------------------------------------------
-    // INCOME
-    // -------------------------------------------------------
+    /* -----------------------------------------------
+       INCOME
+       ----------------------------------------------- */
 
-    const income = transactions
-      .filter((transaction) => {
-        const type = String(
-          transaction.transaction_type || ""
-        ).toLowerCase();
+    const income =
+      transactions
+        .filter((transaction) => {
+          const type =
+            String(
+              transaction.transaction_type ||
+                ""
+            ).toLowerCase();
 
-        return type === "income";
-      })
-      .reduce(
-        (sum, transaction) =>
-          sum + Number(transaction.amount || 0),
-        0
-      );
+          return type === "income";
+        })
+        .reduce(
+          (
+            sum,
+            transaction
+          ) =>
+            sum +
+            Number(
+              transaction.amount || 0
+            ),
+          0
+        );
 
-    // -------------------------------------------------------
-    // EXPENSES
-    // -------------------------------------------------------
+    /* -----------------------------------------------
+       EXPENSES
+       ----------------------------------------------- */
 
-    const totalExpenses = transactions
-      .filter((transaction) => {
-        const type = String(
-          transaction.transaction_type || ""
-        ).toLowerCase();
+    const totalExpenses =
+      transactions
+        .filter((transaction) => {
+          const type =
+            String(
+              transaction.transaction_type ||
+                ""
+            ).toLowerCase();
 
-        return type === "expense";
-      })
-      .reduce(
-        (sum, transaction) =>
-          sum + Number(transaction.amount || 0),
-        0
-      );
+          return type === "expense";
+        })
+        .reduce(
+          (
+            sum,
+            transaction
+          ) =>
+            sum +
+            Number(
+              transaction.amount || 0
+            ),
+          0
+        );
 
-    // -------------------------------------------------------
-    // TRANSFERS
-    //
-    // Transfers are intentionally excluded from profit/loss.
-    // Moving money between accounts is not income or expense.
-    // -------------------------------------------------------
+    /* -----------------------------------------------
+       TRANSFERS
+       ----------------------------------------------- */
 
-    const transfers = transactions
-      .filter((transaction) => {
-        const type = String(
-          transaction.transaction_type || ""
-        ).toLowerCase();
+    const transfers =
+      transactions
+        .filter((transaction) => {
+          const type =
+            String(
+              transaction.transaction_type ||
+                ""
+            ).toLowerCase();
 
-        return type === "transfer";
-      })
-      .reduce(
-        (sum, transaction) =>
-          sum + Number(transaction.amount || 0),
-        0
-      );
+          return type === "transfer";
+        })
+        .reduce(
+          (
+            sum,
+            transaction
+          ) =>
+            sum +
+            Number(
+              transaction.amount || 0
+            ),
+          0
+        );
 
-    // -------------------------------------------------------
-    // NET RESULT
-    // -------------------------------------------------------
+    /* -----------------------------------------------
+       NET RESULT
+       ----------------------------------------------- */
 
-    const netResult = income - totalExpenses;
+    const netResult =
+      income -
+      totalExpenses;
 
     return {
       income,
@@ -205,53 +592,69 @@ export default function Reports() {
     };
   }, [transactions]);
 
-  // =========================================================
-  // CHART DATA
-  // =========================================================
+  /* =======================================================
+     CHART DATA
+     ======================================================= */
 
-  const chartData = useMemo(() => {
-    return [
-      {
-        name: "Financial Overview",
-        Income: reportData.income,
-        Expenses: reportData.totalExpenses,
-      },
-    ];
-  }, [
-    reportData.income,
-    reportData.totalExpenses,
-  ]);
+  const chartData =
+    useMemo(() => {
+      return [
+        {
+          name:
+            "Financial Overview",
 
-  // =========================================================
-  // FILTER TRANSACTIONS
-  // =========================================================
+          Income:
+            convertFromINR(
+              reportData.income,
+              currency
+            ),
 
-  const filteredTransactions = transactions
-    .filter((transaction) => {
-      const query = search.trim().toLowerCase();
+          Expenses:
+            convertFromINR(
+              reportData.totalExpenses,
+              currency
+            ),
+        },
+      ];
+    }, [
+      reportData.income,
+      reportData.totalExpenses,
+      currency,
+    ]);
 
-      if (!query) {
-        return true;
-      }
+  /* =======================================================
+     FILTER TRANSACTIONS
+     ======================================================= */
 
-      return `
-        ${transaction.description || ""}
-        ${transaction.transaction_type || ""}
-        ${transaction.date || ""}
-      `
-        .toLowerCase()
-        .includes(query);
-    })
-    .slice(0, 8);
+  const filteredTransactions =
+    transactions
+      .filter((transaction) => {
+        const query =
+          search
+            .trim()
+            .toLowerCase();
 
-  // =========================================================
-  // LOADING STATE
-  // =========================================================
+        if (!query) {
+          return true;
+        }
+
+        return `
+          ${transaction.description || ""}
+          ${transaction.transaction_type || ""}
+          ${transaction.date || ""}
+        `
+          .toLowerCase()
+          .includes(query);
+      })
+      .slice(0, 8);
+
+  /* =======================================================
+     LOADING
+     ======================================================= */
 
   if (loading) {
     return (
       <div className="reports-page">
-
         <div className="reports-loading">
 
           <div className="reports-spinner" />
@@ -261,25 +664,25 @@ export default function Reports() {
           </h2>
 
           <p>
-            Preparing your LedgerFlow financial reports.
+            Preparing your Ledgerly
+            financial reports.
           </p>
 
         </div>
-
       </div>
     );
   }
 
-  // =========================================================
-  // PAGE
-  // =========================================================
+  /* =======================================================
+     PAGE
+     ======================================================= */
 
   return (
     <div className="reports-page">
 
-      {/* =====================================================
+      {/* =================================================
           HEADER
-      ===================================================== */}
+          ================================================= */}
 
       <div className="reports-header">
 
@@ -300,8 +703,8 @@ export default function Reports() {
             </h1>
 
             <p>
-              Review your financial reports and bookkeeping
-              activity.
+              Review your financial reports
+              and bookkeeping activity.
             </p>
 
           </div>
@@ -319,9 +722,9 @@ export default function Reports() {
 
       </div>
 
-      {/* =====================================================
+      {/* =================================================
           ERROR
-      ===================================================== */}
+          ================================================= */}
 
       {error && (
         <div className="reports-error">
@@ -329,13 +732,13 @@ export default function Reports() {
         </div>
       )}
 
-      {/* =====================================================
+      {/* =================================================
           FINANCIAL SUMMARY
-      ===================================================== */}
+          ================================================= */}
 
       <section className="reports-summary">
 
-        {/* TOTAL INCOME */}
+        {/* INCOME */}
 
         <div className="report-card">
 
@@ -350,18 +753,21 @@ export default function Reports() {
             </span>
 
             <strong>
-              {money(reportData.income)}
+              {money(
+                reportData.income
+              )}
             </strong>
 
             <small>
-              Recorded income transactions
+              Recorded income
+              transactions
             </small>
 
           </div>
 
         </div>
 
-        {/* TOTAL EXPENSES */}
+        {/* EXPENSES */}
 
         <div className="report-card">
 
@@ -376,18 +782,21 @@ export default function Reports() {
             </span>
 
             <strong>
-              {money(reportData.totalExpenses)}
+              {money(
+                reportData.totalExpenses
+              )}
             </strong>
 
             <small>
-              Recorded business expenses
+              Recorded business
+              expenses
             </small>
 
           </div>
 
         </div>
 
-        {/* NET RESULT */}
+        {/* NET */}
 
         <div className="report-card">
 
@@ -403,12 +812,15 @@ export default function Reports() {
 
             <strong
               className={
-                reportData.netResult >= 0
+                reportData.netResult >=
+                0
                   ? "positive"
                   : "negative"
               }
             >
-              {money(reportData.netResult)}
+              {money(
+                reportData.netResult
+              )}
             </strong>
 
             <small>
@@ -447,15 +859,15 @@ export default function Reports() {
 
       </section>
 
-      {/* =====================================================
+      {/* =================================================
           REPORT GRID
-      ===================================================== */}
+          ================================================= */}
 
       <div className="reports-grid">
 
-        {/* ===================================================
+        {/* =================================================
             PROFIT & LOSS
-        =================================================== */}
+            ================================================= */}
 
         <section className="reports-panel">
 
@@ -490,7 +902,9 @@ export default function Reports() {
               </div>
 
               <strong className="positive">
-                {money(reportData.income)}
+                {money(
+                  reportData.income
+                )}
               </strong>
 
             </div>
@@ -508,14 +922,16 @@ export default function Reports() {
               </div>
 
               <strong className="negative">
-                {money(reportData.totalExpenses)}
+                {money(
+                  reportData.totalExpenses
+                )}
               </strong>
 
             </div>
 
             <div className="profit-divider" />
 
-            {/* NET RESULT */}
+            {/* NET */}
 
             <div className="profit-row total">
 
@@ -529,12 +945,15 @@ export default function Reports() {
 
               <strong
                 className={
-                  reportData.netResult >= 0
+                  reportData.netResult >=
+                  0
                     ? "positive"
                     : "negative"
                 }
               >
-                {money(reportData.netResult)}
+                {money(
+                  reportData.netResult
+                )}
               </strong>
 
             </div>
@@ -543,9 +962,9 @@ export default function Reports() {
 
         </section>
 
-        {/* ===================================================
-            INCOME VS EXPENSES CHART
-        =================================================== */}
+        {/* =================================================
+            CHART
+            ================================================= */}
 
         <section className="reports-panel reports-chart-panel">
 
@@ -572,7 +991,9 @@ export default function Reports() {
               height={280}
             >
 
-              <BarChart data={chartData}>
+              <BarChart
+                data={chartData}
+              >
 
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -582,11 +1003,27 @@ export default function Reports() {
                   dataKey="name"
                 />
 
-                <YAxis />
+                <YAxis
+                  tickFormatter={(value) =>
+                    formatMoney(
+                      value /
+                        CURRENCY_RATES[
+                          currency
+                        ],
+                      currency
+                    )
+                  }
+                />
 
                 <Tooltip
                   formatter={(value) =>
-                    money(value)
+                    formatMoney(
+                      Number(value) /
+                        CURRENCY_RATES[
+                          currency
+                        ],
+                      currency
+                    )
                   }
                 />
 
@@ -594,14 +1031,24 @@ export default function Reports() {
 
                 <Bar
                   dataKey="Income"
-                  name="Income"
-                  radius={[6, 6, 0, 0]}
+                  name={`Income (${currency})`}
+                  radius={[
+                    6,
+                    6,
+                    0,
+                    0,
+                  ]}
                 />
 
                 <Bar
                   dataKey="Expenses"
-                  name="Expenses"
-                  radius={[6, 6, 0, 0]}
+                  name={`Expenses (${currency})`}
+                  radius={[
+                    6,
+                    6,
+                    0,
+                    0,
+                  ]}
                 />
 
               </BarChart>
@@ -612,9 +1059,9 @@ export default function Reports() {
 
         </section>
 
-        {/* ===================================================
+        {/* =================================================
             ACCOUNT BALANCES
-        =================================================== */}
+            ================================================= */}
 
         <section className="reports-panel">
 
@@ -646,32 +1093,40 @@ export default function Reports() {
 
               {accounts
                 .slice(0, 6)
-                .map((account) => (
+                .map(
+                  (account) => (
 
-                  <div
-                    className="account-report-row"
-                    key={account.id}
-                  >
+                    <div
+                      className="account-report-row"
+                      key={
+                        account.id
+                      }
+                    >
 
-                    <div>
+                      <div>
 
-                      <strong>
-                        {account.name}
-                      </strong>
+                        <strong>
+                          {account.name}
+                        </strong>
 
-                      <span>
-                        {account.account_type}
-                      </span>
+                        <span>
+                          {
+                            account.account_type
+                          }
+                        </span>
+
+                      </div>
+
+                      <b>
+                        {money(
+                          account.balance
+                        )}
+                      </b>
 
                     </div>
 
-                    <b>
-                      {money(account.balance)}
-                    </b>
-
-                  </div>
-
-                ))}
+                  )
+                )}
 
             </div>
 
@@ -681,9 +1136,9 @@ export default function Reports() {
 
       </div>
 
-      {/* =====================================================
+      {/* =================================================
           TRANSACTION REPORT
-      ===================================================== */}
+          ================================================= */}
 
       <section className="reports-panel transaction-report">
 
@@ -710,7 +1165,9 @@ export default function Reports() {
               placeholder="Search transactions..."
               value={search}
               onChange={(e) =>
-                setSearch(e.target.value)
+                setSearch(
+                  e.target.value
+                )
               }
             />
 
@@ -718,11 +1175,12 @@ export default function Reports() {
 
         </div>
 
-        {/* ===================================================
-            NO TRANSACTIONS
-        =================================================== */}
+        {/* =================================================
+            TRANSACTIONS
+            ================================================= */}
 
-        {filteredTransactions.length === 0 ? (
+        {filteredTransactions.length ===
+        0 ? (
 
           <div className="report-empty">
 
@@ -733,7 +1191,8 @@ export default function Reports() {
             </h3>
 
             <p>
-              Your financial activity will appear here.
+              Your financial activity
+              will appear here.
             </p>
 
           </div>
@@ -742,7 +1201,7 @@ export default function Reports() {
 
           <div className="report-table">
 
-            {/* TABLE HEADER */}
+            {/* HEADER */}
 
             <div className="report-table-header">
 
@@ -764,14 +1223,16 @@ export default function Reports() {
 
             </div>
 
-            {/* TRANSACTIONS */}
+            {/* ROWS */}
 
             {filteredTransactions.map(
               (transaction) => {
 
-                const type = String(
-                  transaction.transaction_type || ""
-                ).toLowerCase();
+                const type =
+                  String(
+                    transaction.transaction_type ||
+                      ""
+                  ).toLowerCase();
 
                 const isIncome =
                   type === "income";
@@ -783,11 +1244,16 @@ export default function Reports() {
 
                   <div
                     className="report-table-row"
-                    key={transaction.id}
+                    key={
+                      transaction.id
+                    }
                   >
 
                     <strong>
-                      {transaction.description || "—"}
+                      {
+                        transaction.description ||
+                        "—"
+                      }
                     </strong>
 
                     <span>
@@ -795,13 +1261,18 @@ export default function Reports() {
                       <em
                         className={`report-type ${type}`}
                       >
-                        {transaction.transaction_type || "—"}
+                        {
+                          transaction.transaction_type ||
+                          "—"
+                        }
                       </em>
 
                     </span>
 
                     <span>
-                      {formatDate(transaction.date)}
+                      {formatDate(
+                        transaction.date
+                      )}
                     </span>
 
                     <b
@@ -814,13 +1285,14 @@ export default function Reports() {
                       }
                     >
 
-                      {isTransfer
-                        ? ""
-                        : isIncome
-                        ? "+"
-                        : "-"}
+                      {!isTransfer &&
+                        (isIncome
+                          ? "+"
+                          : "-")}
 
-                      {money(transaction.amount)}
+                      {money(
+                        transaction.amount
+                      )}
 
                     </b>
 

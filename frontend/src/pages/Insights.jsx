@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Activity,
@@ -19,42 +19,386 @@ import { getInsights } from "../api/insightsApi";
 import "./Insights.css";
 
 
+// =========================================================
+// GLOBAL SETTINGS
+// =========================================================
+
+const SETTINGS_KEY = "ledgerly_settings";
+
+
+// =========================================================
+// CURRENCY CONFIGURATION
+// =========================================================
+
+const CURRENCY_CONFIG = {
+  INR: {
+    locale: "en-IN",
+    currency: "INR",
+    rate: 1,
+  },
+
+  USD: {
+    locale: "en-US",
+    currency: "USD",
+    rate: 0.0118,
+  },
+
+  EUR: {
+    locale: "de-DE",
+    currency: "EUR",
+    rate: 0.0101,
+  },
+
+  GBP: {
+    locale: "en-GB",
+    currency: "GBP",
+    rate: 0.0087,
+  },
+};
+
+
+// =========================================================
+// DATE FORMAT CONFIGURATION
+// =========================================================
+
+const DATE_FORMATS = {
+  "DD/MM/YYYY": true,
+  "MM/DD/YYYY": true,
+  "YYYY-MM-DD": true,
+};
+
+
 export default function Insights() {
+
+  // =======================================================
+  // STATE
+  // =======================================================
+
   const [data, setData] = useState(null);
+
   const [loading, setLoading] = useState(false);
+
   const [error, setError] = useState("");
 
+  const [currency, setCurrency] = useState("INR");
 
-  // =========================================================
-  // LOAD AI INSIGHTS
-  // =========================================================
+  const [dateFormat, setDateFormat] =
+    useState("DD/MM/YYYY");
 
-  async function generateInsights() {
+
+  // =======================================================
+  // LOAD GLOBAL SETTINGS
+  // =======================================================
+
+  const loadSettings = () => {
     try {
-      setLoading(true);
-      setError("");
 
-      const response = await getInsights();
+      const stored =
+        localStorage.getItem(SETTINGS_KEY);
 
-      setData(response.data);
+      if (!stored) {
+
+        setCurrency("INR");
+
+        setDateFormat("DD/MM/YYYY");
+
+        return;
+      }
+
+
+      const parsed =
+        JSON.parse(stored);
+
+
+      // -----------------------------------------------
+      // Currency
+      // -----------------------------------------------
+
+      setCurrency(
+        CURRENCY_CONFIG[parsed.currency]
+          ? parsed.currency
+          : "INR"
+      );
+
+
+      // -----------------------------------------------
+      // Date format
+      // -----------------------------------------------
+
+      setDateFormat(
+        DATE_FORMATS[parsed.dateFormat]
+          ? parsed.dateFormat
+          : "DD/MM/YYYY"
+      );
 
     } catch (err) {
-      console.error("Insights error:", err);
 
-      const detail = err.response?.data?.detail;
+      console.error(
+        "Insights settings error:",
+        err
+      );
 
-      if (Array.isArray(detail)) {
+      setCurrency("INR");
+
+      setDateFormat("DD/MM/YYYY");
+    }
+  };
+
+
+  // =======================================================
+  // INITIAL SETTINGS LOAD
+  // =======================================================
+
+  useEffect(() => {
+
+    loadSettings();
+
+
+    const handleSettingsUpdate = (event) => {
+
+      const updated =
+        event.detail || {};
+
+
+      // -----------------------------------------------
+      // Currency
+      // -----------------------------------------------
+
+      setCurrency(
+        CURRENCY_CONFIG[updated.currency]
+          ? updated.currency
+          : "INR"
+      );
+
+
+      // -----------------------------------------------
+      // Date format
+      // -----------------------------------------------
+
+      setDateFormat(
+        DATE_FORMATS[updated.dateFormat]
+          ? updated.dateFormat
+          : "DD/MM/YYYY"
+      );
+    };
+
+
+    window.addEventListener(
+      "ledgerly-settings-updated",
+      handleSettingsUpdate
+    );
+
+
+    return () => {
+
+      window.removeEventListener(
+        "ledgerly-settings-updated",
+        handleSettingsUpdate
+      );
+    };
+
+  }, []);
+
+
+  // =======================================================
+  // FORMAT CURRENCY
+  // =======================================================
+
+  function formatCurrency(value) {
+
+    const amount =
+      Number(value || 0);
+
+
+    const config =
+      CURRENCY_CONFIG[currency] ||
+      CURRENCY_CONFIG.INR;
+
+
+    // Backend stores financial values in INR.
+    // Convert only for display.
+
+    const convertedAmount =
+      amount * config.rate;
+
+
+    return new Intl.NumberFormat(
+      config.locale,
+      {
+        style: "currency",
+
+        currency: config.currency,
+
+        minimumFractionDigits: 0,
+
+        maximumFractionDigits: 2,
+      }
+    ).format(convertedAmount);
+  }
+
+
+  // =======================================================
+  // FORMAT DATE
+  // =======================================================
+
+  function formatDate(value) {
+
+    if (!value) {
+      return "—";
+    }
+
+
+    const parsed =
+      new Date(value);
+
+
+    if (
+      Number.isNaN(
+        parsed.getTime()
+      )
+    ) {
+      return String(value);
+    }
+
+
+    // -----------------------------------------------
+    // DD/MM/YYYY
+    // -----------------------------------------------
+
+    if (
+      dateFormat ===
+      "DD/MM/YYYY"
+    ) {
+
+      return [
+
+        String(
+          parsed.getDate()
+        ).padStart(2, "0"),
+
+        String(
+          parsed.getMonth() + 1
+        ).padStart(2, "0"),
+
+        parsed.getFullYear(),
+
+      ].join("/");
+    }
+
+
+    // -----------------------------------------------
+    // MM/DD/YYYY
+    // -----------------------------------------------
+
+    if (
+      dateFormat ===
+      "MM/DD/YYYY"
+    ) {
+
+      return [
+
+        String(
+          parsed.getMonth() + 1
+        ).padStart(2, "0"),
+
+        String(
+          parsed.getDate()
+        ).padStart(2, "0"),
+
+        parsed.getFullYear(),
+
+      ].join("/");
+    }
+
+
+    // -----------------------------------------------
+    // YYYY-MM-DD
+    // -----------------------------------------------
+
+    if (
+      dateFormat ===
+      "YYYY-MM-DD"
+    ) {
+
+      return [
+
+        parsed.getFullYear(),
+
+        String(
+          parsed.getMonth() + 1
+        ).padStart(2, "0"),
+
+        String(
+          parsed.getDate()
+        ).padStart(2, "0"),
+
+      ].join("-");
+    }
+
+
+    return parsed.toLocaleDateString();
+  }
+
+
+  // =======================================================
+  // LOAD AI INSIGHTS
+  // =======================================================
+
+  async function generateInsights() {
+
+    try {
+
+      setLoading(true);
+
+      setError("");
+
+
+      const response =
+        await getInsights();
+
+
+      setData(
+        response.data
+      );
+
+    } catch (err) {
+
+      console.error(
+        "Insights error:",
+        err
+      );
+
+
+      const detail =
+        err.response?.data?.detail;
+
+
+      if (
+        Array.isArray(detail)
+      ) {
+
         setError(
           detail
-            .map((item) => item.msg || "Validation error")
+            .map(
+              (item) =>
+                item.msg ||
+                "Validation error"
+            )
             .join(", ")
         );
-      } else if (typeof detail === "object" && detail !== null) {
+
+      } else if (
+        typeof detail === "object" &&
+        detail !== null
+      ) {
+
         setError(
           detail.message ||
           "Unable to generate financial insights."
         );
+
       } else {
+
         setError(
           detail ||
           err.message ||
@@ -63,157 +407,173 @@ export default function Insights() {
       }
 
     } finally {
+
       setLoading(false);
     }
   }
 
 
-  // =========================================================
-  // FORMAT CURRENCY
-  // =========================================================
-
-  function formatCurrency(value) {
-    const amount = Number(value || 0);
-
-    return `₹${amount.toLocaleString("en-IN", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    })}`;
-  }
-
-
-  // =========================================================
-  // FORMAT DATE
-  // =========================================================
-
-  function formatDate(value) {
-    if (!value) {
-      return "—";
-    }
-
-    const parsed = new Date(value);
-
-    if (Number.isNaN(parsed.getTime())) {
-      return String(value);
-    }
-
-    return parsed.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  }
-
-
-  // =========================================================
+  // =======================================================
   // HEALTH SCORE CLASS
-  // =========================================================
+  // =======================================================
 
   function getScoreClass(score) {
-    const value = Number(score || 0);
+
+    const value =
+      Number(score || 0);
+
 
     if (value >= 85) {
       return "excellent";
     }
 
+
     if (value >= 70) {
       return "good";
     }
+
 
     if (value >= 50) {
       return "attention";
     }
 
+
     return "critical";
   }
 
 
-  // =========================================================
+  // =======================================================
   // TREND
-  // =========================================================
+  // =======================================================
 
   function getTrend() {
+
     if (!data?.summary) {
       return null;
     }
 
-    const current = Number(
-      data.summary.total_expenses || 0
-    );
 
-    const previous = Number(
-      data.summary.previous_month_expenses || 0
-    );
+    const current =
+      Number(
+        data.summary.total_expenses ||
+        0
+      );
+
+
+    const previous =
+      Number(
+        data.summary.previous_month_expenses ||
+        0
+      );
+
 
     if (previous <= 0) {
       return null;
     }
 
+
     const percentage =
-      ((current - previous) / previous) * 100;
+      ((current - previous) /
+        previous) *
+      100;
+
 
     return {
-      value: Math.abs(percentage).toFixed(1),
-      increase: percentage > 0,
-      unchanged: percentage === 0,
+
+      value:
+        Math.abs(
+          percentage
+        ).toFixed(1),
+
+      increase:
+        percentage > 0,
+
+      unchanged:
+        percentage === 0,
     };
   }
 
 
-  const trend = getTrend();
+  const trend =
+    getTrend();
 
 
-  // =========================================================
+  // =======================================================
   // SAFE DATA
-  // =========================================================
+  // =======================================================
 
-  const summary = data?.summary || {};
+  const summary =
+    data?.summary || {};
 
-  const health = data?.financial_health || {};
+
+  const health =
+    data?.financial_health || {};
+
 
   const categories =
-    Array.isArray(data?.category_analysis)
+    Array.isArray(
+      data?.category_analysis
+    )
       ? data.category_analysis
       : [];
 
+
   const topExpenses =
-    Array.isArray(data?.top_expenses)
+    Array.isArray(
+      data?.top_expenses
+    )
       ? data.top_expenses
       : [];
 
+
   const unusualExpenses =
-    Array.isArray(data?.unusual_expenses)
+    Array.isArray(
+      data?.unusual_expenses
+    )
       ? data.unusual_expenses
       : [];
 
+
   const aiInsights =
-    Array.isArray(data?.ai_insights)
+    Array.isArray(
+      data?.ai_insights
+    )
       ? data.ai_insights
       : [];
 
+
   const warnings =
-    Array.isArray(data?.warnings)
+    Array.isArray(
+      data?.warnings
+    )
       ? data.warnings
       : [];
 
+
   const recommendations =
-    Array.isArray(data?.recommendations)
+    Array.isArray(
+      data?.recommendations
+    )
       ? data.recommendations
       : [];
 
+
   const dailyAnalysis =
     data?.daily_analysis || {};
+
 
   const budget =
     data?.budget_analysis || {};
 
 
-  // =========================================================
-  // BUDGET STATUS TEXT
-  // =========================================================
+  // =======================================================
+  // BUDGET STATUS
+  // =======================================================
 
   function getBudgetStatusText(status) {
+
     switch (status) {
+
       case "healthy":
         return "Budget is on track";
 
@@ -229,31 +589,41 @@ export default function Insights() {
   }
 
 
-  // =========================================================
+  // =======================================================
   // PAGE
-  // =========================================================
+  // =======================================================
 
   return (
+
     <div className="insights-page">
 
-      {/* =====================================================
+
+      {/* =================================================
           HEADER
-      ===================================================== */}
+      ================================================= */}
 
       <div className="insights-header">
 
         <div className="insights-heading">
 
           <div className="insights-heading-icon">
+
             <Sparkles size={25} />
+
           </div>
 
+
           <div>
-            <h1>AI Insights</h1>
+
+            <h1>
+              AI Insights
+            </h1>
 
             <p>
-              Intelligent analysis of your financial activity.
+              Intelligent analysis of your
+              financial activity.
             </p>
+
           </div>
 
         </div>
@@ -267,22 +637,30 @@ export default function Insights() {
         >
 
           {loading ? (
+
             <>
+
               <RefreshCw
                 size={17}
                 className="spin"
               />
 
               Analyzing...
+
             </>
+
           ) : (
+
             <>
+
               <Sparkles size={17} />
 
               {data
                 ? "Refresh Insights"
                 : "Generate Insights"}
+
             </>
+
           )}
 
         </button>
@@ -290,107 +668,136 @@ export default function Insights() {
       </div>
 
 
-      {/* =====================================================
+      {/* =================================================
           INITIAL STATE
-      ===================================================== */}
+      ================================================= */}
 
-      {!data && !loading && !error && (
+      {!data &&
+        !loading &&
+        !error && (
 
-        <div className="welcome-card">
+          <div className="welcome-card">
 
-          <div className="welcome-icon">
-            <Sparkles size={34} />
+            <div className="welcome-icon">
+
+              <Sparkles size={34} />
+
+            </div>
+
+
+            <h2>
+              Turn your financial data
+              into useful insights
+            </h2>
+
+
+            <p>
+              Ledgerly AI analyzes your
+              spending patterns, categories,
+              budget usage, unusual transactions,
+              and month-to-month changes to help
+              you understand your finances better.
+            </p>
+
+
+            <button
+              type="button"
+              className="welcome-btn"
+              onClick={generateInsights}
+            >
+
+              <Sparkles size={17} />
+
+              Analyze My Finances
+
+            </button>
+
           </div>
-
-          <h2>
-            Turn your financial data into useful insights
-          </h2>
-
-          <p>
-            LedgerFlow AI analyzes your spending patterns,
-            categories, budget usage, unusual transactions,
-            and month-to-month changes to help you understand
-            your finances better.
-          </p>
-
-          <button
-            type="button"
-            className="welcome-btn"
-            onClick={generateInsights}
-          >
-            <Sparkles size={17} />
-
-            Analyze My Finances
-          </button>
-
-        </div>
-
-      )}
+        )}
 
 
-      {/* =====================================================
+      {/* =================================================
           LOADING
-      ===================================================== */}
+      ================================================= */}
 
       {loading && (
 
         <div className="loading-card">
 
           <div className="loading-orb">
+
             <Sparkles size={30} />
+
           </div>
+
 
           <h2>
             Analyzing your finances
           </h2>
 
+
           <p>
-            LedgerFlow AI is reviewing your transactions,
-            spending patterns, budget usage and categories.
+            Ledgerly AI is reviewing your
+            transactions, spending patterns,
+            budget usage and categories.
           </p>
+
 
           <div className="analysis-steps">
 
             <div className="analysis-step active">
+
               <Activity size={16} />
 
               Analyzing transactions
+
             </div>
 
+
             <div className="analysis-step active">
+
               <BarChart3 size={16} />
 
               Comparing spending
+
             </div>
 
+
             <div className="analysis-step active">
+
               <Lightbulb size={16} />
 
               Generating recommendations
+
             </div>
 
           </div>
 
+
           <div className="loading-line">
+
             <div />
+
           </div>
 
         </div>
-
       )}
 
 
-      {/* =====================================================
+      {/* =================================================
           ERROR
-      ===================================================== */}
+      ================================================= */}
 
       {error && !loading && (
 
         <div className="error-card">
 
           <div className="error-icon">
+
             <AlertTriangle size={23} />
+
           </div>
+
 
           <div className="error-content">
 
@@ -398,46 +805,53 @@ export default function Insights() {
               Unable to generate insights
             </h3>
 
+
             <p>
               {error}
             </p>
+
 
             <button
               type="button"
               className="retry-btn"
               onClick={generateInsights}
             >
+
               <RefreshCw size={15} />
 
               Try Again
+
             </button>
 
           </div>
 
         </div>
-
       )}
 
 
-      {/* =====================================================
+      {/* =================================================
           DASHBOARD
-      ===================================================== */}
+      ================================================= */}
 
       {data && !loading && (
 
         <>
 
-          {/* =================================================
+
+          {/* =============================================
               FINANCIAL HEALTH
-          ================================================= */}
+          ============================================= */}
 
           <div className="health-card">
 
             <div className="health-left">
 
               <div className="health-icon">
+
                 <Activity size={24} />
+
               </div>
+
 
               <div>
 
@@ -445,13 +859,17 @@ export default function Insights() {
                   FINANCIAL HEALTH
                 </span>
 
+
                 <h2>
-                  {health.label || "Not Available"}
+                  {health.label ||
+                    "Not Available"}
                 </h2>
 
+
                 <p>
-                  Based on your current spending,
-                  budget usage and financial activity.
+                  Based on your current
+                  spending, budget usage
+                  and financial activity.
                 </p>
 
               </div>
@@ -466,13 +884,18 @@ export default function Insights() {
                   health.score
                 )}`}
               >
+
                 <strong>
-                  {Number(health.score || 0)}
+                  {Number(
+                    health.score || 0
+                  )}
                 </strong>
+
 
                 <span>
                   /100
                 </span>
+
               </div>
 
             </div>
@@ -480,11 +903,12 @@ export default function Insights() {
           </div>
 
 
-          {/* =================================================
+          {/* =============================================
               SUMMARY CARDS
-          ================================================= */}
+          ============================================= */}
 
           <div className="summary-grid">
+
 
             {/* TOTAL EXPENSES */}
 
@@ -496,17 +920,24 @@ export default function Insights() {
                   Total Expenses
                 </span>
 
+
                 <div className="summary-icon purple">
+
                   <Wallet size={19} />
+
                 </div>
 
               </div>
 
+
               <strong>
+
                 {formatCurrency(
                   summary.total_expenses
                 )}
+
               </strong>
+
 
               {trend ? (
 
@@ -519,10 +950,15 @@ export default function Insights() {
                 >
 
                   {trend.increase ? (
+
                     <TrendingUp size={14} />
+
                   ) : (
+
                     <TrendingDown size={14} />
+
                   )}
+
 
                   {trend.value}%{" "}
 
@@ -555,17 +991,24 @@ export default function Insights() {
                   Average Expense
                 </span>
 
+
                 <div className="summary-icon blue">
+
                   <IndianRupee size={19} />
+
                 </div>
 
               </div>
 
+
               <strong>
+
                 {formatCurrency(
                   summary.average_expense
                 )}
+
               </strong>
+
 
               <small>
                 Per transaction
@@ -584,17 +1027,24 @@ export default function Insights() {
                   Largest Expense
                 </span>
 
+
                 <div className="summary-icon orange">
+
                   <Target size={19} />
+
                 </div>
 
               </div>
 
+
               <strong>
+
                 {formatCurrency(
                   summary.largest_expense
                 )}
+
               </strong>
+
 
               <small>
                 Highest transaction this month
@@ -613,15 +1063,22 @@ export default function Insights() {
                   Transactions
                 </span>
 
+
                 <div className="summary-icon green">
+
                   <BarChart3 size={19} />
+
                 </div>
 
               </div>
 
+
               <strong>
+
                 {summary.expense_count || 0}
+
               </strong>
+
 
               <small>
                 Recorded this month
@@ -632,11 +1089,12 @@ export default function Insights() {
           </div>
 
 
-          {/* =================================================
-              DAILY + CATEGORY
-          ================================================= */}
+          {/* =============================================
+              CATEGORY + BUDGET
+          ============================================= */}
 
           <div className="main-grid">
+
 
             {/* CATEGORY */}
 
@@ -650,11 +1108,13 @@ export default function Insights() {
                     SPENDING BREAKDOWN
                   </span>
 
+
                   <h2>
                     Category Analysis
                   </h2>
 
                 </div>
+
 
                 <BarChart3 size={21} />
 
@@ -676,13 +1136,18 @@ export default function Insights() {
                         <div className="category-info">
 
                           <div className="category-name">
+
                             {category.category}
+
                           </div>
 
+
                           <div className="category-amount">
+
                             {formatCurrency(
                               category.amount
                             )}
+
                           </div>
 
                         </div>
@@ -695,7 +1160,8 @@ export default function Insights() {
                             style={{
                               width: `${Math.min(
                                 Number(
-                                  category.percentage || 0
+                                  category.percentage ||
+                                  0
                                 ),
                                 100
                               )}%`,
@@ -706,10 +1172,14 @@ export default function Insights() {
 
 
                         <div className="category-percent">
+
                           {Number(
-                            category.percentage || 0
+                            category.percentage ||
+                            0
                           ).toFixed(1)}
+
                           %
+
                         </div>
 
                       </div>
@@ -722,7 +1192,9 @@ export default function Insights() {
               ) : (
 
                 <div className="empty-state">
+
                   No category data available yet.
+
                 </div>
 
               )}
@@ -742,11 +1214,13 @@ export default function Insights() {
                     BUDGET
                   </span>
 
+
                   <h2>
                     Budget Analysis
                   </h2>
 
                 </div>
+
 
                 <Target size={21} />
 
@@ -757,14 +1231,18 @@ export default function Insights() {
 
                 <span
                   className={`status-dot ${
-                    budget.status || "not_set"
+                    budget.status ||
+                    "not_set"
                   }`}
                 />
 
+
                 <span>
+
                   {getBudgetStatusText(
                     budget.status
                   )}
+
                 </span>
 
               </div>
@@ -773,13 +1251,18 @@ export default function Insights() {
               <div className="budget-percentage">
 
                 <strong>
+
                   {Math.round(
                     Number(
-                      budget.used_percentage || 0
+                      budget.used_percentage ||
+                      0
                     )
                   )}
+
                   %
+
                 </strong>
+
 
                 <span>
                   used
@@ -794,7 +1277,8 @@ export default function Insights() {
                   style={{
                     width: `${Math.min(
                       Number(
-                        budget.used_percentage || 0
+                        budget.used_percentage ||
+                        0
                       ),
                       100
                     )}%`,
@@ -807,43 +1291,51 @@ export default function Insights() {
               {budget.remaining !== null &&
                 budget.remaining !== undefined ? (
 
-                <div className="budget-remaining">
+                  <div className="budget-remaining">
 
-                  <span>
-                    Remaining
-                  </span>
+                    <span>
+                      Remaining
+                    </span>
 
-                  <strong>
-                    {formatCurrency(
-                      budget.remaining
-                    )}
-                  </strong>
 
-                </div>
+                    <strong>
 
-              ) : (
+                      {formatCurrency(
+                        budget.remaining
+                      )}
 
-                <div className="budget-empty">
-                  Set a monthly budget to receive
-                  personalized budget alerts.
-                </div>
+                    </strong>
 
-              )}
+                  </div>
+
+                ) : (
+
+                  <div className="budget-empty">
+
+                    Set a monthly budget to receive
+                    personalized budget alerts.
+
+                  </div>
+
+                )}
 
             </div>
 
           </div>
 
 
-          {/* =================================================
+          {/* =============================================
               DAILY SPENDING
-          ================================================= */}
+          ============================================= */}
 
           <div className="daily-card">
 
             <div className="daily-card-icon">
+
               <Activity size={21} />
+
             </div>
+
 
             <div className="daily-card-content">
 
@@ -851,9 +1343,11 @@ export default function Insights() {
                 SPENDING ACTIVITY
               </span>
 
+
               <h2>
                 Daily Spending
               </h2>
+
 
               <p>
                 Your average spending on active
@@ -866,10 +1360,13 @@ export default function Insights() {
             <div className="daily-stat">
 
               <strong>
+
                 {formatCurrency(
                   dailyAnalysis.average_daily_spending
                 )}
+
               </strong>
+
 
               <span>
                 average / active day
@@ -886,16 +1383,26 @@ export default function Insights() {
                   Highest day
                 </span>
 
+
                 <strong>
+
                   {formatCurrency(
-                    dailyAnalysis.highest_spending_day.amount
+                    dailyAnalysis
+                      .highest_spending_day
+                      .amount
                   )}
+
                 </strong>
 
+
                 <small>
+
                   {formatDate(
-                    dailyAnalysis.highest_spending_day.date
+                    dailyAnalysis
+                      .highest_spending_day
+                      .date
                   )}
+
                 </small>
 
               </div>
@@ -905,11 +1412,12 @@ export default function Insights() {
           </div>
 
 
-          {/* =================================================
+          {/* =============================================
               TOP EXPENSES + UNUSUAL
-          ================================================= */}
+          ============================================= */}
 
           <div className="main-grid expense-analysis-grid">
+
 
             {/* TOP EXPENSES */}
 
@@ -923,11 +1431,13 @@ export default function Insights() {
                     LARGEST TRANSACTIONS
                   </span>
 
+
                   <h2>
                     Top Expenses
                   </h2>
 
                 </div>
+
 
                 <Wallet size={21} />
 
@@ -943,35 +1453,51 @@ export default function Insights() {
 
                       <div
                         className="top-expense-item"
-                        key={expense.id || index}
+                        key={
+                          expense.id ||
+                          index
+                        }
                       >
 
                         <div className="top-expense-rank">
+
                           {index + 1}
+
                         </div>
+
 
                         <div className="top-expense-info">
 
                           <strong>
+
                             {expense.title ||
                               "Expense"}
+
                           </strong>
 
+
                           <span>
+
                             {expense.category ||
                               "Uncategorized"}
+
                             {" • "}
+
                             {formatDate(
                               expense.date
                             )}
+
                           </span>
 
                         </div>
 
+
                         <b>
+
                           {formatCurrency(
                             expense.amount
                           )}
+
                         </b>
 
                       </div>
@@ -984,7 +1510,9 @@ export default function Insights() {
               ) : (
 
                 <div className="empty-state">
+
                   No expenses recorded this month.
+
                 </div>
 
               )}
@@ -1004,11 +1532,13 @@ export default function Insights() {
                     ANOMALY DETECTION
                   </span>
 
+
                   <h2>
                     Unusual Spending
                   </h2>
 
                 </div>
+
 
                 <AlertTriangle size={21} />
 
@@ -1024,27 +1554,40 @@ export default function Insights() {
 
                       <div
                         className="unusual-item"
-                        key={expense.id || index}
+                        key={
+                          expense.id ||
+                          index
+                        }
                       >
 
                         <div className="unusual-icon">
+
                           <AlertTriangle size={17} />
+
                         </div>
+
 
                         <div className="unusual-info">
 
                           <strong>
+
                             {expense.title ||
                               "Unusual expense"}
+
                           </strong>
 
+
                           <span>
+
                             {formatCurrency(
                               expense.amount
                             )}
+
                             {" • "}
+
                             {expense.multiple}x
                             normal transaction
+
                           </span>
 
                         </div>
@@ -1068,6 +1611,7 @@ export default function Insights() {
                       No unusual spending detected
                     </strong>
 
+
                     <span>
                       Your transactions look normal
                       compared with your recent activity.
@@ -1084,9 +1628,9 @@ export default function Insights() {
           </div>
 
 
-          {/* =================================================
+          {/* =============================================
               AI INSIGHTS
-          ================================================= */}
+          ============================================= */}
 
           <div className="panel ai-panel">
 
@@ -1095,14 +1639,18 @@ export default function Insights() {
               <div className="ai-title">
 
                 <div className="ai-icon">
+
                   <Sparkles size={21} />
+
                 </div>
+
 
                 <div>
 
                   <span className="section-label">
-                    LEDGERFLOW AI
+                    LEDGERLY AI
                   </span>
+
 
                   <h2>
                     Financial Insights
@@ -1128,8 +1676,11 @@ export default function Insights() {
                     >
 
                       <div className="insight-number">
+
                         {index + 1}
+
                       </div>
+
 
                       <p>
                         {item}
@@ -1145,7 +1696,9 @@ export default function Insights() {
             ) : (
 
               <div className="empty-state">
+
                 No insights available yet.
+
               </div>
 
             )}
@@ -1153,11 +1706,12 @@ export default function Insights() {
           </div>
 
 
-          {/* =================================================
+          {/* =============================================
               WARNINGS + RECOMMENDATIONS
-          ================================================= */}
+          ============================================= */}
 
           <div className="bottom-grid">
+
 
             {/* WARNINGS */}
 
@@ -1171,11 +1725,13 @@ export default function Insights() {
                     ATTENTION
                   </span>
 
+
                   <h2>
                     Warnings
                   </h2>
 
                 </div>
+
 
                 <AlertTriangle size={21} />
 
@@ -1236,11 +1792,13 @@ export default function Insights() {
                     SMART ACTIONS
                   </span>
 
+
                   <h2>
                     Recommendations
                   </h2>
 
                 </div>
+
 
                 <Lightbulb size={21} />
 
@@ -1291,22 +1849,33 @@ export default function Insights() {
           </div>
 
 
-          {/* =================================================
+          {/* =============================================
               FOOTER
-          ================================================= */}
+          ============================================= */}
 
           <div className="insights-footer">
 
             <div>
+
               <Sparkles size={15} />
 
-              Generated by LedgerFlow AI
+              Generated by Ledgerly AI
+
 
               {data.generated_at && (
+
                 <span className="generated-time">
-                  • {formatDate(data.generated_at)}
+
+                  •{" "}
+
+                  {formatDate(
+                    data.generated_at
+                  )}
+
                 </span>
+
               )}
+
             </div>
 
 

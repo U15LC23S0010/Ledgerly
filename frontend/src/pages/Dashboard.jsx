@@ -23,6 +23,104 @@ import {
 import { getDashboard } from "../api/dashboardApi";
 import "./Dashboard.css";
 
+/* =========================================================
+   SETTINGS / CURRENCY HELPERS
+========================================================= */
+
+const SETTINGS_KEY = "ledgerly_settings";
+
+const VALID_CURRENCIES = [
+  "INR",
+  "USD",
+  "EUR",
+  "GBP",
+];
+
+function getStoredCurrency() {
+  /*
+   * First use the dedicated currency value written by Settings.
+   */
+  const directCurrency =
+    localStorage.getItem("ledgerly_currency");
+
+  if (
+    directCurrency &&
+    VALID_CURRENCIES.includes(directCurrency)
+  ) {
+    return directCurrency;
+  }
+
+  /*
+   * Fallback to the complete Ledgerly settings object.
+   */
+  const storedSettings =
+    localStorage.getItem(SETTINGS_KEY);
+
+  if (storedSettings) {
+    try {
+      const parsedSettings =
+        JSON.parse(storedSettings);
+
+      if (
+        parsedSettings?.currency &&
+        VALID_CURRENCIES.includes(
+          parsedSettings.currency
+        )
+      ) {
+        return parsedSettings.currency;
+      }
+    } catch (error) {
+      console.error(
+        "Unable to read Ledgerly currency settings:",
+        error
+      );
+    }
+  }
+
+  /*
+   * Final fallback.
+   */
+  return "INR";
+}
+
+function formatCurrency(value, currency) {
+  const amount = Number(value || 0);
+
+  const selectedCurrency =
+    currency || getStoredCurrency();
+
+  try {
+    return new Intl.NumberFormat(
+      "en-IN",
+      {
+        style: "currency",
+        currency: selectedCurrency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }
+    ).format(amount);
+  } catch (error) {
+    console.error(
+      "Currency formatting error:",
+      error
+    );
+
+    return new Intl.NumberFormat(
+      "en-IN",
+      {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }
+    ).format(amount);
+  }
+}
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+
 export default function Dashboard() {
   const navigate = useNavigate();
 
@@ -31,15 +129,134 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
-  const [selectedMonth, setSelectedMonth] = useState(
-    new Date().toISOString().slice(0, 7)
+  /*
+   * Currency is loaded from Ledgerly Settings.
+   */
+  const [currency, setCurrency] = useState(
+    getStoredCurrency()
   );
+
+  const [selectedMonth, setSelectedMonth] =
+    useState(
+      new Date()
+        .toISOString()
+        .slice(0, 7)
+    );
+
+  /* =======================================================
+     LOAD DASHBOARD
+  ======================================================= */
 
   useEffect(() => {
     loadDashboard();
   }, [selectedMonth]);
 
-  async function loadDashboard(showRefresh = false) {
+  /* =======================================================
+     LISTEN FOR SETTINGS / CURRENCY CHANGES
+  ======================================================= */
+
+  useEffect(() => {
+    /*
+     * Handle the global settings event.
+     */
+    const handleSettingsUpdated = (
+      event
+    ) => {
+      const updatedCurrency =
+        event.detail?.currency ||
+        getStoredCurrency();
+
+      if (
+        VALID_CURRENCIES.includes(
+          updatedCurrency
+        )
+      ) {
+        setCurrency(updatedCurrency);
+      }
+    };
+
+    /*
+     * Handle the dedicated currency event.
+     */
+    const handleCurrencyChanged = (
+      event
+    ) => {
+      const updatedCurrency =
+        event.detail ||
+        getStoredCurrency();
+
+      if (
+        VALID_CURRENCIES.includes(
+          updatedCurrency
+        )
+      ) {
+        setCurrency(updatedCurrency);
+      }
+    };
+
+    /*
+     * Also handle browser storage changes.
+     * This helps when Settings changes localStorage.
+     */
+    const handleStorageChange = (
+      event
+    ) => {
+      if (
+        event.key ===
+          "ledgerly_currency" ||
+        event.key === SETTINGS_KEY
+      ) {
+        setCurrency(
+          getStoredCurrency()
+        );
+      }
+    };
+
+    window.addEventListener(
+      "ledgerly-settings-updated",
+      handleSettingsUpdated
+    );
+
+    window.addEventListener(
+      "ledgerly-currency-changed",
+      handleCurrencyChanged
+    );
+
+    window.addEventListener(
+      "storage",
+      handleStorageChange
+    );
+
+    /*
+     * Sync once when Dashboard mounts.
+     */
+    setCurrency(getStoredCurrency());
+
+    return () => {
+      window.removeEventListener(
+        "ledgerly-settings-updated",
+        handleSettingsUpdated
+      );
+
+      window.removeEventListener(
+        "ledgerly-currency-changed",
+        handleCurrencyChanged
+      );
+
+      window.removeEventListener(
+        "storage",
+        handleStorageChange
+      );
+    };
+  }, []);
+
+  /* =======================================================
+     LOAD DASHBOARD DATA
+  ======================================================= */
+
+  async function loadDashboard(
+    showRefresh = false
+  ) {
     try {
       if (showRefresh) {
         setRefreshing(true);
@@ -49,16 +266,24 @@ export default function Dashboard() {
 
       setError("");
 
-      const response=
-      await
-      getDashboard(selectedMonth);
+      const response =
+        await getDashboard(
+          selectedMonth
+        );
 
       setDashboard(response.data);
     } catch (err) {
-      console.error("Dashboard error:", err);
+      console.error(
+        "Dashboard error:",
+        err
+      );
 
-      if (err.response?.status === 401) {
-        setError("Your session has expired. Please sign in again.");
+      if (
+        err.response?.status === 401
+      ) {
+        setError(
+          "Your session has expired. Please sign in again."
+        );
       } else {
         setError(
           err.response?.data?.detail ||
@@ -71,75 +296,134 @@ export default function Dashboard() {
     }
   }
 
-  function money(value) {
-    return `₹${Number(value || 0).toLocaleString("en-IN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-  }
+  /* =======================================================
+     SELECTED MONTH LABEL
+  ======================================================= */
 
-  const selectedMonthLabel = useMemo(() => {
-    const [year, month] = selectedMonth.split("-").map(Number);
+  const selectedMonthLabel =
+    useMemo(() => {
+      const [year, month] =
+        selectedMonth
+          .split("-")
+          .map(Number);
 
-    if (!year || !month) return "";
+      if (!year || !month) {
+        return "";
+      }
 
-    const first = new Date(year, month - 1, 1);
-    const last = new Date(year, month, 0);
+      const first = new Date(
+        year,
+        month - 1,
+        1
+      );
 
-    const formatDay = (value) =>
-      value.toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-      });
-
-    return `${formatDay(first)} — ${formatDay(last)} ${year}`;
-  }, [selectedMonth]);
-
- const selectedMonthName = useMemo(() => {
-  const [year, month] = selectedMonth.split("-").map(Number);
-
-  if (!year || !month) return "";
-
-  return new Date(year, month - 1, 1).toLocaleDateString(
-    "en-IN",
-    {
-      month: "short",
-      year: "numeric",
-    }
-  );
-}, [selectedMonth]);
-
-  const categoryData = useMemo(() => {
-    if (!dashboard?.category_summary) {
-      return [];
-    }
-
-    const colors = [
-      "#4f46e5",
-      "#3b82f6",
-      "#f59e0b",
-      "#22c55e",
-      "#ec4899",
-      "#8b5cf6",
-      "#14b8a6",
-      "#94a3b8",
-    ];
-
-    return dashboard.category_summary.map((item, index) => ({
-      name: item.category || "Uncategorized",
-      total: Number(item.total || 0),
-      color: colors[index % colors.length],
-    }));
-  }, [dashboard]);
-
-  const categoryTotal = useMemo(
-    () =>
-      categoryData.reduce(
-        (total, item) => total + item.total,
+      const last = new Date(
+        year,
+        month,
         0
-      ),
-    [categoryData]
-  );
+      );
+
+      const formatDay = (value) =>
+        value.toLocaleDateString(
+          "en-IN",
+          {
+            day: "2-digit",
+            month: "short",
+          }
+        );
+
+      return `${formatDay(
+        first
+      )} — ${formatDay(last)} ${year}`;
+    }, [selectedMonth]);
+
+  /* =======================================================
+     SELECTED MONTH NAME
+  ======================================================= */
+
+  const selectedMonthName =
+    useMemo(() => {
+      const [year, month] =
+        selectedMonth
+          .split("-")
+          .map(Number);
+
+      if (!year || !month) {
+        return "";
+      }
+
+      return new Date(
+        year,
+        month - 1,
+        1
+      ).toLocaleDateString(
+        "en-IN",
+        {
+          month: "short",
+          year: "numeric",
+        }
+      );
+    }, [selectedMonth]);
+
+  /* =======================================================
+     CATEGORY DATA
+  ======================================================= */
+
+  const categoryData =
+    useMemo(() => {
+      if (
+        !dashboard?.category_summary
+      ) {
+        return [];
+      }
+
+      const colors = [
+        "#4f46e5",
+        "#3b82f6",
+        "#f59e0b",
+        "#22c55e",
+        "#ec4899",
+        "#8b5cf6",
+        "#14b8a6",
+        "#94a3b8",
+      ];
+
+      return dashboard.category_summary.map(
+        (item, index) => ({
+          name:
+            item.category ||
+            "Uncategorized",
+
+          total: Number(
+            item.total || 0
+          ),
+
+          color:
+            colors[
+              index % colors.length
+            ],
+        })
+      );
+    }, [dashboard]);
+
+  /* =======================================================
+     CATEGORY TOTAL
+  ======================================================= */
+
+  const categoryTotal =
+    useMemo(
+      () =>
+        categoryData.reduce(
+          (total, item) =>
+            total + item.total,
+          0
+        ),
+      [categoryData]
+    );
+
+  /* =======================================================
+     DONUT
+  ======================================================= */
 
   const donut = useMemo(() => {
     if (!categoryTotal) {
@@ -150,153 +434,261 @@ export default function Dashboard() {
 
     return categoryData
       .map((item) => {
-        const start = (current / categoryTotal) * 100;
+        const start =
+          (current /
+            categoryTotal) *
+          100;
 
         current += item.total;
 
-        const end = (current / categoryTotal) * 100;
+        const end =
+          (current /
+            categoryTotal) *
+          100;
 
         return `${item.color} ${start}% ${end}%`;
       })
       .join(", ");
-  }, [categoryData, categoryTotal]);
+  }, [
+    categoryData,
+    categoryTotal,
+  ]);
+
+  /* =======================================================
+     LOADING
+  ======================================================= */
 
   if (loading) {
     return (
       <div className="dashboard-page">
+
         <div className="dashboard-loading">
+
           <div className="loading-spinner" />
 
-          <h2>Loading your financial overview...</h2>
+          <h2>
+            Loading your financial overview...
+          </h2>
 
           <p>
             Connecting to your LedgerFlow workspace.
           </p>
+
         </div>
+
       </div>
     );
   }
 
+  /* =======================================================
+     ERROR
+  ======================================================= */
+
   if (error) {
     return (
       <div className="dashboard-page">
+
         <div className="dashboard-error">
+
           <AlertTriangle />
 
-          <h2>Unable to load dashboard</h2>
+          <h2>
+            Unable to load dashboard
+          </h2>
 
           <p>{error}</p>
 
           <button
             type="button"
-            onClick={() => loadDashboard()}
+            onClick={() =>
+              loadDashboard()
+            }
           >
             Try again
           </button>
+
         </div>
+
       </div>
     );
   }
 
-  const financial = dashboard?.financial_summary || {};
-  const budget = dashboard?.budget || {};
+  /* =======================================================
+     DASHBOARD DATA
+  ======================================================= */
+
+  const financial =
+    dashboard?.financial_summary ||
+    {};
+
+  const budget =
+    dashboard?.budget || {};
+
   const expenseSummary =
-    dashboard?.expense_summary || {};
+    dashboard?.expense_summary ||
+    {};
 
   const transactions =
-    dashboard?.recent_transactions || [];
+    dashboard?.recent_transactions ||
+    [];
 
-const accounts = dashboard?.accounts || [];
+  const accounts =
+    dashboard?.accounts || [];
 
-const username = dashboard?.user || "User";
+  const username =
+    dashboard?.user || "User";
 
-const totalAccountBalance = accounts.reduce(
-  (total, account) =>
-    total + Number(account.balance || 0),
-  0
-);
+  const totalAccountBalance =
+    accounts.reduce(
+      (total, account) =>
+        total +
+        Number(
+          account.balance || 0
+        ),
+      0
+    );
 
+  const totalIncome =
+    Number(
+      financial.total_income || 0
+    );
 
-  const totalIncome = Number(
-    financial.total_income || 0
+  const totalExpenses =
+    Number(
+      financial.total_expenses || 0
+    );
+
+  const monthlyIncome =
+    Number(
+      financial.monthly_income || 0
+    );
+
+  const monthlyExpenses =
+    Number(
+      financial.monthly_expenses || 0
+    );
+
+  const monthlyNetCashFlow =
+    Number(
+      financial.monthly_net_cash_flow ||
+        0
+    );
+
+  const budgetPercentage =
+    Number(
+      budget.used_percentage || 0
+    );
+
+  const budgetRemaining =
+    Number(
+      budget.remaining || 0
+    );
+
+  console.log(
+    "DASHBOARD ACCOUNTS:",
+    accounts
   );
 
-  const totalExpenses = Number(
-    financial.total_expenses || 0
+  console.log(
+    "TOTAL ACCOUNT BALANCE:",
+    totalAccountBalance
   );
 
-  const monthlyIncome = Number(
-    financial.monthly_income || 0
+  console.log(
+    "FINANCIAL SUMMARY:",
+    financial
   );
 
-  const monthlyExpenses = Number(
-    financial.monthly_expenses || 0
+  console.log(
+    "DASHBOARD CURRENCY:",
+    currency
   );
 
-  const monthlyNetCashFlow = Number(
-    financial.monthly_net_cash_flow || 0
-  );
-
-  const budgetPercentage = Number(
-    budget.used_percentage || 0
-  );
-
-  const budgetRemaining = Number(
-    budget.remaining || 0
-  );
-
-console.log("DASHBOARD ACCOUNTS:", accounts);
-console.log("TOTAL ACCOUNT BALANCE:", totalAccountBalance);
-console.log("FINANCIAL SUMMARY:", financial);
+  /* =======================================================
+     BUDGET STATUS
+  ======================================================= */
 
   function getBudgetStatus() {
-    if (budget.status === "not_set") {
+    if (
+      budget.status === "not_set"
+    ) {
       return {
         title: "Budget not set",
+
         text:
           "Create a monthly budget to start tracking your spending.",
+
         tone: "blue",
+
         icon: CircleDollarSign,
       };
     }
 
-    if (budget.status === "exceeded") {
+    if (
+      budget.status === "exceeded"
+    ) {
       return {
         title: "Budget exceeded",
-        text: `You've exceeded your budget by ${money(
-          Math.abs(budgetRemaining)
+
+        text: `You've exceeded your budget by ${formatCurrency(
+          Math.abs(
+            budgetRemaining
+          ),
+          currency
         )}.`,
+
         tone: "red",
+
         icon: AlertTriangle,
       };
     }
 
-    if (budget.status === "warning") {
+    if (
+      budget.status === "warning"
+    ) {
       return {
         title: "Budget warning",
-        text: `${money(
-          budgetRemaining
+
+        text: `${formatCurrency(
+          budgetRemaining,
+          currency
         )} remains in your monthly budget.`,
+
         tone: "orange",
+
         icon: AlertTriangle,
       };
     }
 
     return {
-      title: "You're within budget",
-      text: `${money(
-        budgetRemaining
+      title:
+        "You're within budget",
+
+      text: `${formatCurrency(
+        budgetRemaining,
+        currency
       )} remains in your monthly budget.`,
+
       tone: "green",
+
       icon: CheckCircle2,
     };
   }
 
-  const budgetStatus = getBudgetStatus();
+  const budgetStatus =
+    getBudgetStatus();
+
+  /* =======================================================
+     NAVIGATION
+  ======================================================= */
 
   function goTo(path) {
     navigate(path);
   }
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
     <div className="dashboard-page">
@@ -304,13 +696,17 @@ console.log("FINANCIAL SUMMARY:", financial);
       {/* HEADER */}
 
       <div className="dash-heading">
+
         <div>
+
           <div className="eyebrow">
+
             FINANCIAL OVERVIEW
 
             <span className="live-dot">
               LIVE
             </span>
+
           </div>
 
           <h1>
@@ -320,6 +716,7 @@ console.log("FINANCIAL SUMMARY:", financial);
           <p>
             Here’s what’s happening across your books today.
           </p>
+
         </div>
 
         <div className="dashboard-header-actions">
@@ -327,9 +724,12 @@ console.log("FINANCIAL SUMMARY:", financial);
           <button
             type="button"
             className="refresh-dashboard-button"
-            onClick={() => loadDashboard(true)}
+            onClick={() =>
+              loadDashboard(true)
+            }
             disabled={refreshing}
           >
+
             <RefreshCw
               className={
                 refreshing
@@ -341,44 +741,68 @@ console.log("FINANCIAL SUMMARY:", financial);
             {refreshing
               ? "Refreshing..."
               : "Refresh"}
+
           </button>
 
           <label className="date-filter">
-  <CalendarDays />
 
-  <select
-    value={selectedMonth}
-    onChange={(event) =>
-      setSelectedMonth(event.target.value)
-    }
-    aria-label="Select dashboard month"
-  >
-    {Array.from({ length: 12 }, (_, index) => {
-      const year = new Date().getFullYear();
-      const month = index + 1;
+            <CalendarDays />
 
-      const value = `${year}-${String(month).padStart(2, "0")}`;
+            <select
+              value={selectedMonth}
+              onChange={(event) =>
+                setSelectedMonth(
+                  event.target.value
+                )
+              }
+              aria-label="Select dashboard month"
+            >
 
-      const label = new Date(
-        year,
-        index,
-        1
-      ).toLocaleDateString("en-IN", {
-        month: "long",
-        year: "numeric",
-      });
+              {Array.from(
+                { length: 12 },
+                (_, index) => {
+                  const year =
+                    new Date().getFullYear();
 
-      return (
-        <option key={value} value={value}>
-          {label}
-        </option>
-      );
-    })}
-  </select>
+                  const month =
+                    index + 1;
 
-  <ChevronDown />
-</label>
+                  const value = `${year}-${String(
+                    month
+                  ).padStart(2, "0")}`;
+
+                  const label =
+                    new Date(
+                      year,
+                      index,
+                      1
+                    ).toLocaleDateString(
+                      "en-IN",
+                      {
+                        month: "long",
+                        year: "numeric",
+                      }
+                    );
+
+                  return (
+                    <option
+                      key={value}
+                      value={value}
+                    >
+                      {label}
+                    </option>
+                  );
+                }
+              )}
+
+            </select>
+
+            <ChevronDown />
+
+          </label>
+
         </div>
+
       </div>
 
       {/* STAT CARDS */}
@@ -387,7 +811,10 @@ console.log("FINANCIAL SUMMARY:", financial);
 
         <Stat
           title="Total Balance"
-          value={money(totalAccountBalance)}
+          value={formatCurrency(
+            totalAccountBalance,
+            currency
+          )}
           change="Current account balance"
           tone="blue"
           icon={Wallet}
@@ -395,9 +822,13 @@ console.log("FINANCIAL SUMMARY:", financial);
 
         <Stat
           title="Total Income"
-          value={money(totalIncome)}
-          change={`This month ${money(
-            monthlyIncome
+          value={formatCurrency(
+            totalIncome,
+            currency
+          )}
+          change={`This month ${formatCurrency(
+            monthlyIncome,
+            currency
           )}`}
           tone="green"
           icon={ArrowDownRight}
@@ -405,9 +836,13 @@ console.log("FINANCIAL SUMMARY:", financial);
 
         <Stat
           title="Total Expenses"
-          value={money(totalExpenses)}
-          change={`This month ${money(
-            monthlyExpenses
+          value={formatCurrency(
+            totalExpenses,
+            currency
+          )}
+          change={`This month ${formatCurrency(
+            monthlyExpenses,
+            currency
           )}`}
           tone="red"
           icon={ArrowUpRight}
@@ -415,13 +850,17 @@ console.log("FINANCIAL SUMMARY:", financial);
 
         <Stat
           title="Budget Used"
-          value={`${budgetPercentage.toFixed(1)}%`}
+          value={`${budgetPercentage.toFixed(
+            1
+          )}%`}
           change={
             budget.monthly_budget
-              ? `${money(
-                  monthlyExpenses
-                )} of ${money(
-                  budget.monthly_budget
+              ? `${formatCurrency(
+                  monthlyExpenses,
+                  currency
+                )} of ${formatCurrency(
+                  budget.monthly_budget,
+                  currency
                 )}`
               : "No monthly budget set"
           }
@@ -440,38 +879,62 @@ console.log("FINANCIAL SUMMARY:", financial);
       <section className="dashboard-cashflow-grid">
 
         <div className="panel cashflow-card">
+
           <div className="cashflow-icon income">
             <TrendingUp />
           </div>
 
           <div>
-            <span>Monthly income</span>
+
+            <span>
+              Monthly income
+            </span>
+
             <strong>
-              {money(monthlyIncome)}
+              {formatCurrency(
+                monthlyIncome,
+                currency
+              )}
             </strong>
+
           </div>
+
         </div>
 
         <div className="panel cashflow-card">
+
           <div className="cashflow-icon expense">
             <TrendingDown />
           </div>
 
           <div>
-            <span>Monthly expenses</span>
+
+            <span>
+              Monthly expenses
+            </span>
+
             <strong>
-              {money(monthlyExpenses)}
+              {formatCurrency(
+                monthlyExpenses,
+                currency
+              )}
             </strong>
+
           </div>
+
         </div>
 
         <div className="panel cashflow-card">
+
           <div className="cashflow-icon balance">
             <Wallet />
           </div>
 
           <div>
-            <span>Monthly cash flow</span>
+
+            <span>
+              Monthly cash flow
+            </span>
 
             <strong
               className={
@@ -480,24 +943,35 @@ console.log("FINANCIAL SUMMARY:", financial);
                   : "negative"
               }
             >
-              {money(monthlyNetCashFlow)}
+              {formatCurrency(
+                monthlyNetCashFlow,
+                currency
+              )}
             </strong>
+
           </div>
+
         </div>
 
         <div className="panel cashflow-card">
+
           <div className="cashflow-icon records">
             <ReceiptText />
           </div>
 
           <div>
-            <span>Expenses recorded</span>
+
+            <span>
+              Expenses recorded
+            </span>
 
             <strong>
               {expenseSummary.monthly_expense_records ||
                 0}
             </strong>
+
           </div>
+
         </div>
 
       </section>
@@ -522,26 +996,35 @@ console.log("FINANCIAL SUMMARY:", financial);
                 "--donut": `conic-gradient(${donut})`,
               }}
             >
+
               <div>
+
                 <strong>
-                  {money(monthlyExpenses)}
+                  {formatCurrency(
+                    monthlyExpenses,
+                    currency
+                  )}
                 </strong>
 
                 <span>
                   {selectedMonthName}
                 </span>
+
               </div>
+
             </div>
 
             <div className="legend">
 
               {categoryData.length === 0 ? (
                 <div className="empty-state">
+
                   <ReceiptText />
 
                   <span>
                     No expense categories yet.
                   </span>
+
                 </div>
               ) : (
                 categoryData
@@ -551,7 +1034,9 @@ console.log("FINANCIAL SUMMARY:", financial);
                       className="legend-row"
                       key={category.name}
                     >
+
                       <span>
+
                         <i
                           style={{
                             background:
@@ -560,11 +1045,13 @@ console.log("FINANCIAL SUMMARY:", financial);
                         />
 
                         {category.name}
+
                       </span>
 
                       <b>
-                        {money(
-                          category.total
+                        {formatCurrency(
+                          category.total,
+                          currency
                         )}
                       </b>
 
@@ -578,6 +1065,7 @@ console.log("FINANCIAL SUMMARY:", financial);
                           : 0}
                         %
                       </small>
+
                     </div>
                   ))
               )}
@@ -593,8 +1081,11 @@ console.log("FINANCIAL SUMMARY:", financial);
               goTo("/analytics")
             }
           >
+
             <BarChart3 />
+
             View full analytics
+
           </button>
 
         </div>
@@ -624,8 +1115,9 @@ console.log("FINANCIAL SUMMARY:", financial);
               }
               text={
                 dashboard?.top_category
-                  ? `You've spent ${money(
-                      dashboard.top_category_amount
+                  ? `You've spent ${formatCurrency(
+                      dashboard.top_category_amount,
+                      currency
                     )} in this category.`
                   : "Add some expenses to generate insights."
               }
@@ -642,12 +1134,14 @@ console.log("FINANCIAL SUMMARY:", financial);
               icon={Lightbulb}
               tone="blue"
               title="Net cash flow"
-              text={`Your current net cash flow is ${money(
-                financial.net_cash_flow
+              text={`Your current net cash flow is ${formatCurrency(
+                financial.net_cash_flow,
+                currency
               )}.`}
             />
 
           </div>
+
         </div>
 
       </section>
@@ -662,6 +1156,7 @@ console.log("FINANCIAL SUMMARY:", financial);
           </div>
 
           <div className="highest-expense-content">
+
             <span>
               HIGHEST EXPENSE
             </span>
@@ -675,11 +1170,13 @@ console.log("FINANCIAL SUMMARY:", financial);
                 dashboard.highest_expense.date
               )}
             </small>
+
           </div>
 
           <b>
-            {money(
-              dashboard.highest_expense.amount
+            {formatCurrency(
+              dashboard.highest_expense.amount,
+              currency
             )}
           </b>
 
@@ -702,11 +1199,13 @@ console.log("FINANCIAL SUMMARY:", financial);
           />
 
           <div className="table-head">
+
             <span>Date</span>
             <span>Description</span>
             <span>Type</span>
             <span>Account</span>
             <span>Amount</span>
+
           </div>
 
           {transactions.length === 0 ? (
@@ -730,104 +1229,122 @@ console.log("FINANCIAL SUMMARY:", financial);
                   goTo("/transactions")
                 }
               >
+
                 <Plus />
+
                 Add transaction
+
               </button>
 
             </div>
           ) : (
-            transactions.map((transaction) => {
+            transactions.map(
+              (transaction) => {
 
-              const income =
-                transaction.transaction_type ===
-                "income";
+                const income =
+                  transaction.transaction_type ===
+                  "income";
 
-              const transfer =
-                transaction.transaction_type ===
-                "transfer";
+                const transfer =
+                  transaction.transaction_type ===
+                  "transfer";
 
-              return (
-                <div
-                  className="transaction-row"
-                  key={transaction.id}
-                >
+                return (
+                  <div
+                    className="transaction-row"
+                    key={transaction.id}
+                  >
 
-                  <span>
-                    {formatDate(
-                      transaction.date
-                    )}
-                  </span>
-
-                  <strong>
-                    <span className="txn-icon">
-                      <ReceiptText />
+                    <span>
+                      {formatDate(
+                        transaction.date
+                      )}
                     </span>
 
-                    {transaction.description ||
-                      "Transaction"}
-                  </strong>
+                    <strong>
 
-                  <span>
-                    <em
-                      className={`tag ${
-                        income
-                          ? "income"
-                          : transfer
+                      <span className="txn-icon">
+                        <ReceiptText />
+                      </span>
+
+                      {transaction.description ||
+                        "Transaction"}
+
+                    </strong>
+
+                    <span>
+
+                      <em
+                        className={`tag ${
+                          income
+                            ? "income"
+                            : transfer
+                            ? "transfer"
+                            : ""
+                        }`}
+                      >
+
+                        {transfer
+                          ? "Transfer"
+                          : income
+                          ? "Income"
+                          : "Expense"}
+
+                      </em>
+
+                    </span>
+
+                    <span className="transaction-account">
+
+                      <div>
+                        {transaction.account_name ||
+                          (transaction.account_id
+                            ? `Account #${transaction.account_id}`
+                            : "—")}
+                      </div>
+
+                      {transaction.category_name && (
+                        <small className="transaction-category">
+                          {
+                            transaction.category_name
+                          }
+                        </small>
+                      )}
+
+                    </span>
+
+                    <b
+                      className={
+                        transfer
                           ? "transfer"
-                          : ""
-                      }`}
+                          : income
+                          ? "positive"
+                          : "negative"
+                      }
                     >
+
                       {transfer
-                        ? "Transfer"
+                        ? ""
                         : income
-                        ? "Income"
-                        : "Expense"}
-                    </em>
-                  </span>
+                        ? "+"
+                        : "-"}{" "}
 
-                  <span className="transaction-account">
-                    <div>
-                      {transaction.account_name ||
-                        (transaction.account_id
-                          ? `Account #${transaction.account_id}`
-                          : "—")}
-                    </div>
+                      {formatCurrency(
+                        Math.abs(
+                          Number(
+                            transaction.amount ||
+                              0
+                          )
+                        ),
+                        currency
+                      )}
 
-                    {transaction.category_name && (
-                      <small className="transaction-category">
-                        {
-                          transaction.category_name
-                        }
-                      </small>
-                    )}
-                  </span>
+                    </b>
 
-                  <b
-                    className={
-                      transfer
-                        ? "transfer"
-                        : income
-                        ? "positive"
-                        : "negative"
-                    }
-                  >
-                    {transfer
-                      ? ""
-                      : income
-                      ? "+"
-                      : "-"}{" "}
-                    {money(
-                      Math.abs(
-                        Number(
-                          transaction.amount || 0
-                        )
-                      )
-                    )}
-                  </b>
-
-                </div>
-              );
-            })
+                  </div>
+                );
+              }
+            )
           )}
 
         </div>
@@ -898,6 +1415,7 @@ console.log("FINANCIAL SUMMARY:", financial);
             />
 
           </div>
+
         </div>
 
       </section>
@@ -939,41 +1457,52 @@ console.log("FINANCIAL SUMMARY:", financial);
                   goTo("/accounts")
                 }
               >
+
                 <Plus />
+
                 Add account
+
               </button>
 
             </div>
           ) : (
-            accounts.map((account) => (
-              <div
-                className="dashboard-account"
-                key={account.id}
-              >
+            accounts.map(
+              (account) => (
+                <div
+                  className="dashboard-account"
+                  key={account.id}
+                >
 
-                <div className="account-icon">
-                  <Wallet />
+                  <div className="account-icon">
+                    <Wallet />
+                  </div>
+
+                  <div>
+
+                    <strong>
+                      {account.name}
+                    </strong>
+
+                    <span>
+                      {account.account_type}
+                    </span>
+
+                  </div>
+
+                  <b>
+                    {formatCurrency(
+                      account.balance,
+                      currency
+                    )}
+                  </b>
+
                 </div>
-
-                <div>
-                  <strong>
-                    {account.name}
-                  </strong>
-
-                  <span>
-                    {account.account_type}
-                  </span>
-                </div>
-
-                <b>
-                  {money(account.balance)}
-                </b>
-
-              </div>
-            ))
+              )
+            )
           )}
 
         </div>
+
       </section>
 
     </div>
@@ -993,11 +1522,15 @@ function Stat({
   progress,
 }) {
   return (
-    <article className={`stat-card ${tone}`}>
+    <article
+      className={`stat-card ${tone}`}
+    >
 
       <div className="stat-top">
 
-        <span>{title}</span>
+        <span>
+          {title}
+        </span>
 
         <i>
           <Icon />
@@ -1005,18 +1538,25 @@ function Stat({
 
       </div>
 
-      <strong>{value}</strong>
+      <strong>
+        {value}
+      </strong>
 
       {progress !== undefined ? (
         <div className="stat-progress">
+
           <span
             style={{
               width: `${Math.min(
-                Math.max(progress, 0),
+                Math.max(
+                  progress,
+                  0
+                ),
                 100
               )}%`,
             }}
           />
+
         </div>
       ) : (
         <div className="mini-line">
@@ -1024,7 +1564,9 @@ function Stat({
         </div>
       )}
 
-      <small>{change}</small>
+      <small>
+        {change}
+      </small>
 
     </article>
   );
@@ -1044,8 +1586,15 @@ function PanelTitle({
     <div className="panel-title">
 
       <div>
-        <span>{eyebrow}</span>
-        <h2>{title}</h2>
+
+        <span>
+          {eyebrow}
+        </span>
+
+        <h2>
+          {title}
+        </h2>
+
       </div>
 
       {action && (
@@ -1053,12 +1602,15 @@ function PanelTitle({
           type="button"
           onClick={onAction}
         >
+
           {action}
 
           {action !== "View all" &&
-            action !== "View accounts" && (
+            action !==
+              "View accounts" && (
               <ChevronDown />
             )}
+
         </button>
       )}
 
@@ -1077,15 +1629,24 @@ function Insight({
   text,
 }) {
   return (
-    <div className={`insight ${tone}`}>
+    <div
+      className={`insight ${tone}`}
+    >
 
       <i>
         <Icon />
       </i>
 
       <div>
-        <strong>{title}</strong>
-        <p>{text}</p>
+
+        <strong>
+          {title}
+        </strong>
+
+        <p>
+          {text}
+        </p>
+
       </div>
 
       <button
@@ -1123,8 +1684,15 @@ function Action({
       </i>
 
       <div>
-        <strong>{title}</strong>
-        <span>{text}</span>
+
+        <strong>
+          {title}
+        </strong>
+
+        <span>
+          {text}
+        </span>
+
       </div>
 
     </button>
@@ -1140,9 +1708,14 @@ function formatDate(date) {
     return "—";
   }
 
-  const parsed = new Date(date);
+  const parsed =
+    new Date(date);
 
-  if (Number.isNaN(parsed.getTime())) {
+  if (
+    Number.isNaN(
+      parsed.getTime()
+    )
+  ) {
     return String(date);
   }
 
