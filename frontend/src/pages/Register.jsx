@@ -1,8 +1,6 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
-
 import {
   ArrowRight,
   Building2,
@@ -21,7 +19,9 @@ import {
 
 import "./Register.css";
 
-const API_URL = import.meta.env.VITE_API_BASE_URL;
+import api from "../api/api";
+
+
 
 export default function Register() {
   const navigate = useNavigate();
@@ -142,130 +142,155 @@ export default function Register() {
   // REGISTER
   // =========================================================
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    setError("");
-    setSuccess("");
+  setError("");
+  setSuccess("");
 
-    if (!validateForm()) {
+  if (!validateForm()) {
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const registrationData = {
+      full_name: form.full_name.trim(),
+      email: form.email.trim().toLowerCase(),
+      mobile_number: form.mobile_number.trim(),
+      password: form.password,
+      company_name: form.company_name.trim(),
+      role: role,
+      admin_code: role === "admin"
+        ? adminCode.trim()
+        : null,
+    };
+
+    console.log("REGISTER REQUEST:", {
+      ...registrationData,
+      password: "********",
+    });
+
+    // =====================================================
+    // SEND REGISTRATION REQUEST
+    // =====================================================
+
+    const response = await api.post(
+      "/auth/register",
+      registrationData,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        // Prevent infinite-looking requests.
+        timeout: 15000,
+      }
+    );
+
+    console.log("REGISTER RESPONSE:", response.data);
+
+    // =====================================================
+    // SAVE REGISTRATION DATA FOR OTP PAGE
+    // =====================================================
+
+    sessionStorage.setItem(
+      "ledgerly_registration",
+      JSON.stringify(registrationData)
+    );
+
+    sessionStorage.setItem(
+      "ledgerly_registration_email",
+      registrationData.email
+    );
+
+    sessionStorage.setItem(
+      "ledgerly_registration_mobile",
+      registrationData.mobile_number
+    );
+
+    // =====================================================
+    // SUCCESS
+    // =====================================================
+
+    setSuccess(
+      response.data?.message ||
+      "Verification code sent successfully."
+    );
+
+    // =====================================================
+    // GO TO OTP PAGE IMMEDIATELY
+    // =====================================================
+
+    navigate("/verify-registration", {
+      replace: true,
+    });
+
+  } catch (err) {
+    console.error("REGISTER ERROR:", err);
+
+    // =====================================================
+    // TIMEOUT
+    // =====================================================
+
+    if (err.code === "ECONNABORTED") {
+      setError(
+        "The verification service took too long to respond. Please try again."
+      );
+
       return;
     }
 
-    try {
-      setLoading(true);
+    // =====================================================
+    // NETWORK ERROR
+    // =====================================================
 
-      // -----------------------------------------------------
-      // REGISTRATION DATA
-      // -----------------------------------------------------
-
-      const registrationData = {
-        full_name: form.full_name.trim(),
-        email: form.email.trim().toLowerCase(),
-        mobile_number: form.mobile_number.trim(),
-        password: form.password,
-        company_name: form.company_name.trim(),
-        role: role,
-        admin_code: role === "admin" ? adminCode.trim() : null,
-      };
-
-      console.log("REGISTER REQUEST:", {
-        ...registrationData,
-        password: "********",
-      });
-
-      // -----------------------------------------------------
-      // STEP 1
-      // Send registration data to backend.
-      //
-      // Backend:
-      // - checks email
-      // - checks mobile
-      // - checks admin code
-      // - generates OTP
-      // - stores OTP
-      // - DOES NOT create user yet
-      // -----------------------------------------------------
-
-      const response = await axios.post(
-        `${API_URL}/auth/register`,
-        registrationData,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+    if (
+      err.code === "ERR_NETWORK" ||
+      err.message === "Network Error"
+    ) {
+      setError(
+        "Unable to connect to the backend. Make sure FastAPI is running."
       );
 
-      console.log("OTP REGISTER RESPONSE:", response.data);
-
-      // -----------------------------------------------------
-      // STORE REGISTRATION DATA
-      //
-      // VerifyRegistration.jsx needs these fields because
-      // the backend creates the account only after OTP
-      // verification.
-      // -----------------------------------------------------
-
-      sessionStorage.setItem(
-        "ledgerly_registration",
-        JSON.stringify(registrationData)
-      );
-
-      // -----------------------------------------------------
-      // STORE EMAIL/MOBILE SEPARATELY
-      //
-      // Useful for displaying them on OTP page.
-      // -----------------------------------------------------
-
-      sessionStorage.setItem(
-        "ledgerly_registration_email",
-        registrationData.email
-      );
-
-      sessionStorage.setItem(
-        "ledgerly_registration_mobile",
-        registrationData.mobile_number
-      );
-
-      // -----------------------------------------------------
-      // SUCCESS
-      // -----------------------------------------------------
-
-      setSuccess(
-        response.data?.message ||
-          "OTP sent successfully. Please check your verification code."
-      );
-
-      // -----------------------------------------------------
-      // GO TO OTP PAGE
-      // -----------------------------------------------------
-
-      setTimeout(() => {
-        navigate("/verify-registration");
-      }, 700);
-    } catch (err) {
-      console.error("REGISTER ERROR:", err);
-
-      const responseData = err.response?.data;
-      const detail = responseData?.detail;
-
-      if (Array.isArray(detail)) {
-        setError(
-          detail
-            .map((item) => item?.msg || "Invalid input")
-            .join(", ")
-        );
-      } else {
-        setError(
-          detail ||
-            "Unable to send OTP. Please check your information and try again."
-        );
-      }
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
+
+    // =====================================================
+    // BACKEND ERROR
+    // =====================================================
+
+    const detail = err.response?.data?.detail;
+
+    if (Array.isArray(detail)) {
+      setError(
+        detail
+          .map((item) => item?.msg || "Invalid input")
+          .join(", ")
+      );
+
+      return;
+    }
+
+    if (detail) {
+      setError(String(detail));
+      return;
+    }
+
+    // =====================================================
+    // UNKNOWN ERROR
+    // =====================================================
+
+    setError(
+      "Unable to send verification code. Please try again."
+    );
+
+  } finally {
+    setLoading(false);
+  }
+};
 
   // =========================================================
   // USER ROLE
@@ -308,7 +333,10 @@ export default function Register() {
         <div className="register-info-brand">
 
           <div className="register-info-logo">
-            LF
+          <img
+          src="/pwa-50x50.png"
+          alt="Ledgerly"
+          />
           </div>
 
           <div>
@@ -394,9 +422,10 @@ export default function Register() {
 
           <div className="mobile-brand">
 
-            <div>
-              LF
-            </div>
+            <img
+              src="/pwa-192x192.png"
+              alt="Ledgerly"
+           />
 
             <strong>
               <span>Ledgerly</span>
