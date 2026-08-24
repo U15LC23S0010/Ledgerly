@@ -18,8 +18,8 @@ function Welcome() {
   const navigate = useNavigate();
 
   const finishWelcome = () => {
-    localStorage.setItem("ledgerflow_welcome_seen", "true");
-
+    // Do NOT permanently store welcome_seen.
+    // Welcome should appear again after the next login.
     navigate("/dashboard", {
       replace: true,
     });
@@ -28,10 +28,7 @@ function Welcome() {
   return (
     <div className="welcome-page">
 
-      {/* =====================================================
-          ANIMATED BACKGROUND
-      ===================================================== */}
-
+      {/* Animated background */}
       <div className="welcome-orb welcome-orb-one" />
       <div className="welcome-orb welcome-orb-two" />
       <div className="welcome-orb welcome-orb-three" />
@@ -39,7 +36,6 @@ function Welcome() {
       <div className="welcome-grid" />
 
       {/* Floating finance elements */}
-
       <div className="welcome-floating welcome-floating-one">
         <TrendingUp />
       </div>
@@ -56,22 +52,12 @@ function Welcome() {
         <Receipt />
       </div>
 
-
-      {/* =====================================================
-          MAIN CARD
-      ===================================================== */}
-
+      {/* Main card */}
       <main className="welcome-card">
-
-        {/* Animated border */}
 
         <div className="welcome-card-glow" />
 
-
-        {/* =================================================
-            CLOSE
-        ================================================= */}
-
+        {/* Close */}
         <button
           type="button"
           className="welcome-close"
@@ -81,28 +67,17 @@ function Welcome() {
           <X size={18} />
         </button>
 
-
-        {/* =================================================
-            LOGO
-        ================================================= */}
-
+        {/* Logo */}
         <div className="welcome-logo-wrapper">
-
           <div className="welcome-logo-ring" />
 
           <div className="welcome-logo">
             LF
           </div>
-
         </div>
 
-
-        {/* =================================================
-            BADGE
-        ================================================= */}
-
+        {/* Badge */}
         <div className="welcome-badge">
-
           <span className="welcome-status-dot" />
 
           <Sparkles size={13} />
@@ -110,49 +85,27 @@ function Welcome() {
           <span>
             Welcome to LedgerFlow AI
           </span>
-
         </div>
 
-
-        {/* =================================================
-            TITLE
-        ================================================= */}
-
+        {/* Title */}
         <h1 className="welcome-title">
-
           Your smarter
-
           <span>
             bookkeeping workspace.
           </span>
-
         </h1>
 
-
-        {/* =================================================
-            DESCRIPTION
-        ================================================= */}
-
+        {/* Description */}
         <p className="welcome-description">
-
           LedgerFlow AI brings your transactions, accounts,
           expenses, budgets, reports and financial insights
           together in one intelligent bookkeeping workspace.
-
         </p>
 
-
-        {/* =================================================
-            FEATURES
-        ================================================= */}
-
+        {/* Features */}
         <div className="welcome-features">
 
-
-          {/* Feature 1 */}
-
           <div className="welcome-feature">
-
             <div className="welcome-feature-number">
               01
             </div>
@@ -162,7 +115,6 @@ function Welcome() {
             </div>
 
             <div className="welcome-feature-content">
-
               <strong>
                 Manage your finances
               </strong>
@@ -171,16 +123,10 @@ function Welcome() {
                 Organize accounts, transactions,
                 expenses and categories.
               </span>
-
             </div>
-
           </div>
 
-
-          {/* Feature 2 */}
-
           <div className="welcome-feature">
-
             <div className="welcome-feature-number">
               02
             </div>
@@ -190,7 +136,6 @@ function Welcome() {
             </div>
 
             <div className="welcome-feature-content">
-
               <strong>
                 Understand your numbers
               </strong>
@@ -199,16 +144,10 @@ function Welcome() {
                 Track budgets, reports, analytics
                 and financial performance.
               </span>
-
             </div>
-
           </div>
 
-
-          {/* Feature 3 */}
-
           <div className="welcome-feature">
-
             <div className="welcome-feature-number">
               03
             </div>
@@ -218,7 +157,6 @@ function Welcome() {
             </div>
 
             <div className="welcome-feature-content">
-
               <strong>
                 Get intelligent insights
               </strong>
@@ -227,18 +165,12 @@ function Welcome() {
                 Discover useful patterns and
                 suggestions from your financial data.
               </span>
-
             </div>
-
           </div>
 
         </div>
 
-
-        {/* =================================================
-            CHECKLIST
-        ================================================= */}
-
+        {/* Checklist */}
         <div className="welcome-checklist">
 
           <div>
@@ -264,17 +196,12 @@ function Welcome() {
 
         </div>
 
-
-        {/* =================================================
-            CTA
-        ================================================= */}
-
+        {/* CTA */}
         <button
           type="button"
           className="welcome-start-button"
           onClick={finishWelcome}
         >
-
           <span>
             Get Started
           </span>
@@ -282,23 +209,15 @@ function Welcome() {
           <ArrowRight size={18} />
 
           <div className="welcome-button-shine" />
-
         </button>
 
-
-        {/* =================================================
-            FOOTER NOTE
-        ================================================= */}
-
+        {/* Footer */}
         <p className="welcome-note">
-
           Your complete guide is always available from the
           sidebar whenever you need help.
-
         </p>
 
       </main>
-
     </div>
   );
 }
