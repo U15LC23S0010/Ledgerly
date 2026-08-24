@@ -334,7 +334,7 @@ const handleSubmit = async (e) => {
 
           <div className="register-info-logo">
           <img
-          src="/pwa-50x50.png"
+          src="/pwa-70x70.png"
           alt="Ledgerly"
           />
           </div>
@@ -420,18 +420,20 @@ const handleSubmit = async (e) => {
 
           {/* MOBILE BRAND */}
 
-          <div className="mobile-brand">
+           <div className="mobile-brand">
 
-            <img
-              src="/pwa-192x192.png"
-              alt="Ledgerly"
-           />
+           <div className="mobile-brand-logo">
+           <img
+           src="/pwa-192x192.png"
+           alt="Ledgerly"
+            />
+           </div>
 
-            <strong>
-              <span>Ledgerly</span>
-            </strong>
+  <strong>
+    <span>Ledgerly</span>
+  </strong>
 
-          </div>
+</div>
 
 
           {/* HEADING */}
