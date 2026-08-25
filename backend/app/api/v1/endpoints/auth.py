@@ -8,7 +8,6 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
-    BackgroundTasks,
 )
 
 from fastapi.security import OAuth2PasswordRequestForm
@@ -57,14 +56,17 @@ OTP_EXPIRE_MINUTES = 5
 
 def utc_now() -> datetime:
     """
-    Return the current UTC time as a naive datetime.
+    Return current UTC time as a naive datetime.
 
     Database DateTime columns are stored without timezone
-    information, so comparisons use naive UTC datetimes.
+    information, so all comparisons use naive UTC values.
     """
-
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
+
+# =========================================================
+# REQUEST MODELS
+# =========================================================
 
 class VerifyRegistrationRequest(BaseModel):
     full_name: str
@@ -105,7 +107,6 @@ def generate_otp() -> str:
     """
     Generate a secure 6-digit OTP.
     """
-
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
@@ -119,7 +120,20 @@ def send_otp(
     otp: str,
     purpose: str = "registration",
 ):
+    """
+    Send OTP email.
+
+    purpose:
+        registration
+        password_reset
+    """
+
+    # Mobile number is currently not used for email.
     _ = mobile_number
+
+    # -----------------------------------------------------
+    # PASSWORD RESET EMAIL
+    # -----------------------------------------------------
 
     if purpose == "password_reset":
 
@@ -128,20 +142,27 @@ def send_otp(
         body = f"""
 Hello,
 
-We received a request to reset your Ledgerly account password.
+We received a request to reset your Ledgerly password.
 
-YOUR VERIFICATION CODE
+YOUR PASSWORD RESET CODE
 
 {otp}
 
-This code is valid for {OTP_EXPIRE_MINUTES} minutes.
+This code expires in {OTP_EXPIRE_MINUTES} minutes.
 
-For your security, please do not share this verification code with anyone.
+For your security, please do not share this code with anyone.
+
+If you did not request a password reset, you can safely ignore this email.
 
 Best regards,
 Ledgerly Team
+
 Smart Bookkeeping, Simplified.
 """
+
+    # -----------------------------------------------------
+    # REGISTRATION EMAIL
+    # -----------------------------------------------------
 
     else:
 
@@ -150,47 +171,56 @@ Smart Bookkeeping, Simplified.
         body = f"""
 Hello,
 
-Welcome to Ledgerly! 
+Welcome to Ledgerly!
 
-You're one step away from setting up your smarter bookkeeping workspace.
+You're one step away from setting up your smarter
+bookkeeping workspace.
 
-VERIFY YOUR EMAIL
-
-Your verification code is:
+YOUR VERIFICATION CODE
 
 {otp}
 
-This code is valid for {OTP_EXPIRE_MINUTES} minutes.
+This code expires in {OTP_EXPIRE_MINUTES} minutes.
 
-Enter this code in Ledgerly to complete your registration and start managing your finances with clarity.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Enter this code in Ledgerly to complete your registration
+and start managing your finances with clarity.
 
 WHAT'S WAITING FOR YOU
 
 ✓ Track income and expenses
 ✓ Manage accounts and transactions
 ✓ Create budgets and invoices
-✓ Analyze your financial performance
-✓ Discover intelligent financial insights
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✓ Analyze financial performance
+✓ Discover intelligent insights
 
 Your financial workspace is almost ready.
 
-See you inside Ledgerly.
-
 Best regards,
-Ledgerly - Smart Bookkeeping
+Ledgerly Team
+
+Smart Bookkeeping, Simplified.
 """
+
+    # -----------------------------------------------------
+    # CREATE EMAIL
+    # -----------------------------------------------------
 
     message = EmailMessage()
 
     message["Subject"] = subject
-    message["From"] = settings.SMTP_FROM_EMAIL
+
+    message["From"] = (
+        f"{settings.SMTP_FROM_NAME} "
+        f"<{settings.SMTP_FROM_EMAIL}>"
+    )
+
     message["To"] = email
 
     message.set_content(body)
+
+    # -----------------------------------------------------
+    # SEND EMAIL
+    # -----------------------------------------------------
 
     try:
 
@@ -201,7 +231,9 @@ Ledgerly - Smart Bookkeeping
         ) as server:
 
             server.ehlo()
+
             server.starttls()
+
             server.ehlo()
 
             server.login(
@@ -212,8 +244,62 @@ Ledgerly - Smart Bookkeeping
             server.send_message(message)
 
         print(
-            f"OTP EMAIL SENT SUCCESSFULLY TO: {email}"
+            f"OTP EMAIL SENT SUCCESSFULLY -> {email}"
         )
+
+        return True
+
+    # -----------------------------------------------------
+    # SMTP AUTH ERROR
+    # -----------------------------------------------------
+
+    except smtplib.SMTPAuthenticationError as e:
+
+        print(
+            "SMTP AUTHENTICATION ERROR:",
+            repr(e),
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Email service authentication failed.",
+        )
+
+    # -----------------------------------------------------
+    # SMTP CONNECTION ERROR
+    # -----------------------------------------------------
+
+    except smtplib.SMTPConnectError as e:
+
+        print(
+            "SMTP CONNECTION ERROR:",
+            repr(e),
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to connect to email service.",
+        )
+
+    # -----------------------------------------------------
+    # SMTP GENERAL ERROR
+    # -----------------------------------------------------
+
+    except smtplib.SMTPException as e:
+
+        print(
+            "SMTP ERROR:",
+            repr(e),
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to send OTP email.",
+        )
+
+    # -----------------------------------------------------
+    # UNKNOWN ERROR
+    # -----------------------------------------------------
 
     except Exception as e:
 
@@ -222,7 +308,12 @@ Ledgerly - Smart Bookkeeping
             repr(e),
         )
 
-        raise
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to send OTP email.",
+        )
+
+
 # =========================================================
 # REGISTER
 # =========================================================
@@ -230,22 +321,24 @@ Ledgerly - Smart Bookkeeping
 @router.post("/register")
 def register(
     user: UserCreate,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     """
-    Step 1 of registration.
+    Start registration.
+
+    Steps:
 
     1. Validate registration data.
-    2. Check email/mobile.
-    3. Check admin code.
-    4. Generate OTP.
-    5. Store OTP.
-    6. Queue OTP email in background.
+    2. Check email.
+    3. Check mobile.
+    4. Check admin code.
+    5. Generate OTP.
+    6. Store OTP.
+    7. Send OTP email.
     """
 
     # -----------------------------------------------------
-    # NORMALIZE
+    # NORMALIZE DATA
     # -----------------------------------------------------
 
     email = user.email.strip().lower()
@@ -255,7 +348,7 @@ def register(
     role = user.role.strip().lower()
 
     # -----------------------------------------------------
-    # ROLE
+    # ROLE VALIDATION
     # -----------------------------------------------------
 
     if role not in ["user", "admin"]:
@@ -266,7 +359,7 @@ def register(
         )
 
     # -----------------------------------------------------
-    # PASSWORD
+    # PASSWORD VALIDATION
     # -----------------------------------------------------
 
     if len(user.password) < 6:
@@ -277,7 +370,7 @@ def register(
         )
 
     # -----------------------------------------------------
-    # MOBILE
+    # MOBILE VALIDATION
     # -----------------------------------------------------
 
     if len(mobile_number) < 10 or len(mobile_number) > 15:
@@ -288,7 +381,7 @@ def register(
         )
 
     # -----------------------------------------------------
-    # EMAIL
+    # CHECK EMAIL
     # -----------------------------------------------------
 
     existing_email = (
@@ -305,7 +398,7 @@ def register(
         )
 
     # -----------------------------------------------------
-    # MOBILE
+    # CHECK MOBILE
     # -----------------------------------------------------
 
     existing_mobile = (
@@ -336,7 +429,10 @@ def register(
                 detail="Admin access code is required.",
             )
 
-        if user.admin_code != settings.ADMIN_REGISTRATION_CODE:
+        if (
+            user.admin_code
+            != settings.ADMIN_REGISTRATION_CODE
+        ):
 
             raise HTTPException(
                 status_code=403,
@@ -349,12 +445,14 @@ def register(
 
     otp = generate_otp()
 
-    expires_at = (
-        utc_now()
-        + timedelta(minutes=OTP_EXPIRE_MINUTES)
-    )
+    now = utc_now()
 
-    created_at = utc_now()
+    expires_at = (
+        now
+        + timedelta(
+            minutes=OTP_EXPIRE_MINUTES
+        )
+    )
 
     # -----------------------------------------------------
     # INVALIDATE OLD OTPs
@@ -383,10 +481,14 @@ def register(
         otp=otp,
         expires_at=expires_at,
         is_verified=False,
-        created_at=created_at,
+        created_at=now,
     )
 
     db.add(otp_record)
+
+    # -----------------------------------------------------
+    # SAVE OTP
+    # -----------------------------------------------------
 
     try:
 
@@ -407,23 +509,37 @@ def register(
         )
 
     # -----------------------------------------------------
-    # QUEUE EMAIL
+    # SEND OTP
     # -----------------------------------------------------
 
     try:
-          send_otp(
-          email,
-          mobile_number,
-          otp,
-         "registration",
-        )
-    except Exception as e:
-      print("REGISTRATION EMAIL FAILED:", repr(e))
 
-      raise HTTPException(
-        status_code=500,
-        detail="OTP email could not be sent. Check SMTP configuration.",
-    )
+        send_otp(
+            email,
+            mobile_number,
+            otp,
+            "registration",
+        )
+
+    except HTTPException:
+
+        raise
+
+    except Exception as e:
+
+        print(
+            "REGISTRATION EMAIL ERROR:",
+            repr(e),
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="OTP email could not be sent. Please try again.",
+        )
+
+    # -----------------------------------------------------
+    # SUCCESS
+    # -----------------------------------------------------
 
     return {
         "message": "OTP sent successfully.",
@@ -443,7 +559,7 @@ def verify_registration(
     db: Session = Depends(get_db),
 ):
     """
-    Verify registration OTP and create the user.
+    Verify registration OTP and create user.
     """
 
     email = data.email.strip().lower()
@@ -451,6 +567,19 @@ def verify_registration(
     mobile_number = data.mobile_number.strip()
 
     role = data.role.strip().lower()
+
+    otp_value = data.otp.strip()
+
+    # -----------------------------------------------------
+    # OTP FORMAT
+    # -----------------------------------------------------
+
+    if not otp_value.isdigit() or len(otp_value) != 6:
+
+        raise HTTPException(
+            status_code=400,
+            detail="OTP must be a valid 6-digit code.",
+        )
 
     # -----------------------------------------------------
     # ROLE
@@ -464,7 +593,7 @@ def verify_registration(
         )
 
     # -----------------------------------------------------
-    # ADMIN
+    # ADMIN VERIFICATION
     # -----------------------------------------------------
 
     if role == "admin":
@@ -476,7 +605,10 @@ def verify_registration(
                 detail="Admin access code is required.",
             )
 
-        if data.admin_code != settings.ADMIN_REGISTRATION_CODE:
+        if (
+            data.admin_code
+            != settings.ADMIN_REGISTRATION_CODE
+        ):
 
             raise HTTPException(
                 status_code=403,
@@ -484,7 +616,7 @@ def verify_registration(
             )
 
     # -----------------------------------------------------
-    # EMAIL CHECK
+    # CHECK EMAIL
     # -----------------------------------------------------
 
     existing_email = (
@@ -501,7 +633,7 @@ def verify_registration(
         )
 
     # -----------------------------------------------------
-    # MOBILE CHECK
+    # CHECK MOBILE
     # -----------------------------------------------------
 
     existing_mobile = (
@@ -528,6 +660,7 @@ def verify_registration(
         .filter(
             OTPVerification.email == email,
             OTPVerification.mobile_number == mobile_number,
+            OTPVerification.is_verified == False,
         )
         .order_by(
             OTPVerification.created_at.desc()
@@ -543,18 +676,7 @@ def verify_registration(
         )
 
     # -----------------------------------------------------
-    # ALREADY USED
-    # -----------------------------------------------------
-
-    if otp_record.is_verified:
-
-        raise HTTPException(
-            status_code=400,
-            detail="OTP has already been used.",
-        )
-
-    # -----------------------------------------------------
-    # EXPIRATION
+    # CHECK EXPIRATION
     # -----------------------------------------------------
 
     if otp_record.expires_at < utc_now():
@@ -569,10 +691,10 @@ def verify_registration(
         )
 
     # -----------------------------------------------------
-    # OTP VALUE
+    # CHECK OTP
     # -----------------------------------------------------
 
-    if otp_record.otp != data.otp.strip():
+    if otp_record.otp != otp_value:
 
         raise HTTPException(
             status_code=400,
@@ -580,7 +702,7 @@ def verify_registration(
         )
 
     # -----------------------------------------------------
-    # MARK VERIFIED
+    # MARK OTP USED
     # -----------------------------------------------------
 
     otp_record.is_verified = True
@@ -600,6 +722,10 @@ def verify_registration(
     )
 
     db.add(new_user)
+
+    # -----------------------------------------------------
+    # SAVE USER
+    # -----------------------------------------------------
 
     try:
 
@@ -621,6 +747,10 @@ def verify_registration(
             detail="Unable to create account.",
         )
 
+    # -----------------------------------------------------
+    # RESPONSE
+    # -----------------------------------------------------
+
     return {
         "message": "Account verified and created successfully.",
         "id": new_user.id,
@@ -639,11 +769,10 @@ def verify_registration(
 @router.post("/resend-otp")
 def resend_otp(
     data: ResendOTPRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     """
-    Resend registration OTP.
+    Generate and send a new registration OTP.
     """
 
     email = data.email.strip().lower()
@@ -651,7 +780,7 @@ def resend_otp(
     mobile_number = data.mobile_number.strip()
 
     # -----------------------------------------------------
-    # CHECK EXISTING USER
+    # CHECK ACCOUNT
     # -----------------------------------------------------
 
     existing_user = (
@@ -673,12 +802,14 @@ def resend_otp(
 
     otp = generate_otp()
 
-    expires_at = (
-        utc_now()
-        + timedelta(minutes=OTP_EXPIRE_MINUTES)
-    )
+    now = utc_now()
 
-    created_at = utc_now()
+    expires_at = (
+        now
+        + timedelta(
+            minutes=OTP_EXPIRE_MINUTES
+        )
+    )
 
     # -----------------------------------------------------
     # INVALIDATE OLD OTPs
@@ -698,7 +829,7 @@ def resend_otp(
         old_otp.is_verified = True
 
     # -----------------------------------------------------
-    # NEW OTP
+    # CREATE NEW OTP
     # -----------------------------------------------------
 
     otp_record = OTPVerification(
@@ -707,10 +838,14 @@ def resend_otp(
         otp=otp,
         expires_at=expires_at,
         is_verified=False,
-        created_at=created_at,
+        created_at=now,
     )
 
     db.add(otp_record)
+
+    # -----------------------------------------------------
+    # SAVE
+    # -----------------------------------------------------
 
     try:
 
@@ -721,7 +856,7 @@ def resend_otp(
         db.rollback()
 
         print(
-            "RESEND OTP DATABASE ERROR:",
+            "RESEND REGISTRATION OTP DATABASE ERROR:",
             repr(e),
         )
 
@@ -731,19 +866,41 @@ def resend_otp(
         )
 
     # -----------------------------------------------------
-    # QUEUE EMAIL
+    # SEND EMAIL
     # -----------------------------------------------------
 
-    background_tasks.add_task(
-        send_otp,
-        email,
-        mobile_number,
-        otp,
-        "registration",
-    )
+    try:
+
+        send_otp(
+            email,
+            mobile_number,
+            otp,
+            "registration",
+        )
+
+    except HTTPException:
+
+        raise
+
+    except Exception as e:
+
+        print(
+            "RESEND REGISTRATION EMAIL ERROR:",
+            repr(e),
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="OTP email could not be sent. Please try again.",
+        )
+
+    # -----------------------------------------------------
+    # SUCCESS
+    # -----------------------------------------------------
 
     return {
         "message": "New OTP sent successfully.",
+        "email": email,
         "expires_in_minutes": OTP_EXPIRE_MINUTES,
     }
 
@@ -755,11 +912,10 @@ def resend_otp(
 @router.post("/forgot-password")
 def forgot_password(
     data: ForgotPasswordRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     """
-    Request a password reset OTP.
+    Generate and send password reset OTP.
     """
 
     email = data.email.strip().lower()
@@ -782,7 +938,7 @@ def forgot_password(
         )
 
     # -----------------------------------------------------
-    # CHECK ACTIVE
+    # ACTIVE CHECK
     # -----------------------------------------------------
 
     if not user.is_active:
@@ -798,12 +954,14 @@ def forgot_password(
 
     otp = generate_otp()
 
-    expires_at = (
-        utc_now()
-        + timedelta(minutes=OTP_EXPIRE_MINUTES)
-    )
+    now = utc_now()
 
-    created_at = utc_now()
+    expires_at = (
+        now
+        + timedelta(
+            minutes=OTP_EXPIRE_MINUTES
+        )
+    )
 
     # -----------------------------------------------------
     # INVALIDATE OLD OTPs
@@ -823,7 +981,7 @@ def forgot_password(
         old_otp.is_verified = True
 
     # -----------------------------------------------------
-    # CREATE PASSWORD RESET OTP
+    # CREATE RESET OTP
     # -----------------------------------------------------
 
     otp_record = OTPVerification(
@@ -832,10 +990,14 @@ def forgot_password(
         otp=otp,
         expires_at=expires_at,
         is_verified=False,
-        created_at=created_at,
+        created_at=now,
     )
 
     db.add(otp_record)
+
+    # -----------------------------------------------------
+    # SAVE
+    # -----------------------------------------------------
 
     try:
 
@@ -856,16 +1018,37 @@ def forgot_password(
         )
 
     # -----------------------------------------------------
-    # QUEUE PASSWORD RESET EMAIL
+    # SEND EMAIL
     # -----------------------------------------------------
 
-    background_tasks.add_task(
-        send_otp,
-        email,
-        user.mobile_number,
-        otp,
-        "password_reset",
-    )
+    try:
+
+        send_otp(
+            email,
+            user.mobile_number,
+            otp,
+            "password_reset",
+        )
+
+    except HTTPException:
+
+        raise
+
+    except Exception as e:
+
+        print(
+            "PASSWORD RESET EMAIL ERROR:",
+            repr(e),
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Password reset OTP could not be sent. Please try again.",
+        )
+
+    # -----------------------------------------------------
+    # SUCCESS
+    # -----------------------------------------------------
 
     return {
         "message": "Password reset OTP sent successfully.",
@@ -881,11 +1064,10 @@ def forgot_password(
 @router.post("/forgot-password/resend")
 def resend_forgot_password_otp(
     data: ForgotPasswordRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     """
-    Resend password reset OTP.
+    Generate and send a new password reset OTP.
     """
 
     email = data.email.strip().lower()
@@ -908,7 +1090,7 @@ def resend_forgot_password_otp(
         )
 
     # -----------------------------------------------------
-    # CHECK ACTIVE
+    # ACTIVE CHECK
     # -----------------------------------------------------
 
     if not user.is_active:
@@ -919,17 +1101,19 @@ def resend_forgot_password_otp(
         )
 
     # -----------------------------------------------------
-    # GENERATE OTP
+    # GENERATE NEW OTP
     # -----------------------------------------------------
 
     otp = generate_otp()
 
-    expires_at = (
-        utc_now()
-        + timedelta(minutes=OTP_EXPIRE_MINUTES)
-    )
+    now = utc_now()
 
-    created_at = utc_now()
+    expires_at = (
+        now
+        + timedelta(
+            minutes=OTP_EXPIRE_MINUTES
+        )
+    )
 
     # -----------------------------------------------------
     # INVALIDATE OLD OTPs
@@ -958,10 +1142,14 @@ def resend_forgot_password_otp(
         otp=otp,
         expires_at=expires_at,
         is_verified=False,
-        created_at=created_at,
+        created_at=now,
     )
 
     db.add(otp_record)
+
+    # -----------------------------------------------------
+    # SAVE
+    # -----------------------------------------------------
 
     try:
 
@@ -978,23 +1166,45 @@ def resend_forgot_password_otp(
 
         raise HTTPException(
             status_code=500,
-            detail="Unable to resend password reset OTP.",
+            detail="Unable to create new password reset OTP.",
         )
 
     # -----------------------------------------------------
-    # QUEUE EMAIL
+    # SEND EMAIL
     # -----------------------------------------------------
 
-    background_tasks.add_task(
-        send_otp,
-        email,
-        user.mobile_number,
-        otp,
-        "password_reset",
-    )
+    try:
+
+        send_otp(
+            email,
+            user.mobile_number,
+            otp,
+            "password_reset",
+        )
+
+    except HTTPException:
+
+        raise
+
+    except Exception as e:
+
+        print(
+            "RESEND PASSWORD EMAIL ERROR:",
+            repr(e),
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Password reset OTP could not be sent. Please try again.",
+        )
+
+    # -----------------------------------------------------
+    # SUCCESS
+    # -----------------------------------------------------
 
     return {
         "message": "New password reset OTP sent successfully.",
+        "email": email,
         "expires_in_minutes": OTP_EXPIRE_MINUTES,
     }
 
@@ -1011,12 +1221,26 @@ def verify_forgot_password_otp(
     """
     Verify password reset OTP.
 
-    This does not change the password.
+    IMPORTANT:
+    This endpoint does NOT consume the OTP.
+
+    The same OTP is verified again by /reset-password.
     """
 
     email = data.email.strip().lower()
 
     otp_value = data.otp.strip()
+
+    # -----------------------------------------------------
+    # OTP FORMAT
+    # -----------------------------------------------------
+
+    if not otp_value.isdigit() or len(otp_value) != 6:
+
+        raise HTTPException(
+            status_code=400,
+            detail="OTP must be a valid 6-digit code.",
+        )
 
     # -----------------------------------------------------
     # FIND USER
@@ -1036,7 +1260,18 @@ def verify_forgot_password_otp(
         )
 
     # -----------------------------------------------------
-    # FIND LATEST OTP
+    # ACTIVE CHECK
+    # -----------------------------------------------------
+
+    if not user.is_active:
+
+        raise HTTPException(
+            status_code=403,
+            detail="This account is inactive.",
+        )
+
+    # -----------------------------------------------------
+    # FIND LATEST UNUSED OTP
     # -----------------------------------------------------
 
     otp_record = (
@@ -1044,12 +1279,17 @@ def verify_forgot_password_otp(
         .filter(
             OTPVerification.email == email,
             OTPVerification.mobile_number == user.mobile_number,
+            OTPVerification.is_verified == False,
         )
         .order_by(
             OTPVerification.created_at.desc()
         )
         .first()
     )
+
+    # -----------------------------------------------------
+    # NOT FOUND
+    # -----------------------------------------------------
 
     if not otp_record:
 
@@ -1059,18 +1299,7 @@ def verify_forgot_password_otp(
         )
 
     # -----------------------------------------------------
-    # USED
-    # -----------------------------------------------------
-
-    if otp_record.is_verified:
-
-        raise HTTPException(
-            status_code=400,
-            detail="OTP has already been used.",
-        )
-
-    # -----------------------------------------------------
-    # EXPIRED
+    # EXPIRATION
     # -----------------------------------------------------
 
     if otp_record.expires_at < utc_now():
@@ -1095,9 +1324,14 @@ def verify_forgot_password_otp(
             detail="Invalid OTP.",
         )
 
+    # -----------------------------------------------------
+    # SUCCESS
+    # -----------------------------------------------------
+
     return {
         "message": "OTP verified successfully.",
         "email": email,
+        "verified": True,
     }
 
 
@@ -1113,8 +1347,8 @@ def reset_password(
     """
     Verify OTP and reset password.
 
-    OTP is consumed only after the password is
-    successfully stored.
+    OTP is consumed only after the password
+    is successfully changed.
     """
 
     email = data.email.strip().lower()
@@ -1135,6 +1369,17 @@ def reset_password(
         )
 
     # -----------------------------------------------------
+    # OTP FORMAT
+    # -----------------------------------------------------
+
+    if not otp_value.isdigit() or len(otp_value) != 6:
+
+        raise HTTPException(
+            status_code=400,
+            detail="OTP must be a valid 6-digit code.",
+        )
+
+    # -----------------------------------------------------
     # FIND USER
     # -----------------------------------------------------
 
@@ -1152,7 +1397,7 @@ def reset_password(
         )
 
     # -----------------------------------------------------
-    # CHECK ACTIVE
+    # ACTIVE CHECK
     # -----------------------------------------------------
 
     if not user.is_active:
@@ -1163,7 +1408,7 @@ def reset_password(
         )
 
     # -----------------------------------------------------
-    # FIND LATEST OTP
+    # FIND LATEST UNUSED OTP
     # -----------------------------------------------------
 
     otp_record = (
@@ -1171,6 +1416,7 @@ def reset_password(
         .filter(
             OTPVerification.email == email,
             OTPVerification.mobile_number == user.mobile_number,
+            OTPVerification.is_verified == False,
         )
         .order_by(
             OTPVerification.created_at.desc()
@@ -1186,18 +1432,7 @@ def reset_password(
         )
 
     # -----------------------------------------------------
-    # ALREADY USED
-    # -----------------------------------------------------
-
-    if otp_record.is_verified:
-
-        raise HTTPException(
-            status_code=400,
-            detail="OTP has already been used.",
-        )
-
-    # -----------------------------------------------------
-    # EXPIRED
+    # EXPIRATION
     # -----------------------------------------------------
 
     if otp_record.expires_at < utc_now():
@@ -1228,6 +1463,10 @@ def reset_password(
 
     user.password = hash_password(new_password)
 
+    # -----------------------------------------------------
+    # CONSUME OTP
+    # -----------------------------------------------------
+
     otp_record.is_verified = True
 
     # -----------------------------------------------------
@@ -1252,11 +1491,12 @@ def reset_password(
             detail="Unable to reset password.",
         )
 
+    # -----------------------------------------------------
+    # SUCCESS
+    # -----------------------------------------------------
+
     return {
-        "message": (
-            "Password reset successfully. "
-            "You can now login."
-        )
+        "message": "Password reset successfully. You can now login."
     }
 
 
@@ -1418,8 +1658,7 @@ def refresh_access_token(
     db: Session = Depends(get_db),
 ):
     """
-    Generate a new access token using a valid
-    refresh token.
+    Generate a new access token using a valid refresh token.
     """
 
     # -----------------------------------------------------
@@ -1452,6 +1691,9 @@ def refresh_access_token(
             detail="Refresh token has been revoked",
         )
 
+    # -----------------------------------------------------
+    # EXPIRED
+    # -----------------------------------------------------
 
     if stored_token.expires_at < utc_now():
 
@@ -1463,6 +1705,10 @@ def refresh_access_token(
             status_code=401,
             detail="Refresh token expired",
         )
+
+    # -----------------------------------------------------
+    # DECODE TOKEN
+    # -----------------------------------------------------
 
     try:
 
@@ -1496,7 +1742,7 @@ def refresh_access_token(
         )
 
     # -----------------------------------------------------
-    # USER
+    # FIND USER
     # -----------------------------------------------------
 
     user = (
@@ -1513,7 +1759,7 @@ def refresh_access_token(
         )
 
     # -----------------------------------------------------
-    # ACTIVE USER
+    # ACTIVE
     # -----------------------------------------------------
 
     if not user.is_active:
@@ -1524,7 +1770,7 @@ def refresh_access_token(
         )
 
     # -----------------------------------------------------
-    # NEW ACCESS TOKEN
+    # CREATE NEW ACCESS TOKEN
     # -----------------------------------------------------
 
     new_access_token = create_access_token(
