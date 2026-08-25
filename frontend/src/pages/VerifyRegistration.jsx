@@ -17,10 +17,6 @@ import "./VerifyRegistration.css";
 export default function VerifyRegistration() {
   const navigate = useNavigate();
 
-  // =========================================================
-  // STATE
-  // =========================================================
-
   const [registrationData, setRegistrationData] = useState(null);
   const [otp, setOtp] = useState("");
 
@@ -31,10 +27,6 @@ export default function VerifyRegistration() {
   const [success, setSuccess] = useState("");
 
   const [countdown, setCountdown] = useState(0);
-
-  // =========================================================
-  // LOAD REGISTRATION SESSION
-  // =========================================================
 
   useEffect(() => {
     try {
@@ -92,10 +84,6 @@ export default function VerifyRegistration() {
     }
   }, []);
 
-  // =========================================================
-  // COUNTDOWN
-  // =========================================================
-
   useEffect(() => {
     if (countdown <= 0) {
       return;
@@ -115,17 +103,11 @@ export default function VerifyRegistration() {
     return () => clearInterval(timer);
   }, [countdown]);
 
-  // =========================================================
-  // HANDLE OTP INPUT
-  // =========================================================
-
   const handleOtpChange = (e) => {
     const value = e.target.value;
 
-    // Only numbers
     const numericValue = value.replace(/\D/g, "");
 
-    // Maximum 6 digits
     if (numericValue.length <= 6) {
       setOtp(numericValue);
       setError("");
@@ -193,10 +175,6 @@ export default function VerifyRegistration() {
           "Registration successful. Your account has been created."
       );
 
-      // =====================================================
-      // REMOVE TEMP REGISTRATION DATA
-      // =====================================================
-
       sessionStorage.removeItem(
         "ledgerly_registration"
       );
@@ -209,10 +187,6 @@ export default function VerifyRegistration() {
         "ledgerly_registration_mobile"
       );
 
-      // =====================================================
-      // STORE TOKEN IF BACKEND RETURNS ONE
-      // =====================================================
-
       const token =
         response.data?.access_token ||
         response.data?.token;
@@ -223,10 +197,6 @@ export default function VerifyRegistration() {
           token
         );
       }
-
-      // =====================================================
-      // REDIRECT
-      // =====================================================
 
       setTimeout(() => {
         navigate(
@@ -338,11 +308,6 @@ export default function VerifyRegistration() {
       setResending(false);
     }
   };
-
-  // =========================================================
-  // GO BACK TO REGISTER
-  // =========================================================
-
   const handleBackToRegister = () => {
     sessionStorage.removeItem(
       "ledgerly_registration"
@@ -358,11 +323,6 @@ export default function VerifyRegistration() {
 
     navigate("/register");
   };
-
-  // =========================================================
-  // DISPLAY EMAIL
-  // =========================================================
-
   const email =
     registrationData?.email ||
     sessionStorage.getItem(
@@ -381,7 +341,10 @@ export default function VerifyRegistration() {
 
           <div className="verify-brand">
             <div className="verify-logo">
-              LF
+               <img
+               src="/ledgerly-30x30.png"
+               alt="Ledgerly"
+              />
             </div>
 
             <div>
@@ -573,7 +536,7 @@ export default function VerifyRegistration() {
 
           <p className="otp-hint">
             Enter the 6-digit code sent to your
-            email or mobile number.
+            email .
           </p>
 
 

@@ -5,17 +5,10 @@ import {
   ArrowRight,
   Mail,
 } from "lucide-react";
-import axios from "axios";
+
+import api from "../api/api";
 
 import "./ForgotPassword.css";
-
-// =========================================================
-// API
-// =========================================================
-
-const API_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "http://127.0.0.1:8000/api/v1";
 
 // =========================================================
 // COMPONENT
@@ -54,29 +47,20 @@ export default function ForgotPassword() {
     try {
       setLoading(true);
 
-      console.log(
-        "FORGOT PASSWORD REQUEST:",
-        {
-          url: `${API_URL}/auth/forgot-password`,
-          email: cleanEmail,
-        }
-      );
+      console.log("FORGOT PASSWORD REQUEST:", {
+        email: cleanEmail,
+      });
 
       // -----------------------------------------------------
-      // API REQUEST
+      // SEND OTP
       // -----------------------------------------------------
 
-      const response = await axios.post(
-        `${API_URL}/auth/forgot-password`,
+      const response = await api.post(
+        "/auth/forgot-password",
         {
           email: cleanEmail,
         },
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
-
-          // Give the backend enough time to send the email.
           timeout: 30000,
         }
       );
@@ -87,7 +71,7 @@ export default function ForgotPassword() {
       );
 
       // -----------------------------------------------------
-      // SAVE EMAIL
+      // SAVE EMAIL FOR OTP / RESET PAGE
       // -----------------------------------------------------
 
       sessionStorage.setItem(
@@ -95,7 +79,7 @@ export default function ForgotPassword() {
         cleanEmail
       );
 
-      // Remove old reset token if present
+      // Remove old reset token
       sessionStorage.removeItem(
         "ledgerly_password_reset_token"
       );
@@ -110,12 +94,13 @@ export default function ForgotPassword() {
       );
 
       // -----------------------------------------------------
-      // GO TO RESET PASSWORD
+      // GO TO RESET PASSWORD PAGE
       // -----------------------------------------------------
 
       setTimeout(() => {
         navigate("/reset-password");
       }, 700);
+
     } catch (err) {
       console.error(
         "FORGOT PASSWORD ERROR:",
@@ -123,7 +108,7 @@ export default function ForgotPassword() {
       );
 
       // -----------------------------------------------------
-      // BACKEND RESPONSE ERROR
+      // BACKEND ERROR
       // -----------------------------------------------------
 
       if (err.response) {
@@ -165,7 +150,10 @@ export default function ForgotPassword() {
       // TIMEOUT
       // -----------------------------------------------------
 
-      if (err.code === "ECONNABORTED") {
+      if (
+        err.code === "ECONNABORTED" ||
+        err.code === "ETIMEDOUT"
+      ) {
         setError(
           "The verification service took too long to respond. Please try again."
         );
@@ -193,6 +181,7 @@ export default function ForgotPassword() {
       setError(
         "Unable to send verification code. Please try again."
       );
+
     } finally {
       setLoading(false);
     }
@@ -204,6 +193,7 @@ export default function ForgotPassword() {
 
   return (
     <main className="forgot-page">
+
       <section className="forgot-card">
 
         {/* LOGO */}
@@ -218,6 +208,7 @@ export default function ForgotPassword() {
         {/* HEADING */}
 
         <div className="forgot-heading">
+
           <span>
             ACCOUNT RECOVERY
           </span>
@@ -231,6 +222,7 @@ export default function ForgotPassword() {
             address and we'll send you a
             verification code.
           </p>
+
         </div>
 
         {/* ERROR */}
@@ -252,11 +244,13 @@ export default function ForgotPassword() {
         {/* FORM */}
 
         <form onSubmit={sendOTP}>
+
           <label htmlFor="forgot-email">
             Email address
           </label>
 
           <div className="forgot-input">
+
             <Mail size={17} />
 
             <input
@@ -273,6 +267,7 @@ export default function ForgotPassword() {
               disabled={loading}
               required
             />
+
           </div>
 
           <button
@@ -280,6 +275,7 @@ export default function ForgotPassword() {
             className="forgot-button-main"
             disabled={loading}
           >
+
             {loading ? (
               <>
                 <span className="forgot-spinner" />
@@ -291,19 +287,27 @@ export default function ForgotPassword() {
                 <ArrowRight size={17} />
               </>
             )}
+
           </button>
+
         </form>
 
         {/* BACK */}
 
         <div className="forgot-back">
+
           <Link to="/login">
+
             <ArrowLeft size={15} />
+
             Back to sign in
+
           </Link>
+
         </div>
 
       </section>
+
     </main>
   );
 }
