@@ -162,8 +162,7 @@ const handleSubmit = async (e) => {
           "Content-Type": "application/json",
         },
 
-        // Prevent infinite-looking requests.
-        timeout: 15000,
+        timeout: 60000,
       }
     );
 
