@@ -726,3 +726,432 @@
 
   margin-top: 1px;
 }
+
+/* =========================================================
+   RESPONSIVE
+   Desktop-like layout on mobile
+========================================================= */
+
+@media (max-width: 800px) {
+
+  .auto-expense-page {
+    padding: 24px;
+  }
+
+  .auto-expense-header {
+    gap: 18px;
+    margin-bottom: 22px;
+  }
+
+  .auto-expense-header h1 {
+    font-size: 30px;
+  }
+
+  .auto-expense-header p {
+    font-size: 14px;
+  }
+
+  .auto-expense-header-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+  }
+
+  .auto-expense-card-header {
+    padding: 22px 24px;
+  }
+
+  .auto-expense-form {
+    padding: 24px;
+  }
+
+  .auto-expense-examples {
+    padding: 20px 24px 24px;
+  }
+
+  .success-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+  .auto-expense-page {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+
+    padding: 16px;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =======================================================
+     HEADER
+  ======================================================= */
+
+  .auto-expense-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 12px;
+
+    margin-bottom: 18px;
+  }
+
+  .auto-expense-eyebrow {
+    margin-bottom: 6px;
+
+    font-size: 10px;
+  }
+
+  .auto-expense-header h1 {
+    font-size: 23px;
+    line-height: 1.2;
+  }
+
+  .auto-expense-header p {
+    margin-top: 6px;
+
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .auto-expense-header-icon {
+    width: 44px;
+    height: 44px;
+
+    border-radius: 11px;
+  }
+
+  .auto-expense-header-icon svg {
+    width: 21px;
+    height: 21px;
+  }
+
+
+  /* =======================================================
+     MAIN CARD
+  ======================================================= */
+
+  .auto-expense-card {
+    width: 100%;
+
+    border-radius: 16px;
+  }
+
+
+  /* =======================================================
+     CARD HEADER
+  ======================================================= */
+
+  .auto-expense-card-header {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 17px;
+  }
+
+  .auto-expense-icon {
+    width: 40px;
+    height: 40px;
+
+    border-radius: 11px;
+  }
+
+  .auto-expense-icon svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .auto-expense-card-header h2 {
+    font-size: 16px;
+  }
+
+  .auto-expense-card-header p {
+    margin-top: 4px;
+
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+
+  /* =======================================================
+     FORM
+  ======================================================= */
+
+  .auto-expense-form {
+    padding: 17px;
+  }
+
+  .auto-expense-form > label {
+    margin-bottom: 7px;
+
+    font-size: 12px;
+  }
+
+  .auto-expense-form textarea {
+    min-height: 125px;
+
+    padding: 12px 13px;
+
+    border-radius: 10px;
+
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+
+  /* =======================================================
+     HINT
+  ======================================================= */
+
+  .auto-expense-hint {
+    gap: 6px;
+
+    margin-top: 8px;
+
+    font-size: 10px;
+
+    line-height: 1.4;
+  }
+
+  .auto-expense-hint svg {
+    width: 13px;
+    height: 13px;
+  }
+
+
+  /* =======================================================
+     ERROR
+  ======================================================= */
+
+  .auto-expense-message {
+    gap: 8px;
+
+    margin-top: 14px;
+
+    padding: 10px 11px;
+
+    border-radius: 9px;
+
+    font-size: 11px;
+  }
+
+  .auto-expense-message svg {
+    width: 16px;
+    height: 16px;
+  }
+
+
+  /* =======================================================
+     SUCCESS
+  ======================================================= */
+
+  .auto-expense-success {
+    margin-top: 15px;
+
+    padding: 14px;
+
+    border-radius: 11px;
+  }
+
+  .success-header {
+    gap: 7px;
+
+    font-size: 12px;
+  }
+
+  .success-header svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .success-close {
+    width: 27px;
+    height: 27px;
+  }
+
+  .success-close svg {
+    width: 14px;
+    height: 14px;
+  }
+
+
+  /* =======================================================
+     SUCCESS DETAILS
+     Keep compact multi-column layout
+  ======================================================= */
+
+  .success-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin-top: 13px;
+    padding-top: 13px;
+  }
+
+  .success-details span {
+    margin-bottom: 4px;
+
+    font-size: 9px;
+  }
+
+  .success-details strong {
+    font-size: 12px;
+  }
+
+
+  /* =======================================================
+     AI CONFIDENCE
+  ======================================================= */
+
+  .ai-confidence {
+    gap: 8px;
+
+    margin-top: 11px;
+
+    padding: 8px 10px;
+
+    font-size: 10px;
+  }
+
+
+  /* =======================================================
+     AI REASON
+  ======================================================= */
+
+  .ai-reason {
+    gap: 6px;
+
+    margin-top: 11px;
+    padding-top: 10px;
+
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .ai-reason svg {
+    width: 13px;
+    height: 13px;
+  }
+
+
+  /* =======================================================
+     SUBMIT BUTTON
+  ======================================================= */
+
+  .auto-expense-submit {
+    min-height: 44px;
+
+    margin-top: 17px;
+
+    padding: 10px 14px;
+
+    border-radius: 9px;
+
+    font-size: 12px;
+  }
+
+  .auto-expense-submit svg {
+    width: 16px;
+    height: 16px;
+  }
+
+
+  /* =======================================================
+     EXAMPLES
+  ======================================================= */
+
+  .auto-expense-examples {
+    padding: 16px 17px 18px;
+  }
+
+  .examples-header {
+    gap: 6px;
+
+    margin-bottom: 10px;
+
+    font-size: 11px;
+  }
+
+  .examples-header svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .example-buttons {
+    gap: 7px;
+  }
+
+  .example-buttons button {
+    padding: 7px 9px;
+
+    border-radius: 8px;
+
+    font-size: 10px;
+  }
+
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+========================================================= */
+
+@media (max-width: 420px) {
+
+  .auto-expense-page {
+    padding: 12px;
+  }
+
+  .auto-expense-header {
+    gap: 8px;
+  }
+
+  .auto-expense-header h1 {
+    font-size: 21px;
+  }
+
+  .auto-expense-header p {
+    font-size: 11px;
+  }
+
+  .auto-expense-header-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .auto-expense-card {
+    border-radius: 14px;
+  }
+
+  .auto-expense-card-header {
+    padding: 14px;
+  }
+
+  .auto-expense-form {
+    padding: 14px;
+  }
+
+  .auto-expense-examples {
+    padding: 14px;
+  }
+
+  .success-details {
+    gap: 9px;
+  }
+
+}

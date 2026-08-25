@@ -511,7 +511,6 @@
   }
 }
 
-/* Remove unwanted empty white box at bottom of sidebar */
 .sidebar-footer:empty,
 .sidebar-bottom:empty,
 .sidebar-bottom-box:empty {

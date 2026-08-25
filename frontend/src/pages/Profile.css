@@ -73,9 +73,6 @@
   color: #64748b;
 }
 
-/* =========================================================
-   CONTENT
-========================================================= */
 
 .profile-content {
   width: 100%;
@@ -86,9 +83,6 @@
   gap: 20px;
 }
 
-/* =========================================================
-   ERROR
-========================================================= */
 
 .profile-error {
   max-width: 1050px;
@@ -109,10 +103,6 @@
 
   font-size: 14px;
 }
-
-/* =========================================================
-   CARD
-========================================================= */
 
 .profile-card {
   width: 100%;
@@ -183,10 +173,6 @@
   color: #64748b;
 }
 
-/* =========================================================
-   PROFILE SUMMARY
-========================================================= */
-
 .profile-summary {
   display: flex;
   align-items: center;
@@ -235,10 +221,6 @@
   font-size: 13px;
   color: #64748b;
 }
-
-/* =========================================================
-   ACCOUNT BADGE
-========================================================= */
 
 .profile-account-badge {
   width: fit-content;
@@ -450,10 +432,6 @@
   color: #475569;
 }
 
-/* =========================================================
-   SECURITY NOTE
-========================================================= */
-
 .security-note {
   display: flex;
   align-items: flex-start;
@@ -498,9 +476,6 @@
   color: #64748b;
 }
 
-/* =========================================================
-   ACCOUNT STATUS
-========================================================= */
 
 .account-status {
   display: flex;
@@ -652,56 +627,174 @@
   color: #94a3b8;
 }
 
-/* =========================================================
-   RESPONSIVE
-========================================================= */
-
 @media (max-width: 800px) {
   .profile-page {
-    padding: 22px 20px 40px;
+    padding: 24px 24px 40px;
+  }
+
+  .profile-content {
+    width: 100%;
+    max-width: 1050px;
   }
 
   .profile-info-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
   }
-}
 
-@media (max-width: 600px) {
-  .profile-page {
-    padding: 18px 14px 35px;
+  .profile-page-header {
+    flex-direction: row;
+    align-items: center;
   }
 
   .profile-page-header h1 {
-    font-size: 24px;
+    font-size: 28px;
+  }
+
+  .profile-page-header p {
+    font-size: 14px;
+  }
+
+  .profile-card {
+    padding: 24px;
+  }
+
+  .security-item {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .security-status {
+    margin-left: 0;
+  }
+}
+
+
+@media (max-width: 600px) {
+  .profile-page {
+    padding: 20px 16px 35px;
+  }
+
+  .profile-page-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .profile-page-heading {
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .profile-heading-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .profile-page-header h1 {
+    font-size: 26px;
+  }
+
+  .profile-page-header p {
+    font-size: 13px;
+  }
+
+  .profile-content {
+    width: 100%;
+  }
+
+  .profile-card {
+    padding: 22px;
+    border-radius: 15px;
+  }
+
+  .profile-info-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-summary {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .profile-avatar {
+    width: 70px;
+    height: 70px;
+    font-size: 22px;
+  }
+
+  .profile-summary-info h3 {
+    font-size: 21px;
+  }
+
+  .security-item {
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .security-item-left {
+    min-width: 0;
+  }
+
+  .security-status {
+    margin-left: 0;
+  }
+}
+
+
+@media (max-width: 420px) {
+  .profile-page {
+    padding: 18px 12px 30px;
+  }
+
+  .profile-page-heading {
+    gap: 10px;
+  }
+
+  .profile-heading-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .profile-page-header h1 {
+    font-size: 23px;
+  }
+
+  .profile-page-header p {
+    font-size: 12px;
   }
 
   .profile-card {
     padding: 18px;
-    border-radius: 12px;
   }
 
-  .profile-summary {
-    padding: 18px 0;
+  .profile-info-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
   }
 
-  .profile-avatar {
-    width: 58px;
-    height: 58px;
-
-    font-size: 19px;
+  .profile-info-item {
+    padding: 11px;
+    gap: 9px;
   }
 
-  .profile-summary-info h3 {
-    font-size: 18px;
+  .profile-info-item-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .profile-info-item-content strong {
+    font-size: 13px;
   }
 
   .security-item {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 10px;
+    gap: 12px;
   }
 
   .security-status {
-    margin-left: 51px;
+    font-size: 10px;
+    padding: 5px 8px;
   }
 }

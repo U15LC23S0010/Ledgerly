@@ -1006,3 +1006,313 @@
   }
 
 }
+
+/* =========================================================
+   DARK MODE
+========================================================= */
+
+html[data-theme="dark"] .customers-page {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+/* Header */
+html[data-theme="dark"] .customers-header h1,
+html[data-theme="dark"] .customers-toolbar h2,
+html[data-theme="dark"] .customer-summary-card strong,
+html[data-theme="dark"] .customer-name-cell strong,
+html[data-theme="dark"] .customer-modal-header h2 {
+  color: #f8fafc;
+}
+
+html[data-theme="dark"] .customers-header p,
+html[data-theme="dark"] .customers-eyebrow,
+html[data-theme="dark"] .panel-eyebrow,
+html[data-theme="dark"] .customer-summary-card span,
+html[data-theme="dark"] .customer-name-cell small,
+html[data-theme="dark"] .customer-contact span,
+html[data-theme="dark"] .customer-contact small,
+html[data-theme="dark"] .muted,
+html[data-theme="dark"] .customer-address,
+html[data-theme="dark"] .customer-table-header {
+  color: #94a3b8;
+}
+
+/* Summary cards */
+html[data-theme="dark"] .customer-summary-card {
+  background: #111c2f;
+  border-color: #263449;
+}
+
+html[data-theme="dark"] .summary-icon {
+  background: #1e293b;
+  color: #818cf8;
+}
+
+/* Main panel */
+html[data-theme="dark"] .customers-panel {
+  background: #111c2f;
+  border-color: #263449;
+}
+
+/* Toolbar */
+html[data-theme="dark"] .customers-toolbar {
+  border-color: #263449;
+}
+
+/* Search */
+html[data-theme="dark"] .customer-search {
+  background: #111c2f;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .customer-search input {
+  color: #f8fafc;
+}
+
+html[data-theme="dark"] .customer-search input::placeholder {
+  color: #64748b;
+}
+
+html[data-theme="dark"] .search-clear {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .search-clear:hover {
+  background: #263449;
+}
+
+/* Selection bar */
+html[data-theme="dark"] .customers-selection-bar {
+  background: #162338;
+  border-color: #263449;
+}
+
+html[data-theme="dark"] .select-all-control {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .selection-info span {
+  color: #cbd5e1;
+}
+
+/* Table */
+html[data-theme="dark"] .customer-table-header {
+  background: #162338;
+  border-color: #263449;
+}
+
+html[data-theme="dark"] .customer-row {
+  border-color: #263449;
+}
+
+html[data-theme="dark"] .customer-row:hover {
+  background: #162338;
+}
+
+html[data-theme="dark"] .customer-row-selected,
+html[data-theme="dark"] .customer-row-selected:hover {
+  background: #172554;
+}
+
+/* Customer avatar */
+html[data-theme="dark"] .customer-avatar {
+  background: #1e293b;
+  color: #818cf8;
+}
+
+/* Actions */
+html[data-theme="dark"] .customer-actions button {
+  background: #111c2f;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .customer-actions button:hover {
+  background: #162338;
+}
+
+html[data-theme="dark"] .customer-actions button.delete {
+  color: #f87171;
+}
+
+html[data-theme="dark"] .customer-actions button.delete:hover {
+  background: #450a0a;
+  border-color: #7f1d1d;
+}
+
+/* Bulk delete */
+html[data-theme="dark"] .bulk-delete-button {
+  background: #450a0a;
+  border-color: #7f1d1d;
+  color: #f87171;
+}
+
+html[data-theme="dark"] .bulk-delete-button:hover {
+  background: #581c1c;
+  border-color: #991b1b;
+}
+
+/* Empty state */
+html[data-theme="dark"] .customers-empty h3 {
+  color: #e2e8f0;
+}
+
+html[data-theme="dark"] .customers-empty p {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .empty-icon {
+  background: #1e293b;
+  color: #818cf8;
+}
+
+/* Modal */
+html[data-theme="dark"] .customer-modal {
+  background: #111c2f;
+}
+
+html[data-theme="dark"] .customer-modal-header {
+  border-color: #263449;
+}
+
+html[data-theme="dark"] .customer-modal-header > button {
+  background: #111c2f;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .customer-modal-header > button:hover {
+  background: #162338;
+}
+
+/* Form */
+html[data-theme="dark"] .customer-form-group label {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .customer-form-group input,
+html[data-theme="dark"] .customer-form-group textarea {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+html[data-theme="dark"] .customer-form-group input::placeholder,
+html[data-theme="dark"] .customer-form-group textarea::placeholder {
+  color: #64748b;
+}
+
+html[data-theme="dark"] .customer-form-group input:focus,
+html[data-theme="dark"] .customer-form-group textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+/* Form error */
+html[data-theme="dark"] .customer-form-error {
+  background: #450a0a;
+  border-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+/* Form footer */
+html[data-theme="dark"] .customer-form-actions {
+  border-color: #263449;
+}
+
+html[data-theme="dark"] .customer-cancel-button {
+  background: #111c2f !important;
+  color: #cbd5e1 !important;
+  border-color: #475569 !important;
+}
+
+html[data-theme="dark"] .customer-cancel-button:hover {
+  background: #162338 !important;
+}
+
+html[data-theme="dark"] .customer-save-button {
+  background: #4f46e5 !important;
+  border-color: #4f46e5 !important;
+}
+
+html[data-theme="dark"] .customer-save-button:hover {
+  background: #4338ca !important;
+}
+
+
+/* =========================================================
+   DENSITY
+========================================================= */
+
+html[data-density="compact"] .customers-page {
+  padding: 20px;
+}
+
+html[data-density="compact"] .customer-summary {
+  gap: 13px;
+}
+
+html[data-density="compact"] .customer-summary-card {
+  padding: 15px;
+}
+
+html[data-density="compact"] .customers-toolbar {
+  padding: 16px;
+}
+
+html[data-density="compact"] .customer-row {
+  min-height: 72px;
+  padding: 10px 16px;
+}
+
+html[data-density="compact"] .customer-table-header {
+  padding: 0 16px;
+}
+
+html[data-density="compact"] .customers-selection-bar {
+  min-height: 46px;
+}
+
+html[data-density="compact"] .customer-form {
+  padding: 18px;
+}
+
+html[data-density="compact"] .customer-form-group {
+  margin-bottom: 14px;
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+========================================================= */
+
+.customers-primary-button:focus-visible,
+.bulk-delete-button:focus-visible,
+.search-clear:focus-visible,
+.select-all-control:focus-within,
+.selection-info button:focus-visible,
+.customer-actions button:focus-visible,
+.customer-modal-header > button:focus-visible,
+.customer-cancel-button:focus-visible,
+.customer-save-button:focus-visible {
+  outline: 2px solid #818cf8;
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   MOBILE DARK MODE
+========================================================= */
+
+@media (max-width: 600px) {
+  html[data-theme="dark"] .customers-page {
+    background: #0f172a;
+  }
+
+  html[data-theme="dark"] .customer-modal-overlay {
+    background: rgba(2, 6, 23, 0.75);
+  }
+}

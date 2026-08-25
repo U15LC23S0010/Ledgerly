@@ -336,7 +336,7 @@ export default function Login() {
 
             <div className="brand-logo">
               <img
-               src="/pwa-30x30.png"
+               src="/ledgerly-30x30.png"
                alt="Ledgerly"
              />
             </div>

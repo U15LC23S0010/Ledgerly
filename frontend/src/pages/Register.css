@@ -1026,13 +1026,12 @@
   }
 }
 
-/* =========================================================
-   RESPONSIVE / TABLET
-========================================================= */
 
 @media (max-width: 1000px) {
+
   .register-page {
     grid-template-columns: 1fr;
+    min-height: 100vh;
   }
 
   .register-info {
@@ -1041,15 +1040,25 @@
 
   .register-form-area {
     min-height: 100vh;
-    padding: 30px 18px;
+    width: 100%;
+    padding: 35px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
   }
 
-  /* MOBILE BRAND */
+  .register-card {
+    width: min(560px, 100%);
+    padding: 38px;
+    border-radius: 20px;
+  }
+
   .mobile-brand {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 30px;
+    margin-bottom: 28px;
   }
 
   .mobile-brand-logo {
@@ -1086,21 +1095,162 @@
   }
 }
 
-/* =========================================================
-   MOBILE
-========================================================= */
+@media (max-width: 768px) {
 
-@media (max-width: 600px) {
+  .register-page {
+    width: 100%;
+    min-height: 100dvh;
+    padding: 0;
+    display: block;
+    overflow-x: hidden;
+    background: linear-gradient(
+      135deg,
+      #f8fafc,
+      #eef2ff
+    );
+  }
+
   .register-form-area {
-    min-height: 100vh;
+    width: 100%;
+    min-height: 100dvh;
+    padding: 28px 18px 35px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    overflow-y: auto;
+  }
+
+  .register-card {
+    width: min(560px, 100%);
+    padding: 34px 30px;
+    border-radius: 18px;
+  }
+
+  .register-heading > span {
+    font-size: 10px;
+  }
+
+  .register-heading h2 {
+    font-size: 29px;
+    letter-spacing: -0.7px;
+  }
+
+  .register-heading p {
+    font-size: 13px;
+    margin-bottom: 26px;
+  }
+
+
+  .register-card label {
+    font-size: 12px;
+  }
+
+  .input-wrapper {
+    width: 100%;
+    height: 49px;
+    margin-bottom: 15px;
+  }
+
+  .input-wrapper input {
+    font-size: 13px;
+  }
+
+
+  .role-options {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .role-option {
+    width: 100%;
+    padding: 13px;
+  }
+
+  .role-info strong {
+    font-size: 13px;
+  }
+
+  .role-info span {
+    font-size: 11px;
+  }
+
+
+  .admin-code-box {
+    width: 100%;
+  }
+
+  .admin-code-box input {
+    width: 100%;
+    height: 43px;
+    font-size: 13px;
+  }
+
+
+  .terms {
+    width: 100%;
+    font-size: 11px !important;
+  }
+
+  .terms label {
+    font-size: 11px !important;
+  }
+
+  .register-button {
+    width: 100%;
+    height: 45px;
+    min-height: 45px;
+    font-size: 13px;
+  }
+
+
+  .login-existing {
+    font-size: 12px;
+  }
+
+
+  .register-security {
+    font-size: 9px;
+  }
+
+
+  .legal-overlay {
+    padding: 18px;
+  }
+
+  .legal-modal {
+    width: min(650px, 100%);
+    max-height: 90vh;
+    border-radius: 17px;
+  }
+
+  .legal-header {
+    padding: 18px 20px;
+  }
+
+  .legal-content {
+    padding: 22px;
+    font-size: 12px;
+  }
+
+  .legal-footer {
+    padding: 14px 20px;
+  }
+}
+
+
+@media (max-width: 480px) {
+
+  .register-form-area {
+    padding: 20px 12px 30px;
     align-items: flex-start;
-    padding: 18px 10px 30px;
   }
 
   .register-card {
     width: 100%;
-    padding: 25px 18px;
-    border-radius: 17px;
+    padding: 27px 22px;
+    border-radius: 16px;
   }
 
   .mobile-brand {
@@ -1116,38 +1266,97 @@
     font-size: 17px;
   }
 
+  .register-heading > span {
+    font-size: 10px;
+  }
+
   .register-heading h2 {
-    font-size: 23px;
+    font-size: 26px;
+    letter-spacing: -0.6px;
   }
 
   .register-heading p {
-    margin-bottom: 22px;
+    font-size: 13px;
+    line-height: 1.55;
+    margin-bottom: 24px;
+  }
+
+  .form-section {
+    padding-bottom: 21px;
+    margin-bottom: 21px;
+  }
+
+  .form-section-heading {
+    margin-bottom: 16px;
+  }
+
+  .form-section-heading strong {
+    font-size: 13px;
+  }
+
+  .form-section-heading small {
+    font-size: 10px;
   }
 
   .input-wrapper {
     height: 48px;
+    padding: 0 11px;
+  }
+
+  .input-wrapper input {
+    font-size: 14px;
   }
 
   .role-option {
-    padding: 11px;
-  }
-
-  .legal-overlay {
     padding: 12px;
   }
 
+  .role-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .role-info strong {
+    font-size: 12px;
+  }
+
+  .role-info span {
+    font-size: 10px;
+  }
+
+  .register-button {
+    height: 46px;
+    font-size: 13px;
+  }
+
+  .login-existing {
+    font-size: 11px;
+  }
+
+  .register-security {
+    font-size: 9px;
+  }
+
+  .legal-overlay {
+    padding: 10px;
+  }
+
   .legal-modal {
-    max-height: 92vh;
-    border-radius: 15px;
+    max-height: 94vh;
+    border-radius: 14px;
   }
 
   .legal-header {
-    padding: 16px;
+    padding: 15px 16px;
   }
 
-  .legal-content {
-    padding: 20px;
-    font-size: 12px;
+  .legal-title {
+    gap: 9px;
+  }
+
+  .legal-icon {
+    width: 36px;
+    height: 36px;
   }
 
   .legal-title h3 {
@@ -1158,22 +1367,46 @@
     font-size: 9px;
   }
 
+  .legal-close {
+    width: 32px;
+    height: 32px;
+  }
+
+  .legal-content {
+    padding: 18px;
+    font-size: 12px;
+    line-height: 1.65;
+  }
+
+  .legal-content h4 {
+    font-size: 12px;
+    margin-top: 20px;
+  }
+
+  .legal-intro {
+    font-size: 12px;
+  }
+
   .legal-footer {
-    padding: 13px 16px;
+    padding: 12px 16px;
+  }
+
+  .legal-footer button {
+    min-width: 100px;
+    height: 37px;
   }
 }
 
-/* =========================================================
-   VERY SMALL PHONES
-========================================================= */
 
-@media (max-width: 380px) {
+@media (max-width: 360px) {
+
   .register-form-area {
-    padding: 12px 8px 25px;
+    padding: 14px 8px 25px;
   }
 
   .register-card {
-    padding: 22px 15px;
+    padding: 23px 17px;
+    border-radius: 14px;
   }
 
   .mobile-brand {
@@ -1181,8 +1414,8 @@
   }
 
   .mobile-brand-logo {
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
   }
 
   .mobile-brand-text strong {
@@ -1190,200 +1423,55 @@
   }
 
   .register-heading h2 {
-    font-size: 21px;
+    font-size: 23px;
+  }
+
+  .register-heading p {
+    font-size: 12px;
+  }
+
+  .input-wrapper {
+    height: 46px;
+  }
+
+  .input-wrapper input {
+    font-size: 13px;
+  }
+
+  .role-option {
+    padding: 10px;
+    gap: 9px;
+  }
+
+  .role-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .role-info strong {
+    font-size: 12px;
   }
 
   .role-info span {
     font-size: 10px;
   }
+
+  .register-button {
+    height: 45px;
+  }
+
+  .terms,
+  .terms label {
+    font-size: 10px !important;
+  }
 }
 
-/* =========================================================
-   MOBILE RESPONSIVE — REGISTER ONLY
-   Does not affect desktop
-========================================================= */
 
 @media (max-width: 768px) {
-  .register-page {
-    width: 100%;
-    min-height: 100dvh;
-    padding: 20px 16px;
-    overflow-x: hidden;
-  }
 
-  .register-container {
-    width: 100%;
-    max-width: 500px;
-    margin: 0 auto;
-  }
-
-  .register-card {
-    width: 100%;
-    padding: 24px 20px;
-    border-radius: 16px;
-    box-sizing: border-box;
-  }
-
-  .register-header {
-    text-align: center;
-  }
-
-  .register-header h1 {
-    font-size: 24px;
-    line-height: 1.25;
-  }
-
-  .register-header p {
-    font-size: 14px;
-    line-height: 1.5;
-  }
-
-  .register-form {
-    width: 100%;
-  }
-
-  .register-field {
-    width: 100%;
-    margin-bottom: 15px;
-  }
-
-  .register-field label {
-    font-size: 13px;
-  }
-
-  .register-field input,
-  .register-field select,
-  .register-field textarea {
-    width: 100%;
-    min-height: 48px;
-    padding: 12px 14px;
-    font-size: 16px;
-    box-sizing: border-box;
-    border-radius: 10px;
-  }
-
-  .register-input-wrapper {
-    width: 100%;
-  }
-
-  .register-input-wrapper input {
-    width: 100%;
-  }
-
-  /* Prevent desktop two-column form from breaking */
-  .register-form-row,
-  .register-fields-row,
-  .register-grid,
-  .register-form-grid {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .register-form-row > *,
-  .register-fields-row > *,
-  .register-grid > *,
-  .register-form-grid > * {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .register-button,
-  .register-submit,
-  .register-form button[type="submit"] {
-    width: 100%;
-    min-height: 48px;
-    font-size: 15px;
-    border-radius: 10px;
-    touch-action: manipulation;
-  }
-
-  .register-footer {
-    width: 100%;
-    text-align: center;
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  .register-options {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-}
-
-/* =========================================================
-   SMALL PHONES
-========================================================= */
-
-@media (max-width: 480px) {
-  .register-page {
-    padding: 14px 12px;
-  }
-
-  .register-container {
-    max-width: 100%;
-  }
-
-  .register-card {
-    padding: 20px 16px;
-    border-radius: 14px;
-  }
-
-  .register-header h1 {
-    font-size: 22px;
-  }
-
-  .register-header p {
-    font-size: 13px;
-  }
-
-  .register-field {
-    margin-bottom: 13px;
-  }
-
-  .register-field input,
-  .register-field select,
-  .register-field textarea {
-    min-height: 46px;
-    font-size: 16px;
-  }
-
-  .register-button,
-  .register-submit,
-  .register-form button[type="submit"] {
-    min-height: 46px;
-  }
-}
-
-/* =========================================================
-   VERY SMALL PHONES
-========================================================= */
-
-@media (max-width: 360px) {
-  .register-page {
-    padding: 10px 8px;
-  }
-
-  .register-card {
-    padding: 18px 13px;
-  }
-
-  .register-header h1 {
-    font-size: 20px;
-  }
-}
-
-/* =========================================================
-   REGISTER LOGO — MOBILE SIZE FIX
-========================================================= */
-
-@media (max-width: 768px) {
   .register-header img {
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
     object-fit: contain;
     margin: 0 auto 8px;
     display: block;
@@ -1391,17 +1479,19 @@
 }
 
 @media (max-width: 480px) {
+
   .register-header img {
-    width: 65px;
-    height: 65px;
-    margin-bottom: 6px;
+    width: 60px;
+    height: 60px;
+    margin-bottom: 7px;
   }
 }
 
 @media (max-width: 360px) {
+
   .register-header img {
     width: 55px;
     height: 55px;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
   }
 }

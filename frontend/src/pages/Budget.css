@@ -647,3 +647,460 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================
+RESPONSIVE — MOBILE ONLY
+Desktop styles above remain unchanged
+========================================================= */
+
+@media (max-width: 900px) {
+
+.budget-page {
+padding: 24px;
+}
+
+.budget-main-grid {
+grid-template-columns: 1fr 1.35fr;
+gap: 18px;
+}
+
+.budget-page-header h1 {
+font-size: 29px;
+}
+
+.budget-page-header p {
+font-size: 13px;
+}
+
+.budget-period-selectors select {
+min-width: 110px;
+height: 40px;
+font-size: 13px;
+}
+
+.set-budget-card,
+.budget-summary-card,
+.history-card {
+padding: 20px;
+}
+
+.budget-card-header h2,
+.budget-summary-card h2,
+.history-card h2 {
+font-size: 17px;
+}
+
+.summary-big-value {
+font-size: 25px;
+}
+
+}
+
+@media (max-width: 700px) {
+
+.budget-page {
+padding: 20px 16px 30px;
+}
+
+/* Keep header horizontal like desktop */
+.budget-page-header {
+flex-direction: row;
+align-items: flex-start;
+gap: 14px;
+}
+
+.budget-page-header h1 {
+font-size: 25px;
+}
+
+.budget-page-header p {
+font-size: 12px;
+}
+
+.budget-period-selectors {
+flex-shrink: 0;
+gap: 6px;
+}
+
+.budget-period-selectors select {
+min-width: 85px;
+width: 85px;
+height: 38px;
+padding: 0 8px;
+font-size: 12px;
+}
+
+/* Keep the two main cards side-by-side */
+.budget-main-grid {
+grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+gap: 12px;
+}
+
+.set-budget-card {
+padding: 16px;
+}
+
+.budget-summary-card {
+padding: 17px;
+min-height: 230px;
+}
+
+.budget-card-header {
+margin-bottom: 20px;
+}
+
+.budget-card-header h2,
+.budget-summary-card h2 {
+font-size: 16px;
+}
+
+.budget-card-header p,
+.budget-summary-top p {
+font-size: 11px;
+}
+
+.budget-icon,
+.summary-icon {
+width: 36px;
+height: 36px;
+border-radius: 9px;
+font-size: 17px;
+}
+
+.set-budget-card label {
+font-size: 11px;
+}
+
+.budget-input-wrapper {
+height: 44px;
+margin-bottom: 12px;
+}
+
+.currency-symbol {
+width: 38px;
+font-size: 14px;
+}
+
+.budget-input-wrapper input {
+padding: 0 9px;
+font-size: 13px;
+}
+
+.set-budget-button {
+height: 42px;
+font-size: 12px;
+}
+
+.delete-budget-button {
+height: 38px;
+margin-top: 8px;
+font-size: 11px;
+}
+
+.budget-summary-content {
+margin-top: 18px;
+}
+
+.summary-big-value {
+font-size: 22px;
+}
+
+.summary-label {
+margin-bottom: 15px;
+font-size: 10px;
+}
+
+.budget-progress-header {
+font-size: 10px;
+}
+
+.budget-progress-bar {
+height: 7px;
+}
+
+.summary-stats {
+grid-template-columns: 1fr 1fr;
+gap: 8px;
+}
+
+.summary-stat {
+padding: 10px;
+}
+
+.summary-stat span {
+font-size: 9px;
+}
+
+.summary-stat strong {
+font-size: 13px;
+}
+
+.history-card {
+padding: 17px;
+}
+
+.history-header {
+margin-bottom: 15px;
+}
+
+.history-count {
+padding: 6px 9px;
+font-size: 10px;
+}
+
+}
+
+@media (max-width: 480px) {
+
+.budget-page {
+padding: 16px 12px 25px;
+}
+
+/* Compact desktop-like header */
+.budget-page-header {
+gap: 8px;
+margin-bottom: 16px;
+}
+
+.budget-page-header h1 {
+font-size: 21px;
+}
+
+.budget-page-header p {
+margin-top: 4px;
+font-size: 10px;
+}
+
+.budget-period-selectors {
+gap: 4px;
+}
+
+.budget-period-selectors select {
+width: 72px;
+min-width: 72px;
+height: 34px;
+padding: 0 5px;
+font-size: 10px;
+}
+
+/* Still keep both cards beside each other */
+.budget-main-grid {
+grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+gap: 8px;
+}
+
+.budget-card {
+border-radius: 11px;
+}
+
+.set-budget-card {
+padding: 12px;
+}
+
+.budget-summary-card {
+padding: 12px;
+min-height: 205px;
+}
+
+.budget-card-header {
+margin-bottom: 14px;
+gap: 6px;
+}
+
+.budget-card-header h2,
+.budget-summary-card h2 {
+font-size: 13px;
+}
+
+.budget-card-header p,
+.budget-summary-top p {
+font-size: 9px;
+}
+
+.budget-icon,
+.summary-icon {
+width: 30px;
+height: 30px;
+border-radius: 7px;
+font-size: 14px;
+}
+
+.set-budget-card label {
+margin-bottom: 6px;
+font-size: 9px;
+}
+
+.budget-input-wrapper {
+height: 38px;
+margin-bottom: 9px;
+}
+
+.currency-symbol {
+width: 30px;
+font-size: 12px;
+}
+
+.budget-input-wrapper input {
+padding: 0 6px;
+font-size: 11px;
+}
+
+.set-budget-button {
+height: 36px;
+font-size: 10px;
+border-radius: 7px;
+}
+
+.delete-budget-button {
+height: 32px;
+font-size: 9px;
+border-radius: 7px;
+}
+
+.summary-title-row {
+gap: 5px;
+}
+
+.budget-status {
+padding: 3px 6px;
+font-size: 8px;
+}
+
+.budget-summary-content {
+margin-top: 12px;
+}
+
+.summary-big-value {
+font-size: 18px;
+}
+
+.summary-label {
+margin: 3px 0 11px;
+font-size: 8px;
+}
+
+.budget-progress-container {
+margin-bottom: 12px;
+}
+
+.budget-progress-header {
+margin-bottom: 5px;
+font-size: 8px;
+}
+
+.budget-progress-bar {
+height: 5px;
+}
+
+.summary-stats {
+gap: 5px;
+}
+
+.summary-stat {
+padding: 7px;
+border-radius: 7px;
+}
+
+.summary-stat span {
+margin-bottom: 3px;
+font-size: 7px;
+}
+
+.summary-stat strong {
+font-size: 10px;
+}
+
+/* History stays full width below */
+.history-card {
+padding: 12px;
+}
+
+.history-header h2 {
+font-size: 14px;
+}
+
+.history-header p {
+font-size: 9px;
+}
+
+.history-count {
+padding: 5px 7px;
+font-size: 8px;
+}
+
+.history-table {
+min-width: 600px;
+}
+
+.history-table th {
+padding: 9px 7px;
+font-size: 8px;
+}
+
+.history-table td {
+padding: 10px 7px;
+font-size: 10px;
+}
+
+}
+
+/* =========================================================
+VERY SMALL PHONES
+========================================================= */
+
+@media (max-width: 360px) {
+
+.budget-page {
+padding: 14px 10px 22px;
+}
+
+.budget-page-header h1 {
+font-size: 19px;
+}
+
+.budget-page-header p {
+font-size: 9px;
+}
+
+.budget-period-selectors select {
+width: 64px;
+min-width: 64px;
+height: 32px;
+font-size: 9px;
+}
+
+.budget-main-grid {
+gap: 6px;
+}
+
+.set-budget-card,
+.budget-summary-card {
+padding: 9px;
+}
+
+.budget-card-header h2,
+.budget-summary-card h2 {
+font-size: 11px;
+}
+
+.budget-card-header p,
+.budget-summary-top p {
+font-size: 8px;
+}
+
+.budget-icon,
+.summary-icon {
+width: 26px;
+height: 26px;
+font-size: 12px;
+}
+
+.summary-big-value {
+font-size: 16px;
+}
+
+.summary-stat strong {
+font-size: 9px;
+}
+
+}

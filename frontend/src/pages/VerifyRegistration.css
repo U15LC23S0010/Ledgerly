@@ -3,10 +3,6 @@
    LEDGERLY — VERIFY REGISTRATION
    ========================================================= */
 
-/* =========================================================
-   PAGE
-   ========================================================= */
-
 .verify-page {
   min-height: 100vh;
   width: 100%;
@@ -618,141 +614,156 @@
   color: #ea580c;
 }
 
-
-/* =========================================================
-   TABLET
-   ========================================================= */
-
 @media (max-width: 600px) {
   .verify-page {
-    padding: 24px 16px;
-    align-items: center;
-  }
-
-  .verify-card {
-    max-width: 440px;
-
-    padding: 34px 28px 28px;
-
-    border-radius: 17px;
-  }
-
-  .verify-heading h1 {
-    font-size: 25px;
-  }
-}
-
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
-
-@media (max-width: 420px) {
-  .verify-page {
+    min-height: 100vh;
     min-height: 100svh;
-    padding: 18px 12px;
+    width: 100%;
+    padding: 40px 20px;
+    box-sizing: border-box;
+
+    align-items: center;
+    justify-content: center;
+
+    overflow-x: hidden;
   }
 
   .verify-card {
-    padding: 28px 20px 24px;
-
-    border-radius: 15px;
+    width: 100%;
+    max-width: 470px;
+    padding: 42px 40px 34px;
+    border-radius: 20px;
   }
 
   .verify-brand {
-    margin-bottom: 25px;
+    margin-bottom: 30px;
   }
 
   .verify-logo {
-    width: 38px;
-    height: 38px;
-
-    border-radius: 10px;
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
   }
 
   .verify-brand strong {
-    font-size: 17px;
+    font-size: 19px;
+  }
+
+  .verify-brand small {
+    font-size: 8px;
   }
 
   .verify-icon {
-    width: 52px;
-    height: 52px;
-
-    margin-bottom: 18px;
+    width: 58px;
+    height: 58px;
+    margin-bottom: 22px;
   }
 
   .verify-icon svg {
-    width: 24px;
-    height: 24px;
+    width: 27px;
+    height: 27px;
+  }
+
+  .verify-heading {
+    margin-bottom: 25px;
   }
 
   .verify-heading h1 {
-    font-size: 23px;
+    font-size: 28px;
   }
 
   .verify-heading p {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .verify-email {
+    font-size: 14px;
+  }
+
+  .verify-alert {
+    font-size: 13px;
+  }
+
+  .verify-form label {
     font-size: 13px;
   }
 
   .verify-form input {
-    height: 54px;
+    height: 58px;
+    padding: 0 18px;
+    font-size: 25px;
+    letter-spacing: 8px;
+  }
 
-    font-size: 22px;
-    letter-spacing: 6px;
+  .otp-hint {
+    font-size: 11.5px;
   }
 
   .verify-primary-button {
-    min-height: 46px;
-
-    font-size: 12.5px;
+    min-height: 48px;
+    font-size: 13.5px;
   }
 
   .resend-section {
-    font-size: 11.5px;
+    font-size: 12.5px;
   }
 
   .resend-section button {
-    font-size: 11.5px;
+    font-size: 12.5px;
+  }
+
+  .verify-back-button {
+    font-size: 12.5px;
   }
 
   .verify-security {
-    font-size: 10px;
+    font-size: 10.5px;
+  }
+
+  .verify-back-link a {
+    font-size: 12.5px;
   }
 }
 
-
-/* =========================================================
-   VERY SMALL DEVICES
-   ========================================================= */
-
-@media (max-width: 330px) {
-  .verify-card {
-    padding: 24px 16px 20px;
+@media (max-width: 380px) {
+  .verify-page {
+    padding: 30px 12px;
   }
 
-  .verify-heading h1 {
-    font-size: 21px;
+  .verify-card {
+    width: 100%;
+    max-width: 470px;
+
+    padding: 38px 24px 30px;
+    border-radius: 18px;
   }
 
   .verify-form input {
-    letter-spacing: 4px;
-    font-size: 20px;
-  }
-
-  .verify-primary-button {
-    padding-left: 12px;
-    padding-right: 12px;
+    width: 100%;
+    font-size: 23px;
+    letter-spacing: 7px;
   }
 }
 
 
-/* =========================================================
-   ACCESSIBILITY
-   ========================================================= */
+@media (max-width: 330px) {
+  .verify-page {
+    padding: 24px 8px;
+  }
+
+  .verify-card {
+    padding: 34px 18px 26px;
+  }
+
+  .verify-heading h1 {
+    font-size: 26px;
+  }
+
+  .verify-form input {
+    font-size: 21px;
+    letter-spacing: 5px;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .verify-primary-button,

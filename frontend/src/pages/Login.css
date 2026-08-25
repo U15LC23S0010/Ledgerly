@@ -1,6 +1,6 @@
 /* =========================================================
    LEDGERLY — LOGIN
-========================================================= */
+   ========================================================= */
 
 .login-page {
   min-height: 100vh;
@@ -13,18 +13,15 @@
 
 /* =========================================================
    BRAND PANEL
-========================================================= */
+   ========================================================= */
 
 .login-brand {
   position: relative;
   overflow: hidden;
-
   display: flex;
   flex-direction: column;
   justify-content: center;
-
   padding: 70px;
-
   color: white;
 
   background:
@@ -46,27 +43,20 @@
     );
 }
 
-
 .login-brand::after {
   content: "";
-
   position: absolute;
-
   width: 420px;
   height: 420px;
-
   right: -180px;
   bottom: -170px;
-
   border-radius: 50%;
-
-  border: 1px solid rgba(255,255,255,.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 
   box-shadow:
-    0 0 0 70px rgba(255,255,255,.025),
-    0 0 0 140px rgba(255,255,255,.018);
+    0 0 0 70px rgba(255, 255, 255, 0.025),
+    0 0 0 140px rgba(255, 255, 255, 0.018);
 }
-
 
 .brand-logo {
   width: 48px;
@@ -87,80 +77,64 @@
     );
 
   color: white;
-
   font-size: 15px;
   font-weight: 900;
 
   box-shadow:
-    0 12px 30px rgba(79,70,229,.35);
+    0 12px 30px rgba(79, 70, 229, 0.35);
 }
-
 
 .login-brand .brand-name {
   margin-top: 22px;
-
   font-size: 28px;
   font-weight: 800;
-
   letter-spacing: -1px;
 }
-
 
 .brand-name span {
   color: #a78bfa;
 }
 
-
 .brand-tagline {
   max-width: 410px;
-
   margin-top: 18px;
 
-  color: rgba(255,255,255,.62);
-
+  color: rgba(255, 255, 255, 0.62);
   font-size: 14px;
   line-height: 1.7;
 }
-
 
 .brand-features {
   margin-top: 60px;
 
   display: flex;
   flex-direction: column;
-
   gap: 22px;
 }
-
 
 .brand-features div {
   display: flex;
   align-items: center;
-
   gap: 15px;
 }
-
 
 .brand-features strong {
   width: 32px;
 
   color: #a78bfa;
-
   font-size: 10px;
   letter-spacing: 1px;
 }
 
-
 .brand-features span {
-  color: rgba(255,255,255,.72);
-
+  color: rgba(255, 255, 255, 0.72);
   font-size: 12px;
 }
 
 
 /* =========================================================
    LOGIN PANEL
-========================================================= */
+   ========================================================= */
 
 .login-panel {
   min-height: 100vh;
@@ -174,7 +148,6 @@
   background: #ffffff;
 }
 
-
 .login-container {
   width: min(420px, 100%);
 }
@@ -182,26 +155,22 @@
 
 /* =========================================================
    MOBILE BRAND
-========================================================= */
+   ========================================================= */
 
 .mobile-brand {
   display: none;
 
   align-items: center;
-
   gap: 12px;
 
   margin-bottom: 45px;
 }
 
-
 .mobile-brand .brand-logo {
   width: 42px;
   height: 42px;
-
   border-radius: 12px;
 }
-
 
 .mobile-brand .brand-name {
   font-size: 18px;
@@ -211,7 +180,7 @@
 
 /* =========================================================
    HEADING
-========================================================= */
+   ========================================================= */
 
 .login-eyebrow {
   display: block;
@@ -219,33 +188,25 @@
   margin-bottom: 12px;
 
   color: #6366f1;
-
   font-size: 10px;
   font-weight: 800;
-
   letter-spacing: 1.5px;
 }
-
 
 .login-heading h1 {
   margin: 0;
 
   color: #172033;
-
   font-size: 30px;
   line-height: 1.15;
-
   font-weight: 800;
-
   letter-spacing: -1px;
 }
-
 
 .login-heading p {
   margin: 13px 0 0;
 
   color: #7c8495;
-
   font-size: 13px;
   line-height: 1.65;
 }
@@ -253,18 +214,16 @@
 
 /* =========================================================
    ERROR
-========================================================= */
+   ========================================================= */
 
 .login-error {
   margin-top: 22px;
-
   padding: 11px 13px;
 
   border: 1px solid #fecaca;
   border-radius: 9px;
 
   background: #fef2f2;
-
   color: #b91c1c;
 
   font-size: 11px;
@@ -274,17 +233,15 @@
 
 /* =========================================================
    FORM
-========================================================= */
+   ========================================================= */
 
 .login-form {
   margin-top: 30px;
 }
 
-
 .form-group {
   margin-bottom: 19px;
 }
-
 
 .form-group label {
   display: block;
@@ -292,11 +249,9 @@
   margin-bottom: 8px;
 
   color: #374151;
-
   font-size: 11px;
   font-weight: 700;
 }
-
 
 .password-label {
   display: flex;
@@ -304,22 +259,18 @@
   justify-content: space-between;
 }
 
-
 .forgot-button {
   padding: 0;
 
   border: 0;
-
   background: transparent;
 
   color: #6366f1;
-
   font-size: 10px;
   font-weight: 700;
 
   cursor: pointer;
 }
-
 
 .form-group input {
   width: 100%;
@@ -335,24 +286,20 @@
   outline: none;
 
   background: #fafbfc;
-
   color: #172033;
 
   font-family: inherit;
-
   font-size: 12px;
 
   transition:
-    border-color .2s ease,
-    box-shadow .2s ease,
-    background .2s ease;
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
-
 
 .form-group input::placeholder {
   color: #a5acb8;
 }
-
 
 .form-group input:focus {
   background: white;
@@ -360,13 +307,13 @@
   border-color: #818cf8;
 
   box-shadow:
-    0 0 0 3px rgba(99,102,241,.1);
+    0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 
 /* =========================================================
    LOGIN BUTTON
-========================================================= */
+   ========================================================= */
 
 .login-button {
   width: 100%;
@@ -377,7 +324,6 @@
   justify-content: center;
 
   gap: 9px;
-
   margin-top: 8px;
 
   border: 0;
@@ -393,34 +339,30 @@
   color: white;
 
   font-family: inherit;
-
   font-size: 12px;
   font-weight: 800;
 
   cursor: pointer;
 
   box-shadow:
-    0 9px 20px rgba(79,70,229,.2);
+    0 9px 20px rgba(79, 70, 229, 0.2);
 
   transition:
-    transform .18s ease,
-    box-shadow .18s ease;
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
 }
-
 
 .login-button:hover:not(:disabled) {
   transform: translateY(-1px);
 
   box-shadow:
-    0 12px 25px rgba(79,70,229,.3);
+    0 12px 25px rgba(79, 70, 229, 0.3);
 }
-
 
 .login-button:disabled {
-  opacity: .7;
+  opacity: 0.7;
   cursor: not-allowed;
 }
-
 
 .login-arrow {
   font-size: 17px;
@@ -430,20 +372,19 @@
 
 /* =========================================================
    SPINNER
-========================================================= */
+   ========================================================= */
 
 .button-spinner {
   width: 14px;
   height: 14px;
 
-  border: 2px solid rgba(255,255,255,.35);
+  border: 2px solid rgba(255, 255, 255, 0.35);
   border-top-color: white;
 
   border-radius: 50%;
 
-  animation: login-spin .7s linear infinite;
+  animation: login-spin 0.7s linear infinite;
 }
-
 
 @keyframes login-spin {
   to {
@@ -452,48 +393,35 @@
 }
 
 
-/* =========================================================
-   REGISTER
-========================================================= */
-
 .register-prompt {
   margin-top: 25px;
-
   padding-top: 23px;
 
   border-top: 1px solid #edf0f4;
 
   display: flex;
   justify-content: center;
+
   gap: 6px;
 
   color: #8a92a2;
-
   font-size: 11px;
 }
 
-
 .register-prompt a {
   display: inline-flex;
-
   gap: 5px;
 
   color: #4f46e5;
 
   text-decoration: none;
-
   font-weight: 800;
 }
-
 
 .register-prompt a:hover {
   text-decoration: underline;
 }
 
-
-/* =========================================================
-   SECURITY
-========================================================= */
 
 .login-security {
   margin-top: 30px;
@@ -505,116 +433,9 @@
   gap: 6px;
 
   color: #9aa2b1;
-
   font-size: 9px;
 }
 
-
-/* =========================================================
-   RESPONSIVE
-========================================================= */
-
-@media (max-width: 850px) {
-
-  .login-page {
-    grid-template-columns: 1fr;
-  }
-
-  .login-brand {
-    display: none;
-  }
-
-  .mobile-brand {
-    display: flex;
-  }
-
-  .login-panel {
-    min-height: 100vh;
-
-    padding:
-      35px
-      24px;
-  }
-
-}
-
-
-@media (max-width: 480px) {
-
-  .login-panel {
-    padding:
-      28px
-      18px;
-  }
-
-  .login-heading h1 {
-    font-size: 26px;
-  }
-
-  .register-prompt {
-    flex-direction: column;
-
-    align-items: center;
-
-    gap: 7px;
-  }
-
-}
-
-/* =========================================================
-   PASSWORD VISIBILITY
-========================================================= */
-
-.password-input-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.password-input-wrapper input {
-  padding-right: 45px;
-}
-
-.password-visibility-button {
-  position: absolute;
-
-  top: 50%;
-  right: 12px;
-
-  transform: translateY(-50%);
-
-  width: 28px;
-  height: 28px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 0;
-
-  border: 0;
-  background: transparent;
-
-  color: #8b93a3;
-
-  cursor: pointer;
-
-  border-radius: 6px;
-
-  transition:
-    color .2s ease,
-    background .2s ease;
-}
-
-.password-visibility-button:hover:not(:disabled) {
-  color: #4f46e5;
-  background: #f1f2ff;
-}
-
-.password-visibility-button:disabled {
-  cursor: not-allowed;
-  opacity: .5;
-}
-
 .password-input-wrapper {
   position: relative;
   width: 100%;
@@ -622,12 +443,15 @@
 
 .password-input-wrapper input {
   width: 100%;
+
   box-sizing: border-box;
+
   padding-right: 44px;
 }
 
 .password-visibility-button {
   position: absolute;
+
   top: 50%;
   right: 10px;
 
@@ -640,17 +464,22 @@
   align-items: center;
   justify-content: center;
 
+  padding: 0;
+
   border: 0;
   border-radius: 6px;
 
   background: transparent;
-
   color: #8a92a2;
 
   cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
 }
 
-.password-visibility-button:hover {
+.password-visibility-button:hover:not(:disabled) {
   color: #4f46e5;
   background: #f3f4ff;
 }
@@ -665,168 +494,279 @@
   height: 17px;
 }
 
-/* =========================================================
-   MOBILE RESPONSIVE — LOGIN ONLY
-   Does not affect desktop
-========================================================= */
+@media (max-width: 850px) {
 
-@media (max-width: 768px) {
   .login-page {
+    display: block;
+
     width: 100%;
     min-height: 100dvh;
-    padding: 20px 16px;
+
+    background: #ffffff;
+
     overflow-x: hidden;
   }
 
-  .login-container {
+  .login-brand {
+    display: none;
+  }
+
+  .login-panel {
     width: 100%;
-    max-width: 430px;
+    min-height: 100dvh;
+
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 40px 24px;
+
+    background: #ffffff;
+  }
+
+  .login-container {
+    width: min(420px, 100%);
     margin: 0 auto;
   }
 
-  .login-card {
-    width: 100%;
-    padding: 24px 20px;
-    border-radius: 16px;
-    box-sizing: border-box;
-  }
-
-  .login-header {
-    text-align: center;
-  }
-
-  .login-header h1 {
-    font-size: 24px;
-    line-height: 1.25;
-  }
-
-  .login-header p {
-    font-size: 14px;
-    line-height: 1.5;
-  }
-
-  .login-form {
-    width: 100%;
-  }
-
-  .login-field {
-    width: 100%;
-    margin-bottom: 16px;
-  }
-
-  .login-field label {
-    font-size: 13px;
-  }
-
-  .login-field input {
-    width: 100%;
-    min-height: 48px;
-    padding: 12px 14px;
-    font-size: 16px;
-    box-sizing: border-box;
-    border-radius: 10px;
-  }
-
-  .login-input-wrapper {
-    width: 100%;
-  }
-
-  .login-input-wrapper input {
-    width: 100%;
-  }
-
-  .login-button,
-  .login-submit,
-  .login-form button[type="submit"] {
-    width: 100%;
-    min-height: 48px;
-    font-size: 15px;
-    border-radius: 10px;
-    touch-action: manipulation;
-  }
-
-  .login-options {
-    width: 100%;
+  .mobile-brand {
     display: flex;
+
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
+    gap: 12px;
+
+    margin-bottom: 40px;
   }
 
-  .login-options a {
+  .mobile-brand .brand-logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .mobile-brand .brand-name {
+    font-size: 19px;
+    font-weight: 800;
+  }
+
+  /* Heading */
+  .login-heading h1 {
+    font-size: 28px;
+    line-height: 1.2;
+  }
+
+  .login-heading p {
     font-size: 13px;
+    line-height: 1.65;
   }
 
-  .login-footer {
+  /* Error */
+  .login-error {
+    margin-top: 20px;
+    font-size: 11px;
+  }
+
+  /* Form */
+  .login-form {
+    margin-top: 28px;
+  }
+
+  .form-group {
+    margin-bottom: 18px;
+  }
+
+  .form-group label {
+    font-size: 11px;
+    margin-bottom: 8px;
+  }
+
+  .form-group input {
     width: 100%;
-    text-align: center;
+    height: 48px;
+
+    padding: 0 13px;
+
     font-size: 13px;
-    line-height: 1.5;
+    border-radius: 9px;
+  }
+
+  .password-input-wrapper input {
+    padding-right: 45px;
+  }
+
+  .login-button {
+    width: 100%;
+    height: 48px;
+
+    font-size: 12px;
+    border-radius: 9px;
+  }
+
+  /* Register */
+  .register-prompt {
+    margin-top: 24px;
+    padding-top: 22px;
+
+    font-size: 11px;
+  }
+
+  /* Security */
+  .login-security {
+    margin-top: 28px;
+    font-size: 9px;
   }
 }
 
-/* =========================================================
-   SMALL PHONES
-========================================================= */
 
 @media (max-width: 480px) {
-  .login-page {
-    padding: 14px 12px;
+
+  .login-panel {
+    min-height: 100dvh;
+
+    align-items: flex-start;
+
+    padding: 28px 18px;
   }
 
   .login-container {
-    max-width: 100%;
+    width: 100%;
+    max-width: 420px;
+
+    margin: 18px auto 0;
   }
 
-  .login-card {
-    padding: 20px 16px;
-    border-radius: 14px;
+  .mobile-brand {
+    margin-bottom: 34px;
   }
 
-  .login-header h1 {
-    font-size: 22px;
+  .mobile-brand .brand-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
   }
 
-  .login-header p {
-    font-size: 13px;
+  .mobile-brand .brand-name {
+    font-size: 18px;
   }
 
-  .login-field {
-    margin-bottom: 14px;
+  .login-eyebrow {
+    margin-bottom: 10px;
+    font-size: 9px;
   }
 
-  .login-field input {
-    min-height: 46px;
-    font-size: 16px;
+  .login-heading h1 {
+    font-size: 25px;
+    letter-spacing: -0.7px;
   }
 
-  .login-button,
-  .login-submit,
-  .login-form button[type="submit"] {
-    min-height: 46px;
+  .login-heading p {
+    margin-top: 11px;
+
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .login-form {
+    margin-top: 25px;
+  }
+
+  .form-group {
+    margin-bottom: 17px;
+  }
+
+  .form-group label {
+    font-size: 11px;
+  }
+
+  .form-group input {
+    height: 47px;
+
+    font-size: 14px;
+
+    border-radius: 9px;
+  }
+
+  .login-button {
+    height: 47px;
+
+    font-size: 12px;
+
+    border-radius: 9px;
+  }
+
+  .register-prompt {
+    margin-top: 22px;
+    padding-top: 20px;
+
+    font-size: 10px;
+  }
+
+  .login-security {
+    margin-top: 25px;
+
+    font-size: 8px;
   }
 }
 
-/* =========================================================
-   VERY SMALL PHONES
-========================================================= */
-
 @media (max-width: 360px) {
-  .login-page {
-    padding: 10px 8px;
+
+  .login-panel {
+    padding: 22px 14px;
   }
 
-  .login-card {
-    padding: 18px 13px;
+  .login-container {
+    margin-top: 10px;
   }
 
-  .login-header h1 {
-    font-size: 20px;
+  .mobile-brand {
+    margin-bottom: 28px;
   }
 
-  .login-options {
-    align-items: flex-start;
+  .mobile-brand .brand-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+  }
+
+  .mobile-brand .brand-name {
+    font-size: 17px;
+  }
+
+  .login-heading h1 {
+    font-size: 23px;
+  }
+
+  .login-heading p {
+    font-size: 11px;
+  }
+
+  .form-group input {
+    height: 45px;
+    font-size: 13px;
+  }
+
+  .login-button {
+    height: 45px;
+  }
+
+  .register-prompt {
     flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+
+@media (hover: none) and (pointer: coarse) {
+
+  .login-button {
+    min-height: 47px;
+  }
+
+  .password-visibility-button {
+    min-width: 30px;
+    min-height: 30px;
   }
 }

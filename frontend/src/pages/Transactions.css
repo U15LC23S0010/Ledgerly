@@ -419,8 +419,6 @@
   }
 }
 
-/* MODAL */
-
 .transactions-modal-overlay {
   position: fixed;
   inset: 0;
@@ -593,171 +591,105 @@
   cursor: not-allowed;
 }
 
-/* RESPONSIVE */
-
+   /* =========================================================
+   RESPONSIVE — KEEP DESKTOP LAYOUT ON MOBILE
+   ========================================================= */
 @media (max-width: 1000px) {
+
+  .transactions-page {
+    min-width: 1000px;
+    padding: 28px;
+  }
+
   .transactions-summary {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .transactions-table {
-    overflow-x: auto;
+    overflow-x: visible;
   }
 
   .transactions-table-header,
   .transaction-row {
-    min-width: 760px;
+    min-width: 0;
+  }
+
+  .transactions-toolbar {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .transactions-filters {
+    flex-direction: row;
+  }
+
+  .transactions-search {
+    width: 240px;
+  }
+
+  .transactions-filters select {
+    width: auto;
+  }
+
+  .transactions-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .transactions-modal {
+    width: 560px;
   }
 }
 
 @media (max-width: 700px) {
+
   .transactions-page {
-    padding: 18px;
+    min-width: 1000px;
+    padding: 28px;
   }
 
   .transactions-header {
-    flex-direction: column;
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .transactions-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .transactions-toolbar {
-    align-items: stretch;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
   }
 
   .transactions-filters {
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .transactions-search {
-    width: 100%;
+    width: 240px;
     box-sizing: border-box;
   }
 
   .transactions-filters select {
-    width: 100%;
-  }
-
-  .transactions-summary {
-    grid-template-columns: 1fr;
+    width: auto;
   }
 
   .transactions-form-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
-}
 
-/* =========================================================
-   TRANSACTION SELECTION
-   ========================================================= */
+  .transactions-modal {
+    width: 560px;
+    max-width: none;
+  }
 
-.transaction-select,
-.transaction-select-all {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  .transactions-form-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
 
-.transaction-select button,
-.transaction-select-all button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: #94a3b8;
-  cursor: pointer;
-}
-
-.transaction-select button:hover,
-.transaction-select-all button:hover {
-  background: #eef2ff;
-  color: #4f46e5;
-}
-
-.transaction-select button:disabled,
-.transaction-select-all button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.transaction-select button svg,
-.transaction-select-all button svg {
-  stroke-width: 2;
-}
-
-.transaction-select-all {
-  gap: 6px;
-}
-
-.transaction-select-all span {
-  display: none;
-}
-
-/* =========================================================
-   SELECTED ROW
-   ========================================================= */
-
-.transaction-row.selected {
-  background: #f5f7ff;
-}
-
-.transaction-row.selected:hover {
-  background: #eef2ff;
-}
-
-/* =========================================================
-   BULK ACTION BAR
-   ========================================================= */
-
-.transactions-bulk-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  padding: 11px 18px;
-  border-bottom: 1px solid #dbe3ec;
-  background: #f8fafc;
-}
-
-.transactions-bulk-bar > div {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #64748b;
-  font-size: 11px;
-}
-
-.transactions-bulk-bar strong {
-  color: #1e293b;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.transactions-bulk-delete-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 8px 12px;
-  border: 0;
-  border-radius: 8px;
-  background: #dc2626;
-  color: white;
-  font-size: 10px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-.transactions-bulk-delete-button:hover {
-  background: #b91c1c;
-}
-
-.transactions-bulk-delete-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  .transactions-cancel-button,
+  .transactions-save-button {
+    width: auto;
+  }
 }

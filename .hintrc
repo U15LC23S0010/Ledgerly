@@ -15,7 +15,8 @@
           "scrollbar-width: none",
           "user-select",
           "mask-image",
-          "-webkit-mask"
+          "-webkit-mask",
+          "-webkit-overflow-scrolling"
         ]
       }
     ]
