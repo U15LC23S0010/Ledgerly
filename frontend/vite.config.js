@@ -1,9 +1,14 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  server: {
+    host: "127.0.0.1",
+    port: 5173,
+    strictPort: true,
+  },
+
   plugins: [
     react(),
 
@@ -15,11 +20,15 @@ export default defineConfig({
         short_name: "Ledgerly",
         description:
           "Smart financial management and bookkeeping application.",
+
         theme_color: "#2563eb",
         background_color: "#f8fafc",
+
         display: "standalone",
+
         start_url: "/",
         scope: "/",
+
         orientation: "portrait-primary",
 
         icons: [

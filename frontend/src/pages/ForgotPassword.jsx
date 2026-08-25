@@ -7,13 +7,15 @@ import {
 } from "lucide-react";
 import axios from "axios";
 
-import "./ForgotPassword.css";s
+import "./ForgotPassword.css";
 
 // =========================================================
-// API CONFIGURATION
+// API
 // =========================================================
 
-const API_URL = import.meta.env.VITE_API_BASE_URL;
+const API_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://127.0.0.1:8000/api/v1";
 
 // =========================================================
 // COMPONENT
@@ -23,31 +25,25 @@ export default function ForgotPassword() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
-
   const [loading, setLoading] = useState(false);
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   // =========================================================
-  // SEND FORGOT PASSWORD OTP
+  // SEND OTP
   // =========================================================
 
   const sendOTP = async (e) => {
     e.preventDefault();
 
-    // Clear previous messages
     setError("");
     setSuccess("");
-
-    // -------------------------------------------------------
-    // CLEAN EMAIL
-    // -------------------------------------------------------
 
     const cleanEmail = email.trim().toLowerCase();
 
     // -------------------------------------------------------
-    // VALIDATE EMAIL
+    // EMAIL VALIDATION
     // -------------------------------------------------------
 
     if (!cleanEmail) {
@@ -55,35 +51,19 @@ export default function ForgotPassword() {
       return;
     }
 
-    // -------------------------------------------------------
-    // API URL CHECK
-    // -------------------------------------------------------
-
-    if (!API_URL) {
-      console.error(
-        "VITE_API_BASE_URL is not configured."
-      );
-
-      setError(
-        "Verification service is not configured. Please try again later."
-      );
-
-      return;
-    }
-
-    console.log(
-      "FORGOT PASSWORD REQUEST:",
-      {
-        url: `${API_URL}/auth/forgot-password`,
-        email: cleanEmail,
-      }
-    );
-
     try {
       setLoading(true);
 
+      console.log(
+        "FORGOT PASSWORD REQUEST:",
+        {
+          url: `${API_URL}/auth/forgot-password`,
+          email: cleanEmail,
+        }
+      );
+
       // -----------------------------------------------------
-      // SEND OTP REQUEST
+      // API REQUEST
       // -----------------------------------------------------
 
       const response = await axios.post(
@@ -96,14 +76,10 @@ export default function ForgotPassword() {
             "Content-Type": "application/json",
           },
 
-          // Prevent the UI from hanging indefinitely
-          timeout: 15000,
+          // Give the backend enough time to send the email.
+          timeout: 30000,
         }
       );
-
-      // -----------------------------------------------------
-      // SUCCESS RESPONSE
-      // -----------------------------------------------------
 
       console.log(
         "FORGOT PASSWORD RESPONSE:",
@@ -111,7 +87,7 @@ export default function ForgotPassword() {
       );
 
       // -----------------------------------------------------
-      // SAVE EMAIL FOR RESET PASSWORD PAGE
+      // SAVE EMAIL
       // -----------------------------------------------------
 
       sessionStorage.setItem(
@@ -119,24 +95,13 @@ export default function ForgotPassword() {
         cleanEmail
       );
 
-      // -----------------------------------------------------
-      // CLEAR OLD RESET SESSION DATA
-      // -----------------------------------------------------
-
+      // Remove old reset token if present
       sessionStorage.removeItem(
         "ledgerly_password_reset_token"
       );
 
-      sessionStorage.removeItem(
-        "ledgerly_password_reset_otp"
-      );
-
-      sessionStorage.removeItem(
-        "ledgerly_password_reset_otp_verified"
-      );
-
       // -----------------------------------------------------
-      // SHOW SUCCESS MESSAGE
+      // SUCCESS
       // -----------------------------------------------------
 
       setSuccess(
@@ -145,18 +110,13 @@ export default function ForgotPassword() {
       );
 
       // -----------------------------------------------------
-      // GO TO OTP PAGE
+      // GO TO RESET PASSWORD
       // -----------------------------------------------------
 
       setTimeout(() => {
         navigate("/reset-password");
-      }, 500);
-
+      }, 700);
     } catch (err) {
-      // =====================================================
-      // ERROR HANDLING
-      // =====================================================
-
       console.error(
         "FORGOT PASSWORD ERROR:",
         err
@@ -168,7 +128,7 @@ export default function ForgotPassword() {
 
       if (err.response) {
         console.error(
-          "BACKEND STATUS:",
+          "STATUS:",
           err.response.status
         );
 
@@ -180,22 +140,18 @@ export default function ForgotPassword() {
         const detail =
           err.response.data?.detail;
 
-        // FastAPI validation errors
         if (Array.isArray(detail)) {
           setError(
             detail
               .map(
                 (item) =>
-                  item?.msg || "Invalid input"
+                  item?.msg ||
+                  "Invalid input"
               )
               .join(", ")
           );
-
-        // FastAPI HTTPException
         } else if (detail) {
           setError(String(detail));
-
-        // Other HTTP errors
         } else {
           setError(
             `Server error (${err.response.status}). Please try again.`
@@ -206,17 +162,13 @@ export default function ForgotPassword() {
       }
 
       // -----------------------------------------------------
-      // REQUEST TIMEOUT
+      // TIMEOUT
       // -----------------------------------------------------
 
-      if (
-        err.code === "ECONNABORTED" ||
-        err.code === "ETIMEDOUT"
-      ) {
+      if (err.code === "ECONNABORTED") {
         setError(
           "The verification service took too long to respond. Please try again."
         );
-
         return;
       }
 
@@ -229,9 +181,8 @@ export default function ForgotPassword() {
         err.message === "Network Error"
       ) {
         setError(
-          "Unable to connect to the verification service. Please check your connection."
+          "Unable to connect to the verification service."
         );
-
         return;
       }
 
@@ -242,7 +193,6 @@ export default function ForgotPassword() {
       setError(
         "Unable to send verification code. Please try again."
       );
-
     } finally {
       setLoading(false);
     }
@@ -254,16 +204,9 @@ export default function ForgotPassword() {
 
   return (
     <main className="forgot-page">
-
-      {/* =====================================================
-          CARD
-      ===================================================== */}
-
       <section className="forgot-card">
 
-        {/* ===================================================
-            LOGO
-        =================================================== */}
+        {/* LOGO */}
 
         <div className="forgot-logo">
           <img
@@ -272,12 +215,9 @@ export default function ForgotPassword() {
           />
         </div>
 
-        {/* ===================================================
-            HEADING
-        =================================================== */}
+        {/* HEADING */}
 
         <div className="forgot-heading">
-
           <span>
             ACCOUNT RECOVERY
           </span>
@@ -287,26 +227,21 @@ export default function ForgotPassword() {
           </h1>
 
           <p>
-            Enter your registered email address
-            and we'll send you a verification code.
+            Enter your registered email
+            address and we'll send you a
+            verification code.
           </p>
-
         </div>
 
-        {/* ===================================================
-            ERROR
-        =================================================== */}
+        {/* ERROR */}
 
         {error && (
           <div className="forgot-alert error">
-            <span>⚠</span>
-            <span>{error}</span>
+            ⚠ {error}
           </div>
         )}
 
-        {/* ===================================================
-            SUCCESS
-        =================================================== */}
+        {/* SUCCESS */}
 
         {success && (
           <div className="forgot-alert success">
@@ -314,26 +249,14 @@ export default function ForgotPassword() {
           </div>
         )}
 
-        {/* ===================================================
-            FORM
-        =================================================== */}
+        {/* FORM */}
 
         <form onSubmit={sendOTP}>
-
-          {/* =================================================
-              EMAIL LABEL
-          ================================================= */}
-
           <label htmlFor="forgot-email">
             Email address
           </label>
 
-          {/* =================================================
-              EMAIL INPUT
-          ================================================= */}
-
           <div className="forgot-input">
-
             <Mail size={17} />
 
             <input
@@ -350,19 +273,13 @@ export default function ForgotPassword() {
               disabled={loading}
               required
             />
-
           </div>
-
-          {/* =================================================
-              SEND OTP BUTTON
-          ================================================= */}
 
           <button
             type="submit"
             className="forgot-button-main"
             disabled={loading}
           >
-
             {loading ? (
               <>
                 <span className="forgot-spinner" />
@@ -374,29 +291,19 @@ export default function ForgotPassword() {
                 <ArrowRight size={17} />
               </>
             )}
-
           </button>
-
         </form>
 
-        {/* ===================================================
-            BACK TO LOGIN
-        =================================================== */}
+        {/* BACK */}
 
         <div className="forgot-back">
-
           <Link to="/login">
-
             <ArrowLeft size={15} />
-
             Back to sign in
-
           </Link>
-
         </div>
 
       </section>
-
     </main>
   );
 }
