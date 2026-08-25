@@ -122,44 +122,66 @@ def send_otp(
     _ = mobile_number
 
     if purpose == "password_reset":
-        subject = "Ledgerly - Password Reset OTP"
+
+        subject = "Your Ledgerly Password Reset Code"
 
         body = f"""
 Hello,
 
-We received a request to reset your Ledgerly password.
+We received a request to reset your Ledgerly account password.
 
-Your password reset verification code is:
+YOUR VERIFICATION CODE
 
 {otp}
 
-This code will expire in {OTP_EXPIRE_MINUTES} minutes.
+This code is valid for {OTP_EXPIRE_MINUTES} minutes.
 
-If you did not request a password reset, please ignore this email.
+For your security, please do not share this verification code with anyone.
 
-Regards,
-Ledgerly
-Smart Bookkeeping
+Best regards,
+Ledgerly Team
+Smart Bookkeeping, Simplified.
 """
+
     else:
-        subject = "Ledgerly - Your Verification Code"
+
+        subject = "Welcome to Ledgerly — Verify Your Email"
 
         body = f"""
 Hello,
 
-Welcome to Ledgerly.
+Welcome to Ledgerly! 
+
+You're one step away from setting up your smarter bookkeeping workspace.
+
+VERIFY YOUR EMAIL
 
 Your verification code is:
 
 {otp}
 
-This code will expire in {OTP_EXPIRE_MINUTES} minutes.
+This code is valid for {OTP_EXPIRE_MINUTES} minutes.
 
-If you did not create a Ledgerly account, please ignore this email.
+Enter this code in Ledgerly to complete your registration and start managing your finances with clarity.
 
-Regards,
-Ledgerly
-Smart Bookkeeping
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT'S WAITING FOR YOU
+
+✓ Track income and expenses
+✓ Manage accounts and transactions
+✓ Create budgets and invoices
+✓ Analyze your financial performance
+✓ Discover intelligent financial insights
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Your financial workspace is almost ready.
+
+See you inside Ledgerly.
+
+Best regards,
+Ledgerly - Smart Bookkeeping
 """
 
     message = EmailMessage()
@@ -171,10 +193,6 @@ Smart Bookkeeping
     message.set_content(body)
 
     try:
-        print(f"Sending OTP email to: {email}")
-        print(f"SMTP host: {settings.SMTP_HOST}")
-        print(f"SMTP port: {settings.SMTP_PORT}")
-        print(f"SMTP username: {settings.SMTP_USERNAME}")
 
         with smtplib.SMTP(
             settings.SMTP_HOST,
@@ -183,9 +201,7 @@ Smart Bookkeeping
         ) as server:
 
             server.ehlo()
-
             server.starttls()
-
             server.ehlo()
 
             server.login(
@@ -195,23 +211,18 @@ Smart Bookkeeping
 
             server.send_message(message)
 
-        print(f"OTP EMAIL SENT SUCCESSFULLY TO: {email}")
-
-    except smtplib.SMTPAuthenticationError as e:
-
-        print("SMTP AUTHENTICATION ERROR:", repr(e))
-
-    except smtplib.SMTPConnectError as e:
-
-        print("SMTP CONNECTION ERROR:", repr(e))
-
-    except smtplib.SMTPException as e:
-
-        print("SMTP ERROR:", repr(e))
+        print(
+            f"OTP EMAIL SENT SUCCESSFULLY TO: {email}"
+        )
 
     except Exception as e:
 
-        print("OTP EMAIL ERROR:", repr(e))
+        print(
+            "OTP EMAIL ERROR:",
+            repr(e),
+        )
+
+        raise
 # =========================================================
 # REGISTER
 # =========================================================
@@ -399,12 +410,19 @@ def register(
     # QUEUE EMAIL
     # -----------------------------------------------------
 
-    background_tasks.add_task(
-        send_otp,
-        email,
-        mobile_number,
-        otp,
-        "registration",
+    try:
+          send_otp(
+          email,
+          mobile_number,
+          otp,
+         "registration",
+        )
+    except Exception as e:
+      print("REGISTRATION EMAIL FAILED:", repr(e))
+
+      raise HTTPException(
+        status_code=500,
+        detail="OTP email could not be sent. Check SMTP configuration.",
     )
 
     return {
