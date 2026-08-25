@@ -11,44 +11,37 @@ import api from "../api/api";
 import "./ProtectedRoute.css";
 
 export default function ProtectedRoute() {
-
   const location = useLocation();
 
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
-
     let mounted = true;
 
     async function checkAuthentication() {
+      const accessToken =
+        localStorage.getItem("access_token") ||
+        localStorage.getItem("access") ||
+        localStorage.getItem("token");
 
-      try {
-
-        const accessToken =
-          localStorage.getItem("access_token") ||
-          localStorage.getItem("access") ||
-          localStorage.getItem("token");
-
-        if (!accessToken) {
-
-          if (mounted) {
-            setAuthenticated(false);
-            setCheckingAuth(false);
-          }
-
-          return;
+      if (!accessToken) {
+        if (mounted) {
+          setAuthenticated(false);
+          setCheckingAuth(false);
         }
 
+        return;
+      }
+
+      try {
         const response = await api.get("/auth/me");
 
         const currentUser =
-          response.data?.user;
+          response.data?.user || response.data;
 
         if (!currentUser) {
-          throw new Error(
-            "Invalid user response"
-          );
+          throw new Error("Invalid user response");
         }
 
         localStorage.setItem(
@@ -60,9 +53,7 @@ export default function ProtectedRoute() {
           setAuthenticated(true);
           setCheckingAuth(false);
         }
-
       } catch (error) {
-
         console.error(
           "Authentication check failed:",
           error
@@ -80,7 +71,6 @@ export default function ProtectedRoute() {
           setAuthenticated(false);
           setCheckingAuth(false);
         }
-
       }
     }
 
@@ -89,40 +79,13 @@ export default function ProtectedRoute() {
     return () => {
       mounted = false;
     };
-
   }, []);
 
   if (checkingAuth) {
-
-    return (
-      <div className="auth-loading-screen">
-
-        <div className="auth-loading-card">
-
-         <div className="auth-loading-logo">
-          <img
-          src="/pwa-192x192.png"
-          alt="Ledgerly"
-          />
-        </div>
-
-        
-          <div className="auth-loading-spinner" />
-
-          <h2>Ledgerly</h2>
-
-          <p>
-            Checking your account...
-          </p>
-
-        </div>
-
-      </div>
-    );
+    return null;
   }
 
   if (!authenticated) {
-
     return (
       <Navigate
         to="/login"

@@ -41,10 +41,6 @@ export default function Login() {
         return;
       }
 
-      // -----------------------------------------
-      // CLEAR OLD AUTH DATA
-      // -----------------------------------------
-
       localStorage.removeItem("access");
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh");
@@ -53,18 +49,9 @@ export default function Login() {
       localStorage.removeItem("user");
       localStorage.removeItem("userEmail");
 
-      // -----------------------------------------
-      // CLEAR OLD WELCOME FLAG
-      //
-      // Every successful login gets a fresh
-      // welcome screen.
-      // -----------------------------------------
 
       sessionStorage.removeItem("ledgerly_show_welcome");
 
-      // -----------------------------------------
-      // FASTAPI LOGIN
-      // -----------------------------------------
 
       const formData = new URLSearchParams();
 
@@ -99,10 +86,6 @@ export default function Login() {
           "Login succeeded, but no access token was returned."
         );
       }
-
-      // -----------------------------------------
-      // SAVE ACCESS TOKEN
-      // -----------------------------------------
 
       localStorage.setItem(
         "access",
@@ -163,19 +146,8 @@ export default function Login() {
           "Unable to load current user:",
           meError
         );
-
-        // Do not destroy the token.
-        // ProtectedRoute will verify it.
       }
 
-      // -----------------------------------------
-      // IMPORTANT
-      // -----------------------------------------
-      // Tell Welcome that this is a fresh login.
-      // sessionStorage lasts only for this browser
-      // session and is cleared when the tab/session
-      // ends.
-      // -----------------------------------------
 
       sessionStorage.setItem(
         "ledgerly_show_welcome",
@@ -186,11 +158,8 @@ export default function Login() {
         "LOGIN SUCCESS → GOING TO WELCOME"
       );
 
-      // -----------------------------------------
-      // NAVIGATE TO WELCOME
-      // -----------------------------------------
 
-      navigate("/welcome", {
+      navigate("/dashboard", {
         replace: true,
       });
 
@@ -200,19 +169,11 @@ export default function Login() {
         err
       );
 
-      // -----------------------------------------
-      // 401
-      // -----------------------------------------
-
       if (err.response?.status === 401) {
         setError(
           "Invalid email or password. Please check your login details."
         );
       }
-
-      // -----------------------------------------
-      // 403
-      // -----------------------------------------
 
       else if (err.response?.status === 403) {
         setError(
@@ -220,10 +181,6 @@ export default function Login() {
             "Your account is inactive."
         );
       }
-
-      // -----------------------------------------
-      // FASTAPI DETAIL
-      // -----------------------------------------
 
       else if (
         err.response?.data?.detail
@@ -245,10 +202,6 @@ export default function Login() {
         }
       }
 
-      // -----------------------------------------
-      // NETWORK ERROR
-      // -----------------------------------------
-
       else if (
         err.code === "ERR_NETWORK" ||
         err.message === "Network Error"
@@ -257,10 +210,6 @@ export default function Login() {
           "Unable to connect to the backend. Make sure FastAPI is running."
         );
       }
-
-      // -----------------------------------------
-      // OTHER ERROR
-      // -----------------------------------------
 
       else {
         setError(
@@ -276,8 +225,6 @@ export default function Login() {
 
   return (
     <main className="login-page">
-
-      {/* LEFT BRAND */}
 
       <section className="login-brand">
 
@@ -324,13 +271,11 @@ export default function Login() {
 
       </section>
 
-      {/* LOGIN PANEL */}
 
       <section className="login-panel">
 
         <div className="login-container">
 
-          {/* MOBILE BRAND */}
 
           <div className="mobile-brand">
 
@@ -366,7 +311,6 @@ export default function Login() {
 
           </div>
 
-          {/* ERROR */}
 
           {error && (
             <div className="login-error">
@@ -380,14 +324,12 @@ export default function Login() {
             </div>
           )}
 
-          {/* LOGIN FORM */}
-
           <form
             className="login-form"
             onSubmit={handleSubmit}
           >
 
-            {/* EMAIL */}
+           
 
             <div className="form-group">
 
@@ -520,7 +462,7 @@ export default function Login() {
 
           </form>
 
-          {/* REGISTER */}
+         
 
           <div className="register-prompt">
 
@@ -534,8 +476,6 @@ export default function Login() {
             </Link>
 
           </div>
-
-          {/* SECURITY */}
 
           <div className="login-security">
 

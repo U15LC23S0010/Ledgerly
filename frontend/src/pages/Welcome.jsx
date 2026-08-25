@@ -19,8 +19,7 @@ function Welcome() {
   const navigate = useNavigate();
 
   const finishWelcome = () => {
-    sessionStorage.removeItem("ledgerly_show_welcome");
-    navigate("/dashboard", { replace: true });
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -62,24 +61,28 @@ function Welcome() {
         </button>
 
         <div className="welcome-logo-wrapper">
+
           <div className="welcome-logo-ring" />
 
           <div className="welcome-logo">
             <img
-          src="/pwa-70x70.png"
-          alt="Ledgerly"
-          />
+              src="/pwa-70x70.png"
+              alt="Ledgerly"
+            />
           </div>
+
         </div>
 
         <div className="welcome-badge">
+
           <span className="welcome-status-dot" />
 
           <Sparkles size={13} />
 
           <span>
-            Welcome to LedgerFlow AI
+            Welcome to Ledgerly
           </span>
+
         </div>
 
         <h1 className="welcome-title">
@@ -90,7 +93,7 @@ function Welcome() {
         </h1>
 
         <p className="welcome-description">
-          LedgerFlow AI brings your transactions, accounts,
+          Ledgerly brings your transactions, accounts,
           expenses, budgets, reports and financial insights
           together in one intelligent bookkeeping workspace.
         </p>
@@ -98,6 +101,7 @@ function Welcome() {
         <div className="welcome-features">
 
           <div className="welcome-feature">
+
             <div className="welcome-feature-number">
               01
             </div>
@@ -107,6 +111,7 @@ function Welcome() {
             </div>
 
             <div className="welcome-feature-content">
+
               <strong>
                 Manage your finances
               </strong>
@@ -115,10 +120,13 @@ function Welcome() {
                 Organize accounts, transactions,
                 expenses and categories.
               </span>
+
             </div>
+
           </div>
 
           <div className="welcome-feature">
+
             <div className="welcome-feature-number">
               02
             </div>
@@ -128,6 +136,7 @@ function Welcome() {
             </div>
 
             <div className="welcome-feature-content">
+
               <strong>
                 Understand your numbers
               </strong>
@@ -136,10 +145,13 @@ function Welcome() {
                 Track budgets, reports, analytics
                 and financial performance.
               </span>
+
             </div>
+
           </div>
 
           <div className="welcome-feature">
+
             <div className="welcome-feature-number">
               03
             </div>
@@ -149,6 +161,7 @@ function Welcome() {
             </div>
 
             <div className="welcome-feature-content">
+
               <strong>
                 Get intelligent insights
               </strong>
@@ -157,7 +170,9 @@ function Welcome() {
                 Discover useful patterns and
                 suggestions from your financial data.
               </span>
+
             </div>
+
           </div>
 
         </div>
@@ -192,6 +207,7 @@ function Welcome() {
           className="welcome-start-button"
           onClick={finishWelcome}
         >
+
           <span>
             Get Started
           </span>
@@ -199,6 +215,7 @@ function Welcome() {
           <ArrowRight size={18} />
 
           <div className="welcome-button-shine" />
+
         </button>
 
         <p className="welcome-note">
@@ -207,6 +224,7 @@ function Welcome() {
         </p>
 
       </main>
+
     </div>
   );
 }

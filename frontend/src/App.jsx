@@ -1,4 +1,3 @@
-
 import {
   Routes,
   Route,
@@ -10,7 +9,6 @@ import Register from "./pages/Register";
 import VerifyRegistration from "./pages/VerifyRegistration";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-
 import Welcome from "./pages/Welcome";
 
 import Dashboard from "./pages/Dashboard";
@@ -29,21 +27,12 @@ import Settings from "./pages/Settings";
 import Transactions from "./pages/Transactions";
 import Notifications from "./pages/Notifications";
 import Guide from "./pages/Guide";
+import Profile from "./pages/Profile";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
-import Profile from "./pages/Profile";
-
-/* =========================================================
-   SETTINGS
-========================================================= */
 
 const SETTINGS_KEY = "ledgerly_settings";
-
-
-/* =========================================================
-   DEFAULT WORKSPACE REDIRECT
-========================================================= */
 
 function WorkspaceDefaultRedirect() {
   let destination = "/dashboard";
@@ -53,8 +42,7 @@ function WorkspaceDefaultRedirect() {
       localStorage.getItem(SETTINGS_KEY);
 
     if (storedSettings) {
-      const settings =
-        JSON.parse(storedSettings);
+      const settings = JSON.parse(storedSettings);
 
       switch (settings.dashboardView) {
         case "expenses":
@@ -88,18 +76,19 @@ function WorkspaceDefaultRedirect() {
   );
 }
 
-
-/* =========================================================
-   APPLICATION
-========================================================= */
-
 export default function App() {
   return (
     <Routes>
 
-      {/* =====================================================
-          PUBLIC AUTHENTICATION ROUTES
-      ===================================================== */}
+      <Route
+        path="/"
+        element={<Navigate to="/welcome" replace />}
+      />
+      
+      <Route
+        path="/welcome"
+        element={<Welcome />}
+      />
 
       <Route
         path="/login"
@@ -126,59 +115,13 @@ export default function App() {
         element={<ResetPassword />}
       />
 
-
-      {/* =====================================================
-          WELCOME ROUTE
-
-          IMPORTANT:
-          - NOT inside ProtectedRoute
-          - NOT inside AppLayout
-          - No sidebar
-          - No dashboard
-          - Login redirects here after successful login
-      ===================================================== */}
-
-      <Route
-        path="/welcome"
-        element={<Welcome />}
-      />
-
-
-      {/* =====================================================
-          PROTECTED APPLICATION
-      ===================================================== */}
-
       <Route element={<ProtectedRoute />}>
-
-        {/* ===================================================
-            APPLICATION LAYOUT
-        =================================================== */}
-
         <Route element={<AppLayout />}>
-
-          {/* =================================================
-              ROOT
-          ================================================= */}
-
-          <Route
-            path="/"
-            element={<WorkspaceDefaultRedirect />}
-          />
-
-
-          {/* =================================================
-              DASHBOARD
-          ================================================= */}
 
           <Route
             path="/dashboard"
             element={<Dashboard />}
           />
-
-
-          {/* =================================================
-              WORKSPACE
-          ================================================= */}
 
           <Route
             path="/workspace"
@@ -210,11 +153,6 @@ export default function App() {
             element={<Budget />}
           />
 
-
-          {/* =================================================
-              ANALYZE
-          ================================================= */}
-
           <Route
             path="/analytics"
             element={<Analytics />}
@@ -224,11 +162,6 @@ export default function App() {
             path="/insights"
             element={<Insights />}
           />
-
-
-          {/* =================================================
-              BUSINESS
-          ================================================= */}
 
           <Route
             path="/accounts"
@@ -255,11 +188,6 @@ export default function App() {
             element={<Reports />}
           />
 
-
-          {/* =================================================
-              SETTINGS
-          ================================================= */}
-
           <Route
             path="/settings"
             element={<Settings />}
@@ -268,7 +196,7 @@ export default function App() {
           <Route
             path="/profile"
             element={<Profile />}
-         />
+          />
 
           <Route
             path="/notifications"
@@ -280,30 +208,19 @@ export default function App() {
             element={<Guide />}
           />
 
-
-          {/* =================================================
-              START
-          ================================================= */}
-
           <Route
             path="/start"
             element={<WorkspaceDefaultRedirect />}
           />
 
         </Route>
-
       </Route>
-
-
-      {/* =====================================================
-          UNKNOWN ROUTES
-      ===================================================== */}
 
       <Route
         path="*"
         element={
           <Navigate
-            to="/login"
+            to="/welcome"
             replace
           />
         }
