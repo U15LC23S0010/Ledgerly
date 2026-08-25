@@ -335,7 +335,10 @@ export default function Login() {
           <div className="mobile-brand">
 
             <div className="brand-logo">
-              LF
+              <img
+               src="/pwa-30x30.png"
+               alt="Ledgerly"
+             />
             </div>
 
             <div className="brand-name">

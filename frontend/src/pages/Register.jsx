@@ -26,10 +26,6 @@ import api from "../api/api";
 export default function Register() {
   const navigate = useNavigate();
 
-  // =========================================================
-  // FORM
-  // =========================================================
-
   const [form, setForm] = useState({
     full_name: "",
     email: "",
@@ -38,40 +34,21 @@ export default function Register() {
     company_name: "",
   });
 
-  // =========================================================
-  // PASSWORD
-  // =========================================================
-
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // =========================================================
-  // ROLE
-  // =========================================================
-
   const [role, setRole] = useState("user");
   const [adminCode, setAdminCode] = useState("");
-
-  // =========================================================
-  // TERMS
-  // =========================================================
 
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
 
-  // =========================================================
-  // STATUS
-  // =========================================================
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // =========================================================
-  // HANDLE INPUT
-  // =========================================================
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -424,7 +401,7 @@ const handleSubmit = async (e) => {
 
            <div className="mobile-brand-logo">
            <img
-           src="/pwa-192x192.png"
+           src="/ledgerly-30x30.png"
            alt="Ledgerly"
             />
            </div>
