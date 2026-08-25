@@ -119,25 +119,9 @@ def send_otp(
     otp: str,
     purpose: str = "registration",
 ):
-    """
-    Send OTP through Gmail SMTP.
-
-    This function runs as a FastAPI BackgroundTask.
-
-    mobile_number is retained because the
-    OTPVerification table requires it.
-
-    OTP is sent only through email.
-    """
-
     _ = mobile_number
 
-    # -----------------------------------------------------
-    # PASSWORD RESET EMAIL
-    # -----------------------------------------------------
-
     if purpose == "password_reset":
-
         subject = "Ledgerly - Password Reset OTP"
 
         body = f"""
@@ -157,13 +141,7 @@ Regards,
 Ledgerly
 Smart Bookkeeping
 """
-
-    # -----------------------------------------------------
-    # REGISTRATION EMAIL
-    # -----------------------------------------------------
-
     else:
-
         subject = "Ledgerly - Your Verification Code"
 
         body = f"""
@@ -184,35 +162,31 @@ Ledgerly
 Smart Bookkeeping
 """
 
-    # -----------------------------------------------------
-    # CREATE EMAIL
-    # -----------------------------------------------------
-
     message = EmailMessage()
 
     message["Subject"] = subject
-
-    message["From"] = (
-        f"{settings.SMTP_FROM_NAME} "
-        f"<{settings.SMTP_FROM_EMAIL}>"
-    )
-
+    message["From"] = settings.SMTP_FROM_EMAIL
     message["To"] = email
 
     message.set_content(body)
 
-    # -----------------------------------------------------
-    # SEND EMAIL
-    # -----------------------------------------------------
-
     try:
+        print(f"Sending OTP email to: {email}")
+        print(f"SMTP host: {settings.SMTP_HOST}")
+        print(f"SMTP port: {settings.SMTP_PORT}")
+        print(f"SMTP username: {settings.SMTP_USERNAME}")
 
         with smtplib.SMTP(
             settings.SMTP_HOST,
-            settings.SMTP_PORT,
+            int(settings.SMTP_PORT),
+            timeout=30,
         ) as server:
 
+            server.ehlo()
+
             server.starttls()
+
+            server.ehlo()
 
             server.login(
                 settings.SMTP_USERNAME,
@@ -221,18 +195,23 @@ Smart Bookkeeping
 
             server.send_message(message)
 
-        print(
-            f"OTP email successfully sent to {email}"
-        )
+        print(f"OTP EMAIL SENT SUCCESSFULLY TO: {email}")
+
+    except smtplib.SMTPAuthenticationError as e:
+
+        print("SMTP AUTHENTICATION ERROR:", repr(e))
+
+    except smtplib.SMTPConnectError as e:
+
+        print("SMTP CONNECTION ERROR:", repr(e))
+
+    except smtplib.SMTPException as e:
+
+        print("SMTP ERROR:", repr(e))
 
     except Exception as e:
 
-        print(
-            "OTP EMAIL ERROR:",
-            repr(e),
-        )
-
-
+        print("OTP EMAIL ERROR:", repr(e))
 # =========================================================
 # REGISTER
 # =========================================================
