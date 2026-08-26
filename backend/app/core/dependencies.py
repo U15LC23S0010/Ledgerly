@@ -3,52 +3,67 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
-from app.core.security import SECRET_KEY, ALGORITHM
+from app.core.config import settings
 from app.db.database import get_db
 from app.models.user import User
 
+
+# =========================================================
+# OAUTH2
+# =========================================================
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/api/v1/auth/login"
 )
 
 
+# =========================================================
+# CURRENT USER
+# =========================================================
+
 def get_current_user(
     token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={
-            "WWW-Authenticate": "Bearer"
+            "WWW-Authenticate": "Bearer",
         },
     )
 
     try:
-
         payload = jwt.decode(
             token,
-            SECRET_KEY,
-            algorithms=[ALGORITHM]
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
         )
 
-       
+        # -------------------------------------------------
+        # ACCESS TOKEN ONLY
+        # -------------------------------------------------
+
         if payload.get("type") != "access":
             raise credentials_exception
 
-        
+        # -------------------------------------------------
+        # USER EMAIL
+        # -------------------------------------------------
 
         email = payload.get("sub")
 
-        if email is None:
+        if not email:
             raise credentials_exception
 
-    except JWTError:
+        email = str(email).strip().lower()
 
+    except JWTError:
         raise credentials_exception
 
-
+    # =====================================================
+    # FIND USER
+    # =====================================================
 
     user = (
         db.query(User)
@@ -59,27 +74,30 @@ def get_current_user(
     if user is None:
         raise credentials_exception
 
+    # =====================================================
+    # ACTIVE USER
+    # =====================================================
 
     if not user.is_active:
-
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is inactive."
+            detail="Account is inactive.",
         )
 
     return user
 
 
+# =========================================================
+# CURRENT ADMIN
+# =========================================================
 
 def get_current_admin(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-
     if current_user.role != "admin":
-
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
+            detail="Admin access required",
         )
 
     return current_user

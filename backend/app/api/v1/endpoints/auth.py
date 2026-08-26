@@ -1,44 +1,45 @@
 from datetime import datetime, timedelta, timezone
 import secrets
+import smtplib
 
-import resend
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from jose import jwt, JWTError
-from pydantic import BaseModel, EmailStr
+from jose import JWTError, jwt
+from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-
-from app.db.database import get_db
-
-from app.models.user import User
-from app.models.refresh_token import RefreshToken
-from app.models.otp import OTPVerification
-
-from app.schemas.user import UserCreate
-
-from app.core.security import (
-    hash_password,
-    verify_password,
-    create_access_token,
-    create_refresh_token,
-    SECRET_KEY,
-    ALGORITHM,
-    REFRESH_TOKEN_EXPIRE_DAYS,
-)
 
 from app.core.config import settings
 from app.core.dependencies import get_current_user
+from app.core.security import (
+    ALGORITHM,
+    SECRET_KEY,
+    create_access_token,
+    create_refresh_token,
+    hash_password,
+    verify_password,
+)
+from app.db.database import get_db
+from app.models.otp import OTPVerification
+from app.models.refresh_token import RefreshToken
+from app.models.user import User
+from app.schemas.user import UserCreate
 
 
 router = APIRouter()
 
 
 # =========================================================
-# OTP SETTINGS
+# CONSTANTS
 # =========================================================
 
 OTP_EXPIRE_MINUTES = 10
+OTP_LENGTH = 6
+MIN_PASSWORD_LENGTH = 6
+MAX_PASSWORD_LENGTH = 128
 
 
 # =========================================================
@@ -49,63 +50,115 @@ def utc_now() -> datetime:
     """
     Return current UTC time as a naive datetime.
 
-    SQLAlchemy DateTime columns in this project are stored
-    without timezone information, so we use naive UTC.
+    The project database uses SQLAlchemy DateTime columns
+    without timezone information, so UTC timezone information
+    is removed before storing/comparing values.
     """
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 # =========================================================
-# RESEND CONFIGURATION
+# NORMALIZATION
 # =========================================================
 
-def configure_resend():
-    """
-    Configure Resend from application settings.
-    """
-
-    api_key = getattr(settings, "RESEND_API_KEY", None)
-
-    if not api_key:
-        print("WARNING: RESEND_API_KEY is not configured.")
-        return
-
-    resend.api_key = api_key
-
-    print("========================================")
-    print("RESEND CONFIGURED")
-    print("========================================")
+def normalize_email(email: str) -> str:
+    return str(email).strip().lower()
 
 
-configure_resend()
+def normalize_mobile(mobile_number: str) -> str:
+    return str(mobile_number).strip()
+
+
+def normalize_role(role: str | None) -> str:
+    return str(role or "user").strip().lower()
 
 
 # =========================================================
-# VALIDATE RESEND CONFIGURATION
+# VALIDATION
 # =========================================================
 
-def validate_resend_configuration():
-    """
-    Validate email configuration before sending.
-    """
-
-    api_key = getattr(settings, "RESEND_API_KEY", None)
-    from_email = getattr(settings, "RESEND_FROM_EMAIL", None)
-
-    if not api_key:
+def validate_password(password: str) -> None:
+    if not password:
         raise HTTPException(
-            status_code=500,
-            detail="Email service is not configured: RESEND_API_KEY is missing.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password is required.",
         )
 
-    if not from_email:
+    if len(password) < MIN_PASSWORD_LENGTH:
         raise HTTPException(
-            status_code=500,
-            detail="Email service is not configured: RESEND_FROM_EMAIL is missing.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Password must contain at least "
+                f"{MIN_PASSWORD_LENGTH} characters."
+            ),
         )
 
-    # Make sure the current API key is used.
-    resend.api_key = api_key
+    if len(password) > MAX_PASSWORD_LENGTH:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Password must not exceed "
+                f"{MAX_PASSWORD_LENGTH} characters."
+            ),
+        )
+
+
+def validate_otp_format(otp: str) -> str:
+    otp = str(otp).strip()
+
+    if not otp.isdigit() or len(otp) != OTP_LENGTH:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP must be a valid 6-digit code.",
+        )
+
+    return otp
+
+
+def validate_mobile_number(mobile_number: str) -> str:
+    mobile_number = normalize_mobile(mobile_number)
+
+    if not mobile_number.isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Mobile number must contain digits only.",
+        )
+
+    if not 10 <= len(mobile_number) <= 15:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Mobile number must contain 10 to 15 digits.",
+        )
+
+    return mobile_number
+
+
+# =========================================================
+# EMAIL CONFIGURATION
+# =========================================================
+
+def validate_email_configuration() -> None:
+    required_settings = {
+        "GMAIL_SMTP_HOST": settings.GMAIL_SMTP_HOST,
+        "GMAIL_SMTP_PORT": settings.GMAIL_SMTP_PORT,
+        "GMAIL_SMTP_USERNAME": settings.GMAIL_SMTP_USERNAME,
+        "GMAIL_SMTP_PASSWORD": settings.GMAIL_SMTP_PASSWORD,
+    }
+
+    missing = [
+        name
+        for name, value in required_settings.items()
+        if value is None or str(value).strip() == ""
+    ]
+
+    if missing:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                "Email service is not configured correctly. "
+                f"Missing: {', '.join(missing)}"
+            ),
+        )
 
 
 # =========================================================
@@ -113,11 +166,11 @@ def validate_resend_configuration():
 # =========================================================
 
 class VerifyRegistrationRequest(BaseModel):
-    full_name: str
+    full_name: str = Field(min_length=1, max_length=255)
     email: EmailStr
-    mobile_number: str
+    mobile_number: str = Field(min_length=10, max_length=15)
     password: str
-    company_name: str
+    company_name: str = Field(min_length=1, max_length=255)
     role: str = "user"
     admin_code: str | None = None
     otp: str
@@ -125,7 +178,7 @@ class VerifyRegistrationRequest(BaseModel):
 
 class ResendOTPRequest(BaseModel):
     email: EmailStr
-    mobile_number: str
+    mobile_number: str = Field(min_length=10, max_length=15)
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -143,54 +196,29 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str = Field(min_length=1)
+
+
 # =========================================================
 # OTP GENERATOR
 # =========================================================
 
 def generate_otp() -> str:
     """
-    Generate a cryptographically secure 6-digit OTP.
+    Generate a cryptographically secure six-digit OTP.
     """
-
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
 # =========================================================
-# OTP EMAIL
+# EMAIL TEMPLATE
 # =========================================================
 
-def send_otp(
-    email: str,
-    mobile_number: str | None,
+def build_otp_email(
     otp: str,
-    purpose: str = "registration",
-):
-    """
-    Send OTP through Resend.
-
-    mobile_number is retained because the existing
-    application stores it with the OTP record.
-
-    OTP delivery is currently through email.
-    """
-
-    # Kept for compatibility with the existing system.
-    _ = mobile_number
-
-    validate_resend_configuration()
-
-    from_email = settings.RESEND_FROM_EMAIL
-    from_name = getattr(
-        settings,
-        "RESEND_FROM_NAME",
-        "Ledgerly",
-    )
-
-    sender = f"{from_name} <{from_email}>"
-
-    # =====================================================
-    # REGISTRATION EMAIL
-    # =====================================================
+    purpose: str,
+) -> tuple[str, str]:
 
     if purpose == "registration":
 
@@ -220,10 +248,7 @@ def send_otp(
     box-sizing:border-box;
 ">
 
-    <h2 style="
-        margin-top:0;
-        color:#172033;
-    ">
+    <h2 style="margin-top:0;color:#172033;">
         Welcome to Ledgerly!
     </h2>
 
@@ -231,10 +256,7 @@ def send_otp(
         Hello,
     </p>
 
-    <p style="
-        color:#4b5563;
-        line-height:1.6;
-    ">
+    <p style="color:#4b5563;line-height:1.6;">
         You're one step away from setting up your smarter
         bookkeeping workspace.
     </p>
@@ -262,18 +284,12 @@ def send_otp(
 
     </div>
 
-    <p style="
-        color:#4b5563;
-        line-height:1.6;
-    ">
+    <p style="color:#4b5563;line-height:1.6;">
         This code expires in
         <strong>{OTP_EXPIRE_MINUTES} minutes</strong>.
     </p>
 
-    <p style="
-        color:#4b5563;
-        line-height:1.6;
-    ">
+    <p style="color:#4b5563;line-height:1.6;">
         Enter this code in Ledgerly to complete your registration.
     </p>
 
@@ -281,10 +297,7 @@ def send_otp(
         What's waiting for you
     </h3>
 
-    <ul style="
-        color:#4b5563;
-        line-height:1.8;
-    ">
+    <ul style="color:#4b5563;line-height:1.8;">
         <li>Track income and expenses</li>
         <li>Manage accounts and transactions</li>
         <li>Create budgets and invoices</li>
@@ -292,10 +305,7 @@ def send_otp(
         <li>Discover intelligent insights</li>
     </ul>
 
-    <p style="
-        color:#4b5563;
-        line-height:1.6;
-    ">
+    <p style="color:#4b5563;line-height:1.6;">
         Your financial workspace is almost ready.
     </p>
 
@@ -313,11 +323,9 @@ def send_otp(
 </html>
 """
 
-    # =====================================================
-    # PASSWORD RESET EMAIL
-    # =====================================================
+        return subject, body
 
-    elif purpose == "password_reset":
+    if purpose == "password_reset":
 
         subject = "Your Ledgerly Password Reset Code"
 
@@ -345,10 +353,7 @@ def send_otp(
     box-sizing:border-box;
 ">
 
-    <h2 style="
-        margin-top:0;
-        color:#172033;
-    ">
+    <h2 style="margin-top:0;color:#172033;">
         Ledgerly Password Reset
     </h2>
 
@@ -356,10 +361,7 @@ def send_otp(
         Hello,
     </p>
 
-    <p style="
-        color:#4b5563;
-        line-height:1.6;
-    ">
+    <p style="color:#4b5563;line-height:1.6;">
         We received a request to reset your Ledgerly password.
     </p>
 
@@ -386,25 +388,16 @@ def send_otp(
 
     </div>
 
-    <p style="
-        color:#4b5563;
-        line-height:1.6;
-    ">
+    <p style="color:#4b5563;line-height:1.6;">
         This code expires in
         <strong>{OTP_EXPIRE_MINUTES} minutes</strong>.
     </p>
 
-    <p style="
-        color:#4b5563;
-        line-height:1.6;
-    ">
+    <p style="color:#4b5563;line-height:1.6;">
         For your security, do not share this code with anyone.
     </p>
 
-    <p style="
-        color:#4b5563;
-        line-height:1.6;
-    ">
+    <p style="color:#4b5563;line-height:1.6;">
         If you did not request a password reset, you can safely
         ignore this email.
     </p>
@@ -423,56 +416,246 @@ def send_otp(
 </html>
 """
 
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid OTP purpose.",
-        )
+        return subject, body
 
-    # =====================================================
-    # SEND THROUGH RESEND
-    # =====================================================
+    raise ValueError("Invalid OTP purpose.")
+
+
+# =========================================================
+# SEND OTP
+# =========================================================
+
+def send_otp(
+    email: str,
+    otp: str,
+    purpose: str,
+) -> None:
+
+    validate_email_configuration()
+
+    subject, body = build_otp_email(
+        otp=otp,
+        purpose=purpose,
+    )
+
+    sender = (
+        f"{settings.GMAIL_FROM_NAME} "
+        f"<{settings.GMAIL_SMTP_USERNAME}>"
+    )
+
+    message = MIMEMultipart("alternative")
+    message["Subject"] = subject
+    message["From"] = sender
+    message["To"] = email
+
+    message.attach(
+        MIMEText(
+            body,
+            "html",
+            "utf-8",
+        )
+    )
+
+    print("=" * 60)
+    print("LEDGERLY OTP EMAIL")
+    print(f"TO: {email}")
+    print(f"PURPOSE: {purpose}")
+    print(f"SMTP: {settings.GMAIL_SMTP_HOST}:{settings.GMAIL_SMTP_PORT}")
+    print("=" * 60)
 
     try:
+        with smtplib.SMTP(
+            settings.GMAIL_SMTP_HOST,
+            settings.GMAIL_SMTP_PORT,
+            timeout=30,
+        ) as server:
 
-        params = {
-            "from": sender,
-            "to": [email],
-            "subject": subject,
-            "html": body,
-        }
+            server.ehlo()
 
-        print("========================================")
-        print("SENDING OTP EMAIL")
-        print(f"TO: {email}")
-        print(f"FROM: {sender}")
-        print(f"PURPOSE: {purpose}")
-        print("========================================")
+            server.starttls()
 
-        response = resend.Emails.send(params)
+            server.ehlo()
 
-        print("========================================")
-        print("OTP EMAIL SENT SUCCESSFULLY")
-        print(f"TO: {email}")
-        print(f"RESEND RESPONSE: {response}")
-        print("========================================")
+            server.login(
+                settings.GMAIL_SMTP_USERNAME,
+                settings.GMAIL_SMTP_PASSWORD,
+            )
 
-        return response
+            server.sendmail(
+                settings.GMAIL_SMTP_USERNAME,
+                [email],
+                message.as_string(),
+            )
 
-    except Exception as e:
-
-        print("========================================")
-        print("RESEND EMAIL ERROR")
-        print(f"ERROR TYPE: {type(e).__name__}")
-        print(f"ERROR: {repr(e)}")
-        print(f"TO: {email}")
-        print(f"FROM: {sender}")
-        print("========================================")
+    except smtplib.SMTPAuthenticationError as exc:
+        print("SMTP AUTHENTICATION ERROR:", repr(exc))
 
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Email service authentication failed.",
+        )
+
+    except smtplib.SMTPException as exc:
+        print("SMTP ERROR:", repr(exc))
+
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Unable to send OTP email.",
         )
+
+    except OSError as exc:
+        print("SMTP CONNECTION ERROR:", repr(exc))
+
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to connect to email service.",
+        )
+
+    except Exception as exc:
+        print("UNEXPECTED EMAIL ERROR:", repr(exc))
+
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to send OTP email.",
+        )
+
+    print("OTP EMAIL SENT SUCCESSFULLY")
+    print("=" * 60)
+
+
+# =========================================================
+# INVALIDATE OTPs
+# =========================================================
+
+def invalidate_pending_otps(
+    db: Session,
+    email: str,
+) -> None:
+
+    pending_otps = (
+        db.query(OTPVerification)
+        .filter(
+            OTPVerification.email == email,
+            OTPVerification.is_verified.is_(False),
+        )
+        .all()
+    )
+
+    for otp_record in pending_otps:
+        otp_record.is_verified = True
+
+
+# =========================================================
+# CREATE OTP RECORD
+# =========================================================
+
+def create_otp_record(
+    db: Session,
+    email: str,
+    mobile_number: str | None,
+    otp: str,
+) -> OTPVerification:
+
+    now = utc_now()
+
+    invalidate_pending_otps(
+        db=db,
+        email=email,
+    )
+
+    otp_record = OTPVerification(
+        email=email,
+        mobile_number=mobile_number,
+        otp=otp,
+        expires_at=now + timedelta(
+            minutes=OTP_EXPIRE_MINUTES
+        ),
+        is_verified=False,
+        created_at=now,
+    )
+
+    db.add(otp_record)
+
+    return otp_record
+
+
+# =========================================================
+# FIND LATEST VALID OTP
+# =========================================================
+
+def get_latest_pending_otp(
+    db: Session,
+    email: str,
+    mobile_number: str | None = None,
+) -> OTPVerification | None:
+
+    query = (
+        db.query(OTPVerification)
+        .filter(
+            OTPVerification.email == email,
+            OTPVerification.is_verified.is_(False),
+        )
+    )
+
+    if mobile_number is not None:
+        query = query.filter(
+            OTPVerification.mobile_number == mobile_number
+        )
+
+    return (
+        query
+        .order_by(
+            OTPVerification.created_at.desc(),
+            OTPVerification.id.desc(),
+        )
+        .first()
+    )
+
+
+# =========================================================
+# VERIFY OTP RECORD
+# =========================================================
+
+def verify_otp_record(
+    db: Session,
+    otp_record: OTPVerification,
+    submitted_otp: str,
+) -> None:
+
+    if otp_record.expires_at < utc_now():
+
+        otp_record.is_verified = True
+
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OTP has expired. Please request a new OTP.",
+        )
+
+    if not secrets.compare_digest(
+        str(otp_record.otp),
+        submitted_otp,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid OTP.",
+        )
+
+
+# =========================================================
+# MARK OTP USED
+# =========================================================
+
+def consume_otp(
+    db: Session,
+    otp_record: OTPVerification,
+) -> None:
+
+    otp_record.is_verified = True
 
 
 # =========================================================
@@ -485,33 +668,53 @@ def register(
     db: Session = Depends(get_db),
 ):
 
-    email = str(user.email).strip().lower()
-    mobile_number = user.mobile_number.strip()
-    role = user.role.strip().lower()
+    email = normalize_email(user.email)
 
-    # =====================================================
-    # ROLE
-    # =====================================================
+    mobile_number = validate_mobile_number(
+        user.mobile_number
+    )
 
-    if role not in ["user", "admin"]:
+    role = normalize_role(user.role)
+
+    full_name = user.full_name.strip()
+    company_name = user.company_name.strip()
+
+    if not full_name:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Full name is required.",
+        )
+
+    if not company_name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Company name is required.",
+        )
+
+    validate_password(user.password)
+
+    if role not in {"user", "admin"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid registration role.",
         )
 
-    # =====================================================
-    # MOBILE
-    # =====================================================
+    if role == "admin":
 
-    if len(mobile_number) < 10 or len(mobile_number) > 15:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid mobile number.",
-        )
+        if not user.admin_code:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access code is required.",
+            )
 
-    # =====================================================
-    # EXISTING EMAIL
-    # =====================================================
+        if not secrets.compare_digest(
+            str(user.admin_code),
+            str(settings.ADMIN_REGISTRATION_CODE),
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid admin access code.",
+            )
 
     existing_email = (
         db.query(User)
@@ -521,13 +724,9 @@ def register(
 
     if existing_email:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered.",
         )
-
-    # =====================================================
-    # EXISTING MOBILE
-    # =====================================================
 
     existing_mobile = (
         db.query(User)
@@ -537,103 +736,47 @@ def register(
 
     if existing_mobile:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Mobile number already registered.",
         )
 
-    # =====================================================
-    # ADMIN
-    # =====================================================
-
-    if role == "admin":
-
-        if not user.admin_code:
-            raise HTTPException(
-                status_code=403,
-                detail="Admin access code is required.",
-            )
-
-        if user.admin_code != settings.ADMIN_REGISTRATION_CODE:
-            raise HTTPException(
-                status_code=403,
-                detail="Invalid admin access code.",
-            )
-
-    # =====================================================
-    # GENERATE OTP
-    # =====================================================
-
     otp = generate_otp()
 
-    now = utc_now()
-
-    expires_at = now + timedelta(
-        minutes=OTP_EXPIRE_MINUTES
-    )
-
-    # =====================================================
-    # INVALIDATE PREVIOUS OTPs
-    # =====================================================
-
-    old_otps = (
-        db.query(OTPVerification)
-        .filter(
-            OTPVerification.email == email,
-            OTPVerification.is_verified == False,
-        )
-        .all()
-    )
-
-    for old_otp in old_otps:
-        old_otp.is_verified = True
-
-    # =====================================================
-    # CREATE OTP
-    # =====================================================
-
-    otp_record = OTPVerification(
+    otp_record = create_otp_record(
+        db=db,
         email=email,
         mobile_number=mobile_number,
         otp=otp,
-        expires_at=expires_at,
-        is_verified=False,
-        created_at=now,
     )
 
-    db.add(otp_record)
-
-    # =====================================================
-    # SAVE OTP
-    # =====================================================
-
     try:
-
         db.commit()
         db.refresh(otp_record)
 
-    except Exception as e:
+    except IntegrityError:
+        db.rollback()
 
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Unable to create verification request.",
+        )
+
+    except Exception as exc:
         db.rollback()
 
         print(
             "REGISTRATION OTP DATABASE ERROR:",
-            repr(e),
+            repr(exc),
         )
 
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create verification request.",
         )
 
-    # =====================================================
-    # SEND OTP
-    # =====================================================
-
     try:
-
         send_otp(
             email=email,
-            mobile_number=mobile_number,
             otp=otp,
             purpose="registration",
         )
@@ -647,24 +790,6 @@ def register(
             db.rollback()
 
         raise
-
-    except Exception as e:
-
-        print(
-            "REGISTRATION EMAIL ERROR:",
-            repr(e),
-        )
-
-        try:
-            otp_record.is_verified = True
-            db.commit()
-        except Exception:
-            db.rollback()
-
-        raise HTTPException(
-            status_code=500,
-            detail="OTP email could not be sent.",
-        )
 
     return {
         "message": "OTP sent successfully.",
@@ -684,52 +809,55 @@ def verify_registration(
     db: Session = Depends(get_db),
 ):
 
-    email = str(data.email).strip().lower()
-    mobile_number = data.mobile_number.strip()
-    role = data.role.strip().lower()
-    otp_value = data.otp.strip()
+    email = normalize_email(data.email)
 
-    # =====================================================
-    # OTP FORMAT
-    # =====================================================
+    mobile_number = validate_mobile_number(
+        data.mobile_number
+    )
 
-    if not otp_value.isdigit() or len(otp_value) != 6:
+    role = normalize_role(data.role)
+
+    otp_value = validate_otp_format(data.otp)
+
+    full_name = data.full_name.strip()
+    company_name = data.company_name.strip()
+
+    if not full_name:
         raise HTTPException(
-            status_code=400,
-            detail="OTP must be a valid 6-digit code.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Full name is required.",
         )
 
-    # =====================================================
-    # ROLE
-    # =====================================================
-
-    if role not in ["user", "admin"]:
+    if not company_name:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Company name is required.",
+        )
+
+    validate_password(data.password)
+
+    if role not in {"user", "admin"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid registration role.",
         )
-
-    # =====================================================
-    # ADMIN
-    # =====================================================
 
     if role == "admin":
 
         if not data.admin_code:
             raise HTTPException(
-                status_code=403,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="Admin access code is required.",
             )
 
-        if data.admin_code != settings.ADMIN_REGISTRATION_CODE:
+        if not secrets.compare_digest(
+            str(data.admin_code),
+            str(settings.ADMIN_REGISTRATION_CODE),
+        ):
             raise HTTPException(
-                status_code=403,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="Invalid admin access code.",
             )
-
-    # =====================================================
-    # EXISTING EMAIL
-    # =====================================================
 
     existing_email = (
         db.query(User)
@@ -739,13 +867,9 @@ def verify_registration(
 
     if existing_email:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered.",
         )
-
-    # =====================================================
-    # EXISTING MOBILE
-    # =====================================================
 
     existing_mobile = (
         db.query(User)
@@ -755,95 +879,69 @@ def verify_registration(
 
     if existing_mobile:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Mobile number already registered.",
         )
 
-    # =====================================================
-    # FIND OTP
-    # =====================================================
-
-    otp_record = (
-        db.query(OTPVerification)
-        .filter(
-            OTPVerification.email == email,
-            OTPVerification.mobile_number == mobile_number,
-            OTPVerification.is_verified == False,
-        )
-        .order_by(
-            OTPVerification.created_at.desc()
-        )
-        .first()
+    otp_record = get_latest_pending_otp(
+        db=db,
+        email=email,
+        mobile_number=mobile_number,
     )
 
     if not otp_record:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="OTP not found. Please request a new OTP.",
         )
 
-    # =====================================================
-    # EXPIRATION
-    # =====================================================
-
-    if otp_record.expires_at < utc_now():
-
-        otp_record.is_verified = True
-        db.commit()
-
-        raise HTTPException(
-            status_code=400,
-            detail="OTP has expired. Please request a new OTP.",
-        )
-
-    # =====================================================
-    # OTP CHECK
-    # =====================================================
-
-    if otp_record.otp != otp_value:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid OTP.",
-        )
-
-    # =====================================================
-    # CREATE USER
-    # =====================================================
+    verify_otp_record(
+        db=db,
+        otp_record=otp_record,
+        submitted_otp=otp_value,
+    )
 
     new_user = User(
-        full_name=data.full_name.strip(),
+        full_name=full_name,
         email=email,
         mobile_number=mobile_number,
         password=hash_password(data.password),
-        company_name=data.company_name.strip(),
+        company_name=company_name,
         role=role,
         is_active=True,
     )
 
-    otp_record.is_verified = True
+    consume_otp(
+        db=db,
+        otp_record=otp_record,
+    )
 
     db.add(new_user)
 
-    # =====================================================
-    # SAVE USER
-    # =====================================================
-
     try:
-
         db.commit()
         db.refresh(new_user)
 
-    except Exception as e:
+    except IntegrityError:
+        db.rollback()
 
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "Email or mobile number is already registered."
+            ),
+        )
+
+    except Exception as exc:
         db.rollback()
 
         print(
             "REGISTRATION ERROR:",
-            repr(e),
+            repr(exc),
         )
 
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create account.",
         )
 
@@ -868,12 +966,11 @@ def resend_otp(
     db: Session = Depends(get_db),
 ):
 
-    email = str(data.email).strip().lower()
-    mobile_number = data.mobile_number.strip()
+    email = normalize_email(data.email)
 
-    # =====================================================
-    # EXISTING ACCOUNT
-    # =====================================================
+    mobile_number = validate_mobile_number(
+        data.mobile_number
+    )
 
     existing_user = (
         db.query(User)
@@ -883,81 +980,47 @@ def resend_otp(
 
     if existing_user:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Account already exists.",
         )
 
-    # =====================================================
-    # GENERATE
-    # =====================================================
-
     otp = generate_otp()
 
-    now = utc_now()
-
-    expires_at = now + timedelta(
-        minutes=OTP_EXPIRE_MINUTES
-    )
-
-    # =====================================================
-    # INVALIDATE OLD OTP
-    # =====================================================
-
-    old_otps = (
-        db.query(OTPVerification)
-        .filter(
-            OTPVerification.email == email,
-            OTPVerification.is_verified == False,
-        )
-        .all()
-    )
-
-    for old_otp in old_otps:
-        old_otp.is_verified = True
-
-    # =====================================================
-    # CREATE NEW OTP
-    # =====================================================
-
-    otp_record = OTPVerification(
+    otp_record = create_otp_record(
+        db=db,
         email=email,
         mobile_number=mobile_number,
         otp=otp,
-        expires_at=expires_at,
-        is_verified=False,
-        created_at=now,
     )
 
-    db.add(otp_record)
-
     try:
-
         db.commit()
         db.refresh(otp_record)
 
-    except Exception as e:
+    except IntegrityError:
+        db.rollback()
 
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Unable to create new OTP.",
+        )
+
+    except Exception as exc:
         db.rollback()
 
         print(
             "RESEND OTP DATABASE ERROR:",
-            repr(e),
+            repr(exc),
         )
 
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create new OTP.",
         )
 
-    # =====================================================
-    # SEND
-    # =====================================================
-
     try:
-
         send_otp(
             email=email,
-            mobile_number=mobile_number,
             otp=otp,
             purpose="registration",
         )
@@ -989,11 +1052,7 @@ def forgot_password(
     db: Session = Depends(get_db),
 ):
 
-    email = str(data.email).strip().lower()
-
-    # =====================================================
-    # USER
-    # =====================================================
+    email = normalize_email(data.email)
 
     user = (
         db.query(User)
@@ -1003,87 +1062,53 @@ def forgot_password(
 
     if not user:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="No account found with this email address.",
         )
 
     if not user.is_active:
         raise HTTPException(
-            status_code=403,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="This account is inactive.",
         )
 
-    # =====================================================
-    # OTP
-    # =====================================================
-
     otp = generate_otp()
 
-    now = utc_now()
-
-    expires_at = now + timedelta(
-        minutes=OTP_EXPIRE_MINUTES
-    )
-
-    # =====================================================
-    # INVALIDATE OLD OTPs
-    # =====================================================
-
-    old_otps = (
-        db.query(OTPVerification)
-        .filter(
-            OTPVerification.email == email,
-            OTPVerification.is_verified == False,
-        )
-        .all()
-    )
-
-    for old_otp in old_otps:
-        old_otp.is_verified = True
-
-    # =====================================================
-    # CREATE
-    # =====================================================
-
-    otp_record = OTPVerification(
+    otp_record = create_otp_record(
+        db=db,
         email=email,
         mobile_number=user.mobile_number,
         otp=otp,
-        expires_at=expires_at,
-        is_verified=False,
-        created_at=now,
     )
 
-    db.add(otp_record)
-
     try:
-
         db.commit()
         db.refresh(otp_record)
 
-    except Exception as e:
+    except IntegrityError:
+        db.rollback()
 
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Unable to create password reset request.",
+        )
+
+    except Exception as exc:
         db.rollback()
 
         print(
             "FORGOT PASSWORD OTP DATABASE ERROR:",
-            repr(e),
+            repr(exc),
         )
 
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create password reset request.",
         )
 
-    # =====================================================
-    # SEND
-    # =====================================================
-
     try:
-
         send_otp(
             email=email,
-            mobile_number=user.mobile_number,
             otp=otp,
             purpose="password_reset",
         )
@@ -1115,11 +1140,7 @@ def resend_forgot_password_otp(
     db: Session = Depends(get_db),
 ):
 
-    email = str(data.email).strip().lower()
-
-    # =====================================================
-    # USER
-    # =====================================================
+    email = normalize_email(data.email)
 
     user = (
         db.query(User)
@@ -1129,87 +1150,53 @@ def resend_forgot_password_otp(
 
     if not user:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="No account found with this email address.",
         )
 
     if not user.is_active:
         raise HTTPException(
-            status_code=403,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="This account is inactive.",
         )
 
-    # =====================================================
-    # OTP
-    # =====================================================
-
     otp = generate_otp()
 
-    now = utc_now()
-
-    expires_at = now + timedelta(
-        minutes=OTP_EXPIRE_MINUTES
-    )
-
-    # =====================================================
-    # INVALIDATE OLD
-    # =====================================================
-
-    old_otps = (
-        db.query(OTPVerification)
-        .filter(
-            OTPVerification.email == email,
-            OTPVerification.is_verified == False,
-        )
-        .all()
-    )
-
-    for old_otp in old_otps:
-        old_otp.is_verified = True
-
-    # =====================================================
-    # CREATE NEW
-    # =====================================================
-
-    otp_record = OTPVerification(
+    otp_record = create_otp_record(
+        db=db,
         email=email,
         mobile_number=user.mobile_number,
         otp=otp,
-        expires_at=expires_at,
-        is_verified=False,
-        created_at=now,
     )
 
-    db.add(otp_record)
-
     try:
-
         db.commit()
         db.refresh(otp_record)
 
-    except Exception as e:
+    except IntegrityError:
+        db.rollback()
 
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Unable to create new password reset OTP.",
+        )
+
+    except Exception as exc:
         db.rollback()
 
         print(
             "RESEND PASSWORD OTP DATABASE ERROR:",
-            repr(e),
+            repr(exc),
         )
 
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to create new password reset OTP.",
         )
 
-    # =====================================================
-    # SEND
-    # =====================================================
-
     try:
-
         send_otp(
             email=email,
-            mobile_number=user.mobile_number,
             otp=otp,
             purpose="password_reset",
         )
@@ -1241,22 +1228,9 @@ def verify_forgot_password_otp(
     db: Session = Depends(get_db),
 ):
 
-    email = str(data.email).strip().lower()
-    otp_value = data.otp.strip()
+    email = normalize_email(data.email)
 
-    # =====================================================
-    # OTP FORMAT
-    # =====================================================
-
-    if not otp_value.isdigit() or len(otp_value) != 6:
-        raise HTTPException(
-            status_code=400,
-            detail="OTP must be a valid 6-digit code.",
-        )
-
-    # =====================================================
-    # USER
-    # =====================================================
+    otp_value = validate_otp_format(data.otp)
 
     user = (
         db.query(User)
@@ -1266,62 +1240,33 @@ def verify_forgot_password_otp(
 
     if not user:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found.",
         )
 
     if not user.is_active:
         raise HTTPException(
-            status_code=403,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="This account is inactive.",
         )
 
-    # =====================================================
-    # OTP
-    # =====================================================
-
-    otp_record = (
-        db.query(OTPVerification)
-        .filter(
-            OTPVerification.email == email,
-            OTPVerification.mobile_number == user.mobile_number,
-            OTPVerification.is_verified == False,
-        )
-        .order_by(
-            OTPVerification.created_at.desc()
-        )
-        .first()
+    otp_record = get_latest_pending_otp(
+        db=db,
+        email=email,
+        mobile_number=user.mobile_number,
     )
 
     if not otp_record:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="OTP not found. Please request a new OTP.",
         )
 
-    # =====================================================
-    # EXPIRY
-    # =====================================================
-
-    if otp_record.expires_at < utc_now():
-
-        otp_record.is_verified = True
-        db.commit()
-
-        raise HTTPException(
-            status_code=400,
-            detail="OTP has expired. Please request a new OTP.",
-        )
-
-    # =====================================================
-    # VERIFY
-    # =====================================================
-
-    if otp_record.otp != otp_value:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid OTP.",
-        )
+    verify_otp_record(
+        db=db,
+        otp_record=otp_record,
+        submitted_otp=otp_value,
+    )
 
     return {
         "message": "OTP verified successfully.",
@@ -1340,33 +1285,11 @@ def reset_password(
     db: Session = Depends(get_db),
 ):
 
-    email = str(data.email).strip().lower()
-    otp_value = data.otp.strip()
-    new_password = data.new_password
+    email = normalize_email(data.email)
 
-    # =====================================================
-    # PASSWORD
-    # =====================================================
+    otp_value = validate_otp_format(data.otp)
 
-    if len(new_password) < 6:
-        raise HTTPException(
-            status_code=400,
-            detail="Password must contain at least 6 characters.",
-        )
-
-    # =====================================================
-    # OTP FORMAT
-    # =====================================================
-
-    if not otp_value.isdigit() or len(otp_value) != 6:
-        raise HTTPException(
-            status_code=400,
-            detail="OTP must be a valid 6-digit code.",
-        )
-
-    # =====================================================
-    # USER
-    # =====================================================
+    validate_password(data.new_password)
 
     user = (
         db.query(User)
@@ -1376,91 +1299,80 @@ def reset_password(
 
     if not user:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found.",
         )
 
     if not user.is_active:
         raise HTTPException(
-            status_code=403,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="This account is inactive.",
         )
 
-    # =====================================================
-    # OTP
-    # =====================================================
-
-    otp_record = (
-        db.query(OTPVerification)
-        .filter(
-            OTPVerification.email == email,
-            OTPVerification.mobile_number == user.mobile_number,
-            OTPVerification.is_verified == False,
-        )
-        .order_by(
-            OTPVerification.created_at.desc()
-        )
-        .first()
+    otp_record = get_latest_pending_otp(
+        db=db,
+        email=email,
+        mobile_number=user.mobile_number,
     )
 
     if not otp_record:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="OTP not found. Please request a new OTP.",
         )
 
-    # =====================================================
-    # EXPIRY
-    # =====================================================
+    verify_otp_record(
+        db=db,
+        otp_record=otp_record,
+        submitted_otp=otp_value,
+    )
 
-    if otp_record.expires_at < utc_now():
+    user.password = hash_password(
+        data.new_password
+    )
 
-        otp_record.is_verified = True
-        db.commit()
+    consume_otp(
+        db=db,
+        otp_record=otp_record,
+    )
 
-        raise HTTPException(
-            status_code=400,
-            detail="OTP has expired. Please request a new OTP.",
+    # -----------------------------------------------------
+    # Revoke every existing refresh token
+    # -----------------------------------------------------
+
+    existing_refresh_tokens = (
+        db.query(RefreshToken)
+        .filter(
+            RefreshToken.user_id == user.id,
+            RefreshToken.revoked.is_(False),
         )
+        .all()
+    )
 
-    # =====================================================
-    # VERIFY
-    # =====================================================
-
-    if otp_record.otp != otp_value:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid OTP.",
-        )
-
-    # =====================================================
-    # UPDATE PASSWORD
-    # =====================================================
-
-    user.password = hash_password(new_password)
-
-    otp_record.is_verified = True
+    for token in existing_refresh_tokens:
+        token.revoked = True
 
     try:
-
         db.commit()
 
-    except Exception as e:
-
+    except Exception as exc:
         db.rollback()
 
         print(
             "PASSWORD RESET ERROR:",
-            repr(e),
+            repr(exc),
         )
 
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Unable to reset password.",
         )
 
     return {
-        "message": "Password reset successfully. You can now login."
+        "message": (
+            "Password reset successfully. "
+            "You can now login."
+        )
     }
 
 
@@ -1474,126 +1386,122 @@ def login(
     db: Session = Depends(get_db),
 ):
 
-    try:
+    email = normalize_email(form_data.username)
 
-        email = form_data.username.strip().lower()
+    db_user = (
+        db.query(User)
+        .filter(User.email == email)
+        .first()
+    )
 
-        # =================================================
-        # USER
-        # =================================================
-
-        db_user = (
-            db.query(User)
-            .filter(User.email == email)
-            .first()
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+            headers={
+                "WWW-Authenticate": "Bearer"
+            },
         )
 
-        if not db_user:
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid email or password",
-            )
+    if not db_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is inactive.",
+        )
 
-        # =================================================
-        # ACTIVE
-        # =================================================
-
-        if not db_user.is_active:
-            raise HTTPException(
-                status_code=403,
-                detail="Account is inactive.",
-            )
-
-        # =================================================
-        # PASSWORD
-        # =================================================
-
-        if not verify_password(
+    try:
+        password_valid = verify_password(
             form_data.password,
             db_user.password,
-        ):
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid email or password",
-            )
-
-        # =================================================
-        # ACCESS TOKEN
-        # =================================================
-
-        access_token = create_access_token(
-            data={
-                "sub": db_user.email,
-                "role": db_user.role,
-            }
         )
-
-        # =================================================
-        # REFRESH TOKEN
-        # =================================================
-
-        refresh_token = create_refresh_token(
-            data={
-                "sub": db_user.email,
-                "role": db_user.role,
-            }
-        )
-
-        # =================================================
-        # STORE REFRESH TOKEN
-        # =================================================
-
-        refresh_token_record = RefreshToken(
-            token=refresh_token,
-            user_id=db_user.id,
-            expires_at=(
-                utc_now()
-                + timedelta(
-                    days=REFRESH_TOKEN_EXPIRE_DAYS
-                )
-            ),
-            revoked=False,
-        )
-
-        db.add(refresh_token_record)
-
-        db.commit()
-
-        # =================================================
-        # RESPONSE
-        # =================================================
-
-        return {
-            "message": "Login Successful",
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer",
-            "user": {
-                "id": db_user.id,
-                "full_name": db_user.full_name,
-                "email": db_user.email,
-                "mobile_number": db_user.mobile_number,
-                "company_name": db_user.company_name,
-                "role": db_user.role,
-            },
-        }
-
-    except HTTPException:
-        raise
-
-    except Exception as e:
-
-        db.rollback()
-
+    except Exception as exc:
         print(
-            "LOGIN INTERNAL ERROR:",
-            repr(e),
+            "PASSWORD VERIFICATION ERROR:",
+            repr(exc),
         )
 
         raise HTTPException(
-            status_code=500,
-            detail="Internal server error",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to verify credentials.",
         )
+
+    if not password_valid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+            headers={
+                "WWW-Authenticate": "Bearer"
+            },
+        )
+
+    access_token = create_access_token(
+        data={
+            "sub": db_user.email,
+            "role": db_user.role,
+        }
+    )
+
+    refresh_token = create_refresh_token(
+        data={
+            "sub": db_user.email,
+            "role": db_user.role,
+        }
+    )
+
+    refresh_expires_at = (
+        utc_now()
+        + timedelta(
+            days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+        )
+    )
+
+    refresh_token_record = RefreshToken(
+        token=refresh_token,
+        user_id=db_user.id,
+        expires_at=refresh_expires_at,
+        revoked=False,
+    )
+
+    db.add(refresh_token_record)
+
+    try:
+        db.commit()
+
+    except IntegrityError:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to complete login.",
+        )
+
+    except Exception as exc:
+        db.rollback()
+
+        print(
+            "LOGIN REFRESH TOKEN DATABASE ERROR:",
+            repr(exc),
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to complete login.",
+        )
+
+    return {
+        "message": "Login Successful",
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user": {
+            "id": db_user.id,
+            "full_name": db_user.full_name,
+            "email": db_user.email,
+            "mobile_number": db_user.mobile_number,
+            "company_name": db_user.company_name,
+            "role": db_user.role,
+        },
+    }
 
 
 # =========================================================
@@ -1602,88 +1510,92 @@ def login(
 
 @router.post("/refresh")
 def refresh_access_token(
-    refresh_token: str,
+    data: RefreshTokenRequest,
     db: Session = Depends(get_db),
 ):
 
-    # =====================================================
-    # STORED TOKEN
-    # =====================================================
+    refresh_token = data.refresh_token.strip()
 
-    stored_token = (
-        db.query(RefreshToken)
-        .filter(
-            RefreshToken.token == refresh_token
-        )
-        .first()
-    )
-
-    if not stored_token:
+    if not refresh_token:
         raise HTTPException(
-            status_code=401,
-            detail="Invalid refresh token",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token is required.",
         )
 
-    # =====================================================
-    # REVOKED
-    # =====================================================
-
-    if stored_token.revoked:
-        raise HTTPException(
-            status_code=401,
-            detail="Refresh token has been revoked",
-        )
-
-    # =====================================================
-    # EXPIRY
-    # =====================================================
-
-    if stored_token.expires_at < utc_now():
-
-        stored_token.revoked = True
-        db.commit()
-
-        raise HTTPException(
-            status_code=401,
-            detail="Refresh token expired",
-        )
-
-    # =====================================================
-    # DECODE JWT
-    # =====================================================
+    # -----------------------------------------------------
+    # Decode and validate JWT first
+    # -----------------------------------------------------
 
     try:
-
         payload = jwt.decode(
             refresh_token,
             SECRET_KEY,
             algorithms=[ALGORITHM],
         )
 
-        if payload.get("type") != "refresh":
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid token type",
-            )
-
-        email = payload.get("sub")
-
-        if not email:
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid refresh token",
-            )
-
     except JWTError:
-
         raise HTTPException(
-            status_code=401,
-            detail="Invalid refresh token",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token.",
         )
 
-    # =====================================================
-    # USER
-    # =====================================================
+    if payload.get("type") != "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type.",
+        )
+
+    email = payload.get("sub")
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token.",
+        )
+
+    email = normalize_email(email)
+
+    # -----------------------------------------------------
+    # Database token
+    # -----------------------------------------------------
+
+    stored_token = (
+        db.query(RefreshToken)
+        .filter(
+            RefreshToken.token == refresh_token,
+        )
+        .first()
+    )
+
+    if not stored_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token.",
+        )
+
+    if stored_token.revoked:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token has been revoked.",
+        )
+
+    if stored_token.expires_at < utc_now():
+
+        stored_token.revoked = True
+
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token expired.",
+        )
+
+    # -----------------------------------------------------
+    # User
+    # -----------------------------------------------------
 
     user = (
         db.query(User)
@@ -1693,19 +1605,25 @@ def refresh_access_token(
 
     if not user:
         raise HTTPException(
-            status_code=404,
-            detail="User not found",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User associated with token was not found.",
+        )
+
+    if stored_token.user_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token.",
         )
 
     if not user.is_active:
         raise HTTPException(
-            status_code=403,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is inactive.",
         )
 
-    # =====================================================
-    # NEW ACCESS TOKEN
-    # =====================================================
+    # -----------------------------------------------------
+    # Issue new access token
+    # -----------------------------------------------------
 
     new_access_token = create_access_token(
         data={
@@ -1726,33 +1644,47 @@ def refresh_access_token(
 
 @router.post("/logout")
 def logout(
-    refresh_token: str,
+    data: RefreshTokenRequest,
     db: Session = Depends(get_db),
 ):
+
+    refresh_token = data.refresh_token.strip()
 
     stored_token = (
         db.query(RefreshToken)
         .filter(
-            RefreshToken.token == refresh_token
+            RefreshToken.token == refresh_token,
         )
         .first()
     )
 
     if not stored_token:
-        raise HTTPException(
-            status_code=404,
-            detail="Refresh token not found",
-        )
+        return {
+            "message": "Logout successful"
+        }
 
     if stored_token.revoked:
-        raise HTTPException(
-            status_code=400,
-            detail="Refresh token already revoked",
-        )
+        return {
+            "message": "Logout successful"
+        }
 
     stored_token.revoked = True
 
-    db.commit()
+    try:
+        db.commit()
+
+    except Exception as exc:
+        db.rollback()
+
+        print(
+            "LOGOUT DATABASE ERROR:",
+            repr(exc),
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to logout.",
+        )
 
     return {
         "message": "Logout successful"
@@ -1767,7 +1699,6 @@ def logout(
 def get_me(
     current_user: User = Depends(get_current_user),
 ):
-
     return {
         "message": "Welcome!",
         "user": {

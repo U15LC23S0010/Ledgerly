@@ -43,14 +43,18 @@ class Settings(BaseSettings):
     )
 
     # =========================================================
-    # RESEND
+    # GMAIL SMTP
     # =========================================================
 
-    RESEND_API_KEY: str
+    GMAIL_SMTP_HOST: str = "smtp.gmail.com"
 
-    RESEND_FROM_EMAIL: str = "onboarding@resend.dev"
+    GMAIL_SMTP_PORT: int = 587
 
-    RESEND_FROM_NAME: str = "Ledgerly"
+    GMAIL_SMTP_USERNAME: str
+
+    GMAIL_SMTP_PASSWORD: str
+
+    GMAIL_FROM_NAME: str = "Ledgerly"
 
     # =========================================================
     # CONFIGURATION
