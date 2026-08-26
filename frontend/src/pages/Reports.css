@@ -1111,3 +1111,31 @@
     min-width: 540px;
   }
 }
+
+.reports-page .recharts-bar-rectangle path,
+.reports-page .recharts-bar-rectangle rect {
+  fill: #4f46e5 !important;
+  stroke: none !important;
+}
+
+.reports-page .recharts-bar-rectangle:hover path,
+.reports-page .recharts-bar-rectangle:hover rect {
+  fill: #6366f1 !important;
+}
+
+.reports-page .report-bar,
+.reports-page .bar-fill,
+.reports-page .chart-bar,
+.reports-page .bar {
+  background: #4f46e5 !important;
+  border-color: #4f46e5 !important;
+}
+
+.reports-page svg rect[fill="black"],
+.reports-page svg path[fill="black"],
+.reports-page svg rect[fill="#000"],
+.reports-page svg path[fill="#000"],
+.reports-page svg rect[fill="#000000"],
+.reports-page svg path[fill="#000000"] {
+  fill: #4f46e5 !important;
+}

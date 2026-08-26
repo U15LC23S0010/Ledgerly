@@ -42,10 +42,6 @@ MIN_PASSWORD_LENGTH = 6
 MAX_PASSWORD_LENGTH = 128
 
 
-# =========================================================
-# UTC TIME
-# =========================================================
-
 def utc_now() -> datetime:
     """
     Return current UTC time as a naive datetime.
@@ -160,10 +156,6 @@ def validate_email_configuration() -> None:
             ),
         )
 
-
-# =========================================================
-# REQUEST MODELS
-# =========================================================
 
 class VerifyRegistrationRequest(BaseModel):
     full_name: str = Field(min_length=1, max_length=255)
@@ -314,7 +306,7 @@ def build_otp_email(
     <p style="color:#4b5563;">
         Best regards,<br>
         <strong>Ledgerly Team</strong><br>
-        Smart Bookkeeping, Simplified.
+        Smart Bookkeeping
     </p>
 
 </div>

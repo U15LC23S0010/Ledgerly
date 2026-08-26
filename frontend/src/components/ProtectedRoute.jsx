@@ -4,88 +4,29 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import { useEffect, useState } from "react";
-
-import api from "../api/api";
-
 import "./ProtectedRoute.css";
+
+  /* =========================================================
+   PROTECTED ROUTE
+  ========================================================= */
 
 export default function ProtectedRoute() {
   const location = useLocation();
 
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
+  /* =======================================================
+     CHECK ACCESS TOKEN
+  ======================================================= */
 
-  useEffect(() => {
-    let mounted = true;
+  const accessToken =
+    localStorage.getItem("access_token") ||
+    localStorage.getItem("access") ||
+    localStorage.getItem("token");
 
-    async function checkAuthentication() {
-      const accessToken =
-        localStorage.getItem("access_token") ||
-        localStorage.getItem("access") ||
-        localStorage.getItem("token");
+  /* =======================================================
+     NOT AUTHENTICATED
+  ======================================================= */
 
-      if (!accessToken) {
-        if (mounted) {
-          setAuthenticated(false);
-          setCheckingAuth(false);
-        }
-
-        return;
-      }
-
-      try {
-        const response = await api.get("/auth/me");
-
-        const currentUser =
-          response.data?.user || response.data;
-
-        if (!currentUser) {
-          throw new Error("Invalid user response");
-        }
-
-        localStorage.setItem(
-          "user",
-          JSON.stringify(currentUser)
-        );
-
-        if (mounted) {
-          setAuthenticated(true);
-          setCheckingAuth(false);
-        }
-      } catch (error) {
-        console.error(
-          "Authentication check failed:",
-          error
-        );
-
-        localStorage.removeItem("access");
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh");
-        localStorage.removeItem("refresh_token");
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        localStorage.removeItem("userEmail");
-
-        if (mounted) {
-          setAuthenticated(false);
-          setCheckingAuth(false);
-        }
-      }
-    }
-
-    checkAuthentication();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (checkingAuth) {
-    return null;
-  }
-
-  if (!authenticated) {
+  if (!accessToken) {
     return (
       <Navigate
         to="/login"
@@ -96,6 +37,10 @@ export default function ProtectedRoute() {
       />
     );
   }
+
+  /* =======================================================
+     AUTHENTICATED
+  ======================================================= */
 
   return <Outlet />;
 }

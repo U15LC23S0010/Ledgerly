@@ -6,20 +6,11 @@ from passlib.context import CryptContext
 
 from app.core.config import settings
 
-
-# =========================================================
-# PASSWORD HASHING
-# =========================================================
-
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",
 )
 
-
-# =========================================================
-# JWT CONFIGURATION
-# =========================================================
 
 SECRET_KEY = settings.SECRET_KEY
 
@@ -32,11 +23,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES = (
 REFRESH_TOKEN_EXPIRE_DAYS = (
     settings.REFRESH_TOKEN_EXPIRE_DAYS
 )
-
-
-# =========================================================
-# PASSWORD FUNCTIONS
-# =========================================================
 
 def hash_password(password: str) -> str:
     """
@@ -57,10 +43,6 @@ def verify_password(
         hashed_password,
     )
 
-
-# =========================================================
-# ACCESS TOKEN
-# =========================================================
 
 def create_access_token(data: dict) -> str:
     """
@@ -88,11 +70,6 @@ def create_access_token(data: dict) -> str:
         SECRET_KEY,
         algorithm=ALGORITHM,
     )
-
-
-# =========================================================
-# REFRESH TOKEN
-# =========================================================
 
 def create_refresh_token(data: dict) -> str:
     """

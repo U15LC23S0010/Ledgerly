@@ -693,3 +693,33 @@
     width: auto;
   }
 }
+
+.transactions-table-header .select-all,
+.transactions-table-header input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  appearance: auto;
+  cursor: pointer;
+  accent-color: #2563eb;
+  vertical-align: middle;
+}
+
+.transactions-table-header .select-all {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.transactions-table-header .select-all label {
+  margin: 0;
+  padding: 0;
+  color: #94a3b8;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  line-height: 1;
+  cursor: pointer;
+  text-transform: uppercase;
+}

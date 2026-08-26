@@ -5,43 +5,86 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 60000,
+  timeout: 15000,
 });
+
 
 api.interceptors.request.use(
   (config) => {
-    const token =
+    const accessToken =
       localStorage.getItem("access_token") ||
       localStorage.getItem("access") ||
       localStorage.getItem("token");
 
-    if (token) {
+    if (accessToken) {
       config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
+
+      config.headers.Authorization =
+        `Bearer ${accessToken}`;
     }
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    return Promise.reject(error);
+  }
 );
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
+
   (error) => {
-    const status = error.response?.status;
+    const status =
+      error.response?.status;
 
     if (status === 401) {
-      const hadAuthorizationHeader =
-        !!error.config?.headers?.Authorization;
+      console.warn(
+        "Ledgerly session expired."
+      );
 
-      if (hadAuthorizationHeader) {
-        localStorage.removeItem("access");
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh");
-        localStorage.removeItem("refresh_token");
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        localStorage.removeItem("userEmail");
+      localStorage.removeItem(
+        "access_token"
+      );
+
+      localStorage.removeItem(
+        "access"
+      );
+
+      localStorage.removeItem(
+        "token"
+      );
+
+      localStorage.removeItem(
+        "refresh"
+      );
+
+      localStorage.removeItem(
+        "refresh_token"
+      );
+
+      localStorage.removeItem(
+        "user"
+      );
+
+      localStorage.removeItem(
+        "userEmail"
+      );
+
+      const currentPath =
+        window.location.pathname;
+
+      const isAuthPage =
+        currentPath === "/login" ||
+        currentPath === "/register" ||
+        currentPath === "/forgot-password" ||
+        currentPath === "/reset-password";
+
+      if (!isAuthPage) {
+        window.location.replace(
+          "/login"
+        );
       }
     }
 
