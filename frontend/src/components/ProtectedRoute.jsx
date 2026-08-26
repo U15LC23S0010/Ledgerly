@@ -1,30 +1,18 @@
-import {
-  Navigate,
-  Outlet,
-  useLocation,
-} from "react-router-dom";
-
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import "./ProtectedRoute.css";
 
-  /* =========================================================
-   PROTECTED ROUTE
-  ========================================================= */
+function getAccessToken() {
+  return (
+    localStorage.getItem("access_token") ||
+    localStorage.getItem("access") ||
+    localStorage.getItem("token")
+  );
+}
 
 export default function ProtectedRoute() {
   const location = useLocation();
 
-  /* =======================================================
-     CHECK ACCESS TOKEN
-  ======================================================= */
-
-  const accessToken =
-    localStorage.getItem("access_token") ||
-    localStorage.getItem("access") ||
-    localStorage.getItem("token");
-
-  /* =======================================================
-     NOT AUTHENTICATED
-  ======================================================= */
+  const accessToken = getAccessToken();
 
   if (!accessToken) {
     return (
@@ -37,10 +25,6 @@ export default function ProtectedRoute() {
       />
     );
   }
-
-  /* =======================================================
-     AUTHENTICATED
-  ======================================================= */
 
   return <Outlet />;
 }

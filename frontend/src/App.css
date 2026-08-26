@@ -1,6 +1,3 @@
-/* =========================================================
-   LEDGERLY — APP LAYOUT
-========================================================= */
 
 .app-shell {
   min-height: 100vh;
@@ -54,9 +51,6 @@
   }
 }
 
-/* =========================================================
-   RESPONSIVE — DESKTOP LAYOUT ON ALL SCREEN SIZES
-========================================================= */
 @media (max-width: 900px) {
   .welcome-page {
     min-width: 900px;
@@ -236,5 +230,29 @@
   .welcome-checklist {
     flex-direction: row;
     flex-wrap: wrap;
+  }
+}
+
+.page-loader {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+}
+
+.page-loader-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: ledgerlyPageSpin 0.7s linear infinite;
+}
+
+@keyframes ledgerlyPageSpin {
+  to {
+    transform: rotate(360deg);
   }
 }
