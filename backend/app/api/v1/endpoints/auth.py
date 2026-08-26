@@ -1,15 +1,9 @@
 from datetime import datetime, timedelta, timezone
 import secrets
-import smtplib
 
-from email.message import EmailMessage
+import resend
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-)
-
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
 from jose import jwt, JWTError
@@ -51,6 +45,13 @@ OTP_EXPIRE_MINUTES = 5
 
 
 # =========================================================
+# RESEND CONFIGURATION
+# =========================================================
+
+resend.api_key = settings.RESEND_API_KEY
+
+
+# =========================================================
 # UTC HELPER
 # =========================================================
 
@@ -61,6 +62,7 @@ def utc_now() -> datetime:
     Database DateTime columns are stored without timezone
     information, so all comparisons use naive UTC values.
     """
+
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
@@ -107,11 +109,12 @@ def generate_otp() -> str:
     """
     Generate a secure 6-digit OTP.
     """
+
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
 # =========================================================
-# SEND OTP EMAIL
+# SEND OTP EMAIL USING RESEND
 # =========================================================
 
 def send_otp(
@@ -121,190 +124,225 @@ def send_otp(
     purpose: str = "registration",
 ):
     """
-    Send OTP email.
+    Send OTP email using Resend.
 
     purpose:
         registration
         password_reset
+
+    mobile_number is currently not used because
+    OTP delivery is through email.
     """
 
-    # Mobile number is currently not used for email.
     _ = mobile_number
 
-    # -----------------------------------------------------
+    # =====================================================
     # PASSWORD RESET EMAIL
-    # -----------------------------------------------------
+    # =====================================================
 
     if purpose == "password_reset":
 
         subject = "Your Ledgerly Password Reset Code"
 
         body = f"""
-Hello,
+        <html>
+            <body style="
+                font-family: Arial, sans-serif;
+                background-color: #f6f8fb;
+                padding: 30px;
+            ">
 
-We received a request to reset your Ledgerly password.
+                <div style="
+                    max-width: 600px;
+                    margin: auto;
+                    background: white;
+                    padding: 30px;
+                    border-radius: 12px;
+                ">
 
-YOUR PASSWORD RESET CODE
+                    <h2 style="color: #172033;">
+                        Ledgerly Password Reset
+                    </h2>
 
-{otp}
+                    <p>Hello,</p>
 
-This code expires in {OTP_EXPIRE_MINUTES} minutes.
+                    <p>
+                        We received a request to reset your
+                        Ledgerly password.
+                    </p>
 
-For your security, please do not share this code with anyone.
+                    <p>
+                        Your password reset code is:
+                    </p>
 
-If you did not request a password reset, you can safely ignore this email.
+                    <div style="
+                        font-size: 32px;
+                        font-weight: bold;
+                        letter-spacing: 8px;
+                        text-align: center;
+                        padding: 20px;
+                        background: #f1f4f9;
+                        border-radius: 10px;
+                        margin: 20px 0;
+                    ">
+                        {otp}
+                    </div>
 
-Best regards,
-Ledgerly Team
+                    <p>
+                        This code expires in
+                        <strong>{OTP_EXPIRE_MINUTES} minutes</strong>.
+                    </p>
 
-Smart Bookkeeping, Simplified.
-"""
+                    <p>
+                        For your security, please do not share
+                        this code with anyone.
+                    </p>
 
-    # -----------------------------------------------------
+                    <p>
+                        If you did not request a password reset,
+                        you can safely ignore this email.
+                    </p>
+
+                    <br>
+
+                    <p>
+                        Best regards,<br>
+                        <strong>Ledgerly Team</strong><br>
+                        Smart Bookkeeping, Simplified.
+                    </p>
+
+                </div>
+
+            </body>
+        </html>
+        """
+
+    # =====================================================
     # REGISTRATION EMAIL
-    # -----------------------------------------------------
+    # =====================================================
 
     else:
 
         subject = "Welcome to Ledgerly — Verify Your Email"
 
         body = f"""
-Hello,
+        <html>
+            <body style="
+                font-family: Arial, sans-serif;
+                background-color: #f6f8fb;
+                padding: 30px;
+            ">
 
-Welcome to Ledgerly!
+                <div style="
+                    max-width: 600px;
+                    margin: auto;
+                    background: white;
+                    padding: 30px;
+                    border-radius: 12px;
+                ">
 
-You're one step away from setting up your smarter
-bookkeeping workspace.
+                    <h2 style="color: #172033;">
+                        Welcome to Ledgerly!
+                    </h2>
 
-YOUR VERIFICATION CODE
+                    <p>Hello,</p>
 
-{otp}
+                    <p>
+                        You're one step away from setting up
+                        your smarter bookkeeping workspace.
+                    </p>
 
-This code expires in {OTP_EXPIRE_MINUTES} minutes.
+                    <p>
+                        Your verification code is:
+                    </p>
 
-Enter this code in Ledgerly to complete your registration
-and start managing your finances with clarity.
+                    <div style="
+                        font-size: 32px;
+                        font-weight: bold;
+                        letter-spacing: 8px;
+                        text-align: center;
+                        padding: 20px;
+                        background: #f1f4f9;
+                        border-radius: 10px;
+                        margin: 20px 0;
+                    ">
+                        {otp}
+                    </div>
 
-WHAT'S WAITING FOR YOU
+                    <p>
+                        This code expires in
+                        <strong>{OTP_EXPIRE_MINUTES} minutes</strong>.
+                    </p>
 
-✓ Track income and expenses
-✓ Manage accounts and transactions
-✓ Create budgets and invoices
-✓ Analyze financial performance
-✓ Discover intelligent insights
+                    <p>
+                        Enter this code in Ledgerly to complete
+                        your registration.
+                    </p>
 
-Your financial workspace is almost ready.
+                    <h3>What's waiting for you</h3>
 
-Best regards,
-Ledgerly Team
+                    <ul>
+                        <li>Track income and expenses</li>
+                        <li>Manage accounts and transactions</li>
+                        <li>Create budgets and invoices</li>
+                        <li>Analyze financial performance</li>
+                        <li>Discover intelligent insights</li>
+                    </ul>
 
-Smart Bookkeeping, Simplified.
-"""
+                    <p>
+                        Your financial workspace is almost ready.
+                    </p>
 
-    # -----------------------------------------------------
-    # CREATE EMAIL
-    # -----------------------------------------------------
+                    <br>
 
-    message = EmailMessage()
+                    <p>
+                        Best regards,<br>
+                        <strong>Ledgerly Team</strong><br>
+                        Smart Bookkeeping, Simplified.
+                    </p>
 
-    message["Subject"] = subject
+                </div>
 
-    message["From"] = (
-        f"{settings.SMTP_FROM_NAME} "
-        f"<{settings.SMTP_FROM_EMAIL}>"
-    )
+            </body>
+        </html>
+        """
 
-    message["To"] = email
-
-    message.set_content(body)
-
-    # -----------------------------------------------------
-    # SEND EMAIL
-    # -----------------------------------------------------
+    # =====================================================
+    # SEND THROUGH RESEND
+    # =====================================================
 
     try:
 
-        with smtplib.SMTP(
-            settings.SMTP_HOST,
-            int(settings.SMTP_PORT),
-            timeout=30,
-        ) as server:
+        params = {
+            "from": (
+                f"{settings.RESEND_FROM_NAME} "
+                f"<{settings.RESEND_FROM_EMAIL}>"
+            ),
+            "to": [email],
+            "subject": subject,
+            "html": body,
+        }
 
-            server.ehlo()
-
-            server.starttls()
-
-            server.ehlo()
-
-            server.login(
-                settings.SMTP_USERNAME,
-                settings.SMTP_PASSWORD,
-            )
-
-            server.send_message(message)
+        response = resend.Emails.send(params)
 
         print(
             f"OTP EMAIL SENT SUCCESSFULLY -> {email}"
         )
 
+        print(
+            f"RESEND RESPONSE -> {response}"
+        )
+
         return True
 
-    # -----------------------------------------------------
-    # SMTP AUTH ERROR
-    # -----------------------------------------------------
-
-    except smtplib.SMTPAuthenticationError as e:
-
-        print(
-            "SMTP AUTHENTICATION ERROR:",
-            repr(e),
-        )
-
-        raise HTTPException(
-            status_code=500,
-            detail="Email service authentication failed.",
-        )
-
-    # -----------------------------------------------------
-    # SMTP CONNECTION ERROR
-    # -----------------------------------------------------
-
-    except smtplib.SMTPConnectError as e:
-
-        print(
-            "SMTP CONNECTION ERROR:",
-            repr(e),
-        )
-
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to connect to email service.",
-        )
-
-    # -----------------------------------------------------
-    # SMTP GENERAL ERROR
-    # -----------------------------------------------------
-
-    except smtplib.SMTPException as e:
-
-        print(
-            "SMTP ERROR:",
-            repr(e),
-        )
-
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to send OTP email.",
-        )
-
-    # -----------------------------------------------------
-    # UNKNOWN ERROR
-    # -----------------------------------------------------
+    # =====================================================
+    # RESEND ERROR
+    # =====================================================
 
     except Exception as e:
 
         print(
-            "OTP EMAIL ERROR:",
+            "RESEND EMAIL ERROR:",
             repr(e),
         )
 
@@ -337,9 +375,9 @@ def register(
     7. Send OTP email.
     """
 
-    # -----------------------------------------------------
+    # =====================================================
     # NORMALIZE DATA
-    # -----------------------------------------------------
+    # =====================================================
 
     email = user.email.strip().lower()
 
@@ -347,9 +385,9 @@ def register(
 
     role = user.role.strip().lower()
 
-    # -----------------------------------------------------
+    # =====================================================
     # ROLE VALIDATION
-    # -----------------------------------------------------
+    # =====================================================
 
     if role not in ["user", "admin"]:
 
@@ -358,9 +396,9 @@ def register(
             detail="Invalid registration role.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # PASSWORD VALIDATION
-    # -----------------------------------------------------
+    # =====================================================
 
     if len(user.password) < 6:
 
@@ -369,9 +407,9 @@ def register(
             detail="Password must contain at least 6 characters.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # MOBILE VALIDATION
-    # -----------------------------------------------------
+    # =====================================================
 
     if len(mobile_number) < 10 or len(mobile_number) > 15:
 
@@ -380,9 +418,9 @@ def register(
             detail="Invalid mobile number.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # CHECK EMAIL
-    # -----------------------------------------------------
+    # =====================================================
 
     existing_email = (
         db.query(User)
@@ -397,9 +435,9 @@ def register(
             detail="Email already registered.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # CHECK MOBILE
-    # -----------------------------------------------------
+    # =====================================================
 
     existing_mobile = (
         db.query(User)
@@ -416,9 +454,9 @@ def register(
             detail="Mobile number already registered.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # ADMIN VERIFICATION
-    # -----------------------------------------------------
+    # =====================================================
 
     if role == "admin":
 
@@ -429,19 +467,16 @@ def register(
                 detail="Admin access code is required.",
             )
 
-        if (
-            user.admin_code
-            != settings.ADMIN_REGISTRATION_CODE
-        ):
+        if user.admin_code != settings.ADMIN_REGISTRATION_CODE:
 
             raise HTTPException(
                 status_code=403,
                 detail="Invalid admin access code.",
             )
 
-    # -----------------------------------------------------
+    # =====================================================
     # GENERATE OTP
-    # -----------------------------------------------------
+    # =====================================================
 
     otp = generate_otp()
 
@@ -454,9 +489,9 @@ def register(
         )
     )
 
-    # -----------------------------------------------------
+    # =====================================================
     # INVALIDATE OLD OTPs
-    # -----------------------------------------------------
+    # =====================================================
 
     old_otps = (
         db.query(OTPVerification)
@@ -471,9 +506,9 @@ def register(
 
         old_otp.is_verified = True
 
-    # -----------------------------------------------------
+    # =====================================================
     # CREATE OTP
-    # -----------------------------------------------------
+    # =====================================================
 
     otp_record = OTPVerification(
         email=email,
@@ -486,9 +521,9 @@ def register(
 
     db.add(otp_record)
 
-    # -----------------------------------------------------
+    # =====================================================
     # SAVE OTP
-    # -----------------------------------------------------
+    # =====================================================
 
     try:
 
@@ -508,9 +543,9 @@ def register(
             detail="Unable to create verification request.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # SEND OTP
-    # -----------------------------------------------------
+    # =====================================================
 
     try:
 
@@ -537,9 +572,9 @@ def register(
             detail="OTP email could not be sent. Please try again.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # SUCCESS
-    # -----------------------------------------------------
+    # =====================================================
 
     return {
         "message": "OTP sent successfully.",
@@ -558,9 +593,6 @@ def verify_registration(
     data: VerifyRegistrationRequest,
     db: Session = Depends(get_db),
 ):
-    """
-    Verify registration OTP and create user.
-    """
 
     email = data.email.strip().lower()
 
@@ -570,9 +602,9 @@ def verify_registration(
 
     otp_value = data.otp.strip()
 
-    # -----------------------------------------------------
+    # =====================================================
     # OTP FORMAT
-    # -----------------------------------------------------
+    # =====================================================
 
     if not otp_value.isdigit() or len(otp_value) != 6:
 
@@ -581,9 +613,9 @@ def verify_registration(
             detail="OTP must be a valid 6-digit code.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # ROLE
-    # -----------------------------------------------------
+    # =====================================================
 
     if role not in ["user", "admin"]:
 
@@ -592,9 +624,9 @@ def verify_registration(
             detail="Invalid registration role.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # ADMIN VERIFICATION
-    # -----------------------------------------------------
+    # =====================================================
 
     if role == "admin":
 
@@ -605,19 +637,16 @@ def verify_registration(
                 detail="Admin access code is required.",
             )
 
-        if (
-            data.admin_code
-            != settings.ADMIN_REGISTRATION_CODE
-        ):
+        if data.admin_code != settings.ADMIN_REGISTRATION_CODE:
 
             raise HTTPException(
                 status_code=403,
                 detail="Invalid admin access code.",
             )
 
-    # -----------------------------------------------------
+    # =====================================================
     # CHECK EMAIL
-    # -----------------------------------------------------
+    # =====================================================
 
     existing_email = (
         db.query(User)
@@ -632,9 +661,9 @@ def verify_registration(
             detail="Email already registered.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # CHECK MOBILE
-    # -----------------------------------------------------
+    # =====================================================
 
     existing_mobile = (
         db.query(User)
@@ -651,9 +680,9 @@ def verify_registration(
             detail="Mobile number already registered.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # FIND LATEST OTP
-    # -----------------------------------------------------
+    # =====================================================
 
     otp_record = (
         db.query(OTPVerification)
@@ -675,9 +704,9 @@ def verify_registration(
             detail="OTP not found. Please request a new OTP.",
         )
 
-    # -----------------------------------------------------
-    # CHECK EXPIRATION
-    # -----------------------------------------------------
+    # =====================================================
+    # EXPIRATION
+    # =====================================================
 
     if otp_record.expires_at < utc_now():
 
@@ -690,9 +719,9 @@ def verify_registration(
             detail="OTP has expired. Please request a new OTP.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # CHECK OTP
-    # -----------------------------------------------------
+    # =====================================================
 
     if otp_record.otp != otp_value:
 
@@ -701,15 +730,15 @@ def verify_registration(
             detail="Invalid OTP.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # MARK OTP USED
-    # -----------------------------------------------------
+    # =====================================================
 
     otp_record.is_verified = True
 
-    # -----------------------------------------------------
+    # =====================================================
     # CREATE USER
-    # -----------------------------------------------------
+    # =====================================================
 
     new_user = User(
         full_name=data.full_name.strip(),
@@ -723,9 +752,9 @@ def verify_registration(
 
     db.add(new_user)
 
-    # -----------------------------------------------------
+    # =====================================================
     # SAVE USER
-    # -----------------------------------------------------
+    # =====================================================
 
     try:
 
@@ -747,9 +776,9 @@ def verify_registration(
             detail="Unable to create account.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # RESPONSE
-    # -----------------------------------------------------
+    # =====================================================
 
     return {
         "message": "Account verified and created successfully.",
@@ -771,17 +800,14 @@ def resend_otp(
     data: ResendOTPRequest,
     db: Session = Depends(get_db),
 ):
-    """
-    Generate and send a new registration OTP.
-    """
 
     email = data.email.strip().lower()
 
     mobile_number = data.mobile_number.strip()
 
-    # -----------------------------------------------------
+    # =====================================================
     # CHECK ACCOUNT
-    # -----------------------------------------------------
+    # =====================================================
 
     existing_user = (
         db.query(User)
@@ -796,9 +822,9 @@ def resend_otp(
             detail="Account already exists.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # GENERATE OTP
-    # -----------------------------------------------------
+    # =====================================================
 
     otp = generate_otp()
 
@@ -811,9 +837,9 @@ def resend_otp(
         )
     )
 
-    # -----------------------------------------------------
+    # =====================================================
     # INVALIDATE OLD OTPs
-    # -----------------------------------------------------
+    # =====================================================
 
     old_otps = (
         db.query(OTPVerification)
@@ -828,9 +854,9 @@ def resend_otp(
 
         old_otp.is_verified = True
 
-    # -----------------------------------------------------
-    # CREATE NEW OTP
-    # -----------------------------------------------------
+    # =====================================================
+    # CREATE OTP
+    # =====================================================
 
     otp_record = OTPVerification(
         email=email,
@@ -843,9 +869,9 @@ def resend_otp(
 
     db.add(otp_record)
 
-    # -----------------------------------------------------
+    # =====================================================
     # SAVE
-    # -----------------------------------------------------
+    # =====================================================
 
     try:
 
@@ -865,9 +891,9 @@ def resend_otp(
             detail="Unable to create new OTP.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # SEND EMAIL
-    # -----------------------------------------------------
+    # =====================================================
 
     try:
 
@@ -894,10 +920,6 @@ def resend_otp(
             detail="OTP email could not be sent. Please try again.",
         )
 
-    # -----------------------------------------------------
-    # SUCCESS
-    # -----------------------------------------------------
-
     return {
         "message": "New OTP sent successfully.",
         "email": email,
@@ -914,15 +936,12 @@ def forgot_password(
     data: ForgotPasswordRequest,
     db: Session = Depends(get_db),
 ):
-    """
-    Generate and send password reset OTP.
-    """
 
     email = data.email.strip().lower()
 
-    # -----------------------------------------------------
+    # =====================================================
     # FIND USER
-    # -----------------------------------------------------
+    # =====================================================
 
     user = (
         db.query(User)
@@ -937,9 +956,9 @@ def forgot_password(
             detail="No account found with this email address.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # ACTIVE CHECK
-    # -----------------------------------------------------
+    # =====================================================
 
     if not user.is_active:
 
@@ -948,9 +967,9 @@ def forgot_password(
             detail="This account is inactive.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # GENERATE OTP
-    # -----------------------------------------------------
+    # =====================================================
 
     otp = generate_otp()
 
@@ -963,9 +982,9 @@ def forgot_password(
         )
     )
 
-    # -----------------------------------------------------
+    # =====================================================
     # INVALIDATE OLD OTPs
-    # -----------------------------------------------------
+    # =====================================================
 
     old_otps = (
         db.query(OTPVerification)
@@ -980,9 +999,9 @@ def forgot_password(
 
         old_otp.is_verified = True
 
-    # -----------------------------------------------------
+    # =====================================================
     # CREATE RESET OTP
-    # -----------------------------------------------------
+    # =====================================================
 
     otp_record = OTPVerification(
         email=email,
@@ -995,9 +1014,9 @@ def forgot_password(
 
     db.add(otp_record)
 
-    # -----------------------------------------------------
+    # =====================================================
     # SAVE
-    # -----------------------------------------------------
+    # =====================================================
 
     try:
 
@@ -1017,9 +1036,9 @@ def forgot_password(
             detail="Unable to create password reset request.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # SEND EMAIL
-    # -----------------------------------------------------
+    # =====================================================
 
     try:
 
@@ -1046,10 +1065,6 @@ def forgot_password(
             detail="Password reset OTP could not be sent. Please try again.",
         )
 
-    # -----------------------------------------------------
-    # SUCCESS
-    # -----------------------------------------------------
-
     return {
         "message": "Password reset OTP sent successfully.",
         "email": email,
@@ -1066,15 +1081,12 @@ def resend_forgot_password_otp(
     data: ForgotPasswordRequest,
     db: Session = Depends(get_db),
 ):
-    """
-    Generate and send a new password reset OTP.
-    """
 
     email = data.email.strip().lower()
 
-    # -----------------------------------------------------
+    # =====================================================
     # FIND USER
-    # -----------------------------------------------------
+    # =====================================================
 
     user = (
         db.query(User)
@@ -1089,9 +1101,9 @@ def resend_forgot_password_otp(
             detail="No account found with this email address.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # ACTIVE CHECK
-    # -----------------------------------------------------
+    # =====================================================
 
     if not user.is_active:
 
@@ -1100,9 +1112,9 @@ def resend_forgot_password_otp(
             detail="This account is inactive.",
         )
 
-    # -----------------------------------------------------
-    # GENERATE NEW OTP
-    # -----------------------------------------------------
+    # =====================================================
+    # GENERATE OTP
+    # =====================================================
 
     otp = generate_otp()
 
@@ -1115,9 +1127,9 @@ def resend_forgot_password_otp(
         )
     )
 
-    # -----------------------------------------------------
+    # =====================================================
     # INVALIDATE OLD OTPs
-    # -----------------------------------------------------
+    # =====================================================
 
     old_otps = (
         db.query(OTPVerification)
@@ -1132,9 +1144,9 @@ def resend_forgot_password_otp(
 
         old_otp.is_verified = True
 
-    # -----------------------------------------------------
+    # =====================================================
     # CREATE NEW OTP
-    # -----------------------------------------------------
+    # =====================================================
 
     otp_record = OTPVerification(
         email=email,
@@ -1147,9 +1159,9 @@ def resend_forgot_password_otp(
 
     db.add(otp_record)
 
-    # -----------------------------------------------------
+    # =====================================================
     # SAVE
-    # -----------------------------------------------------
+    # =====================================================
 
     try:
 
@@ -1169,9 +1181,9 @@ def resend_forgot_password_otp(
             detail="Unable to create new password reset OTP.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # SEND EMAIL
-    # -----------------------------------------------------
+    # =====================================================
 
     try:
 
@@ -1198,10 +1210,6 @@ def resend_forgot_password_otp(
             detail="Password reset OTP could not be sent. Please try again.",
         )
 
-    # -----------------------------------------------------
-    # SUCCESS
-    # -----------------------------------------------------
-
     return {
         "message": "New password reset OTP sent successfully.",
         "email": email,
@@ -1218,22 +1226,14 @@ def verify_forgot_password_otp(
     data: VerifyForgotPasswordOTPRequest,
     db: Session = Depends(get_db),
 ):
-    """
-    Verify password reset OTP.
-
-    IMPORTANT:
-    This endpoint does NOT consume the OTP.
-
-    The same OTP is verified again by /reset-password.
-    """
 
     email = data.email.strip().lower()
 
     otp_value = data.otp.strip()
 
-    # -----------------------------------------------------
+    # =====================================================
     # OTP FORMAT
-    # -----------------------------------------------------
+    # =====================================================
 
     if not otp_value.isdigit() or len(otp_value) != 6:
 
@@ -1242,9 +1242,9 @@ def verify_forgot_password_otp(
             detail="OTP must be a valid 6-digit code.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # FIND USER
-    # -----------------------------------------------------
+    # =====================================================
 
     user = (
         db.query(User)
@@ -1259,9 +1259,9 @@ def verify_forgot_password_otp(
             detail="User not found.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # ACTIVE CHECK
-    # -----------------------------------------------------
+    # =====================================================
 
     if not user.is_active:
 
@@ -1270,9 +1270,9 @@ def verify_forgot_password_otp(
             detail="This account is inactive.",
         )
 
-    # -----------------------------------------------------
-    # FIND LATEST UNUSED OTP
-    # -----------------------------------------------------
+    # =====================================================
+    # FIND OTP
+    # =====================================================
 
     otp_record = (
         db.query(OTPVerification)
@@ -1287,10 +1287,6 @@ def verify_forgot_password_otp(
         .first()
     )
 
-    # -----------------------------------------------------
-    # NOT FOUND
-    # -----------------------------------------------------
-
     if not otp_record:
 
         raise HTTPException(
@@ -1298,9 +1294,9 @@ def verify_forgot_password_otp(
             detail="OTP not found. Please request a new OTP.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # EXPIRATION
-    # -----------------------------------------------------
+    # =====================================================
 
     if otp_record.expires_at < utc_now():
 
@@ -1313,9 +1309,9 @@ def verify_forgot_password_otp(
             detail="OTP has expired. Please request a new OTP.",
         )
 
-    # -----------------------------------------------------
-    # VALUE
-    # -----------------------------------------------------
+    # =====================================================
+    # VERIFY OTP
+    # =====================================================
 
     if otp_record.otp != otp_value:
 
@@ -1323,10 +1319,6 @@ def verify_forgot_password_otp(
             status_code=400,
             detail="Invalid OTP.",
         )
-
-    # -----------------------------------------------------
-    # SUCCESS
-    # -----------------------------------------------------
 
     return {
         "message": "OTP verified successfully.",
@@ -1344,12 +1336,6 @@ def reset_password(
     data: ResetPasswordRequest,
     db: Session = Depends(get_db),
 ):
-    """
-    Verify OTP and reset password.
-
-    OTP is consumed only after the password
-    is successfully changed.
-    """
 
     email = data.email.strip().lower()
 
@@ -1357,9 +1343,9 @@ def reset_password(
 
     new_password = data.new_password
 
-    # -----------------------------------------------------
+    # =====================================================
     # PASSWORD VALIDATION
-    # -----------------------------------------------------
+    # =====================================================
 
     if len(new_password) < 6:
 
@@ -1368,9 +1354,9 @@ def reset_password(
             detail="Password must contain at least 6 characters.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # OTP FORMAT
-    # -----------------------------------------------------
+    # =====================================================
 
     if not otp_value.isdigit() or len(otp_value) != 6:
 
@@ -1379,9 +1365,9 @@ def reset_password(
             detail="OTP must be a valid 6-digit code.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # FIND USER
-    # -----------------------------------------------------
+    # =====================================================
 
     user = (
         db.query(User)
@@ -1396,9 +1382,9 @@ def reset_password(
             detail="User not found.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # ACTIVE CHECK
-    # -----------------------------------------------------
+    # =====================================================
 
     if not user.is_active:
 
@@ -1407,9 +1393,9 @@ def reset_password(
             detail="This account is inactive.",
         )
 
-    # -----------------------------------------------------
-    # FIND LATEST UNUSED OTP
-    # -----------------------------------------------------
+    # =====================================================
+    # FIND OTP
+    # =====================================================
 
     otp_record = (
         db.query(OTPVerification)
@@ -1431,9 +1417,9 @@ def reset_password(
             detail="OTP not found. Please request a new OTP.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # EXPIRATION
-    # -----------------------------------------------------
+    # =====================================================
 
     if otp_record.expires_at < utc_now():
 
@@ -1446,9 +1432,9 @@ def reset_password(
             detail="OTP has expired. Please request a new OTP.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # VERIFY OTP
-    # -----------------------------------------------------
+    # =====================================================
 
     if otp_record.otp != otp_value:
 
@@ -1457,21 +1443,21 @@ def reset_password(
             detail="Invalid OTP.",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # UPDATE PASSWORD
-    # -----------------------------------------------------
+    # =====================================================
 
     user.password = hash_password(new_password)
 
-    # -----------------------------------------------------
+    # =====================================================
     # CONSUME OTP
-    # -----------------------------------------------------
+    # =====================================================
 
     otp_record.is_verified = True
 
-    # -----------------------------------------------------
+    # =====================================================
     # SAVE
-    # -----------------------------------------------------
+    # =====================================================
 
     try:
 
@@ -1491,10 +1477,6 @@ def reset_password(
             detail="Unable to reset password.",
         )
 
-    # -----------------------------------------------------
-    # SUCCESS
-    # -----------------------------------------------------
-
     return {
         "message": "Password reset successfully. You can now login."
     }
@@ -1509,22 +1491,14 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    """
-    Normal login.
-
-    Creates:
-    - Access token
-    - Refresh token
-    - Refresh token database record
-    """
 
     try:
 
         email = form_data.username.strip().lower()
 
-        # -------------------------------------------------
+        # =================================================
         # FIND USER
-        # -------------------------------------------------
+        # =================================================
 
         db_user = (
             db.query(User)
@@ -1539,9 +1513,9 @@ def login(
                 detail="Invalid email or password",
             )
 
-        # -------------------------------------------------
+        # =================================================
         # ACTIVE
-        # -------------------------------------------------
+        # =================================================
 
         if not db_user.is_active:
 
@@ -1550,9 +1524,9 @@ def login(
                 detail="Account is inactive.",
             )
 
-        # -------------------------------------------------
+        # =================================================
         # PASSWORD
-        # -------------------------------------------------
+        # =================================================
 
         if not verify_password(
             form_data.password,
@@ -1564,9 +1538,9 @@ def login(
                 detail="Invalid email or password",
             )
 
-        # -------------------------------------------------
+        # =================================================
         # ACCESS TOKEN
-        # -------------------------------------------------
+        # =================================================
 
         access_token = create_access_token(
             data={
@@ -1575,9 +1549,9 @@ def login(
             }
         )
 
-        # -------------------------------------------------
+        # =================================================
         # REFRESH TOKEN
-        # -------------------------------------------------
+        # =================================================
 
         refresh_token = create_refresh_token(
             data={
@@ -1586,9 +1560,9 @@ def login(
             }
         )
 
-        # -------------------------------------------------
+        # =================================================
         # STORE REFRESH TOKEN
-        # -------------------------------------------------
+        # =================================================
 
         refresh_token_record = RefreshToken(
             token=refresh_token,
@@ -1606,9 +1580,9 @@ def login(
 
         db.commit()
 
-        # -------------------------------------------------
+        # =================================================
         # RESPONSE
-        # -------------------------------------------------
+        # =================================================
 
         return {
             "message": "Login Successful",
@@ -1657,13 +1631,10 @@ def refresh_access_token(
     refresh_token: str,
     db: Session = Depends(get_db),
 ):
-    """
-    Generate a new access token using a valid refresh token.
-    """
 
-    # -----------------------------------------------------
+    # =====================================================
     # FIND TOKEN
-    # -----------------------------------------------------
+    # =====================================================
 
     stored_token = (
         db.query(RefreshToken)
@@ -1680,9 +1651,9 @@ def refresh_access_token(
             detail="Invalid refresh token",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # REVOKED
-    # -----------------------------------------------------
+    # =====================================================
 
     if stored_token.revoked:
 
@@ -1691,9 +1662,9 @@ def refresh_access_token(
             detail="Refresh token has been revoked",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # EXPIRED
-    # -----------------------------------------------------
+    # =====================================================
 
     if stored_token.expires_at < utc_now():
 
@@ -1706,9 +1677,9 @@ def refresh_access_token(
             detail="Refresh token expired",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # DECODE TOKEN
-    # -----------------------------------------------------
+    # =====================================================
 
     try:
 
@@ -1741,9 +1712,9 @@ def refresh_access_token(
             detail="Invalid refresh token",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # FIND USER
-    # -----------------------------------------------------
+    # =====================================================
 
     user = (
         db.query(User)
@@ -1758,9 +1729,9 @@ def refresh_access_token(
             detail="User not found",
         )
 
-    # -----------------------------------------------------
+    # =====================================================
     # ACTIVE
-    # -----------------------------------------------------
+    # =====================================================
 
     if not user.is_active:
 
@@ -1769,9 +1740,9 @@ def refresh_access_token(
             detail="Account is inactive.",
         )
 
-    # -----------------------------------------------------
-    # CREATE NEW ACCESS TOKEN
-    # -----------------------------------------------------
+    # =====================================================
+    # CREATE ACCESS TOKEN
+    # =====================================================
 
     new_access_token = create_access_token(
         data={
@@ -1795,9 +1766,6 @@ def logout(
     refresh_token: str,
     db: Session = Depends(get_db),
 ):
-    """
-    Revoke refresh token.
-    """
 
     stored_token = (
         db.query(RefreshToken)
@@ -1838,9 +1806,6 @@ def logout(
 def get_me(
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Return currently authenticated user.
-    """
 
     return {
         "message": "Welcome!",

@@ -1,21 +1,23 @@
-from pathlib import Path
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
-# backend/.env
-BASE_DIR = Path(__file__).resolve().parents[2]
-ENV_FILE = BASE_DIR / ".env"
 
 
 class Settings(BaseSettings):
 
-    
+    # =========================================================
+    # APPLICATION
+    # =========================================================
+
     APP_ENV: str = "development"
 
-    CORS_ORIGINS: str = "http://localhost:5174"
+    # =========================================================
+    # DATABASE
+    # =========================================================
 
     DATABASE_URL: str
+
+    # =========================================================
+    # JWT
+    # =========================================================
 
     SECRET_KEY: str
 
@@ -23,26 +25,43 @@ class Settings(BaseSettings):
 
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # =========================================================
+    # ADMIN
+    # =========================================================
+
     ADMIN_REGISTRATION_CODE: str
 
-    SMTP_HOST: str
+    # =========================================================
+    # CORS
+    # =========================================================
 
-    SMTP_PORT: int = 587
+    CORS_ORIGINS: str = (
+        "http://localhost:5173,"
+        "http://127.0.0.1:5173"
+    )
 
-    SMTP_USERNAME: str
+    # =========================================================
+    # RESEND
+    # =========================================================
 
-    SMTP_PASSWORD: str
+    RESEND_API_KEY: str
 
-    SMTP_FROM_EMAIL: str
+    RESEND_FROM_EMAIL: str = "onboarding@resend.dev"
 
-    SMTP_FROM_NAME: str = "Ledgerly"
+    RESEND_FROM_NAME: str = "Ledgerly"
 
+    # =========================================================
+    # CONFIGURATION
+    # =========================================================
 
     model_config = SettingsConfigDict(
-        env_file=ENV_FILE,
+        env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore",
         case_sensitive=True,
+        extra="ignore",
     )
+
 
 settings = Settings()
