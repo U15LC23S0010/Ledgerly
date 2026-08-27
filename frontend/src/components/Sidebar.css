@@ -1,6 +1,6 @@
-/* =========================================================
+   /* =========================================================
    LEDGERLY AI — SIDEBAR
-========================================================= */
+   ========================================================= */
 
 .sidebar {
   position: fixed;
@@ -33,11 +33,6 @@
     sans-serif;
 }
 
-
-/* =========================================================
-   BRAND
-========================================================= */
-
 .sidebar-brand {
   width: 100%;
 
@@ -64,11 +59,6 @@
   outline-offset: 2px;
   border-radius: 8px;
 }
-
-
-/* =========================================================
-   BRAND ORB
-========================================================= */
 
 .brand-orb {
   flex: 0 0 36px;
@@ -100,11 +90,6 @@
 
   letter-spacing: -0.5px;
 }
-
-
-/* =========================================================
-   BRAND TEXT
-========================================================= */
 
 .brand-copy {
   min-width: 0;
@@ -147,11 +132,6 @@
   white-space: nowrap;
 }
 
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
-
 .sidebar-nav {
   flex: 1 1 auto;
 
@@ -168,22 +148,12 @@
   padding: 0 2px 10px;
 }
 
-
-/* =========================================================
-   NAV SECTION
-========================================================= */
-
 .nav-section {
   display: flex;
   flex-direction: column;
 
   gap: 3px;
 }
-
-
-/* =========================================================
-   SECTION TITLE
-========================================================= */
 
 .nav-section-title {
   padding: 5px 9px 6px;
@@ -197,11 +167,6 @@
 
   letter-spacing: 1.2px;
 }
-
-
-/* =========================================================
-   NAV ITEM
-========================================================= */
 
 .nav-item {
   position: relative;
@@ -231,11 +196,6 @@
     box-shadow 0.18s ease;
 }
 
-
-/* =========================================================
-   ICON
-========================================================= */
-
 .nav-icon {
   flex: 0 0 auto;
 
@@ -244,11 +204,6 @@
 
   stroke-width: 2;
 }
-
-
-/* =========================================================
-   LABEL
-========================================================= */
 
 .nav-label {
   min-width: 0;
@@ -261,20 +216,11 @@
 }
 
 
-/* =========================================================
-   HOVER
-========================================================= */
-
 .nav-item:hover {
   background: rgba(255, 255, 255, 0.07);
 
   color: #e2e8f0;
 }
-
-
-/* =========================================================
-   ACTIVE
-========================================================= */
 
 .nav-item.active {
   background: #2563eb;
@@ -290,11 +236,6 @@
 
   color: #ffffff;
 }
-
-
-/* =========================================================
-   BADGE
-========================================================= */
 
 .nav-badge {
   margin-left: auto;
@@ -314,11 +255,6 @@
   font-weight: 800;
 }
 
-
-/* =========================================================
-   BOTTOM
-========================================================= */
-
 .sidebar-bottom {
   flex: 0 0 auto;
 
@@ -329,19 +265,9 @@
   border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-
-/* =========================================================
-   SETTINGS
-========================================================= */
-
 .settings-link {
   margin-bottom: 8px;
 }
-
-
-/* =========================================================
-   USER AREA
-========================================================= */
 
 .sidebar-user {
   display: flex;
@@ -357,11 +283,6 @@
 
   background: rgba(255, 255, 255, 0.035);
 }
-
-
-/* =========================================================
-   AVATAR
-========================================================= */
 
 .avatar {
   flex: 0 0 30px;
@@ -383,10 +304,6 @@
   font-weight: 800;
 }
 
-
-/* =========================================================
-   USER COPY
-========================================================= */
 
 .user-copy {
   min-width: 0;
@@ -421,11 +338,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-
-/* =========================================================
-   LOGOUT
-========================================================= */
 
 .logout-button {
   flex: 0 0 auto;
@@ -462,11 +374,6 @@
   color: #f87171;
 }
 
-
-/* =========================================================
-   SCROLLBAR
-========================================================= */
-
 .sidebar-nav::-webkit-scrollbar {
   width: 3px;
 }
@@ -486,20 +393,12 @@
 }
 
 
-/* =========================================================
-   TABLET
-========================================================= */
-
 @media (max-width: 1000px) {
   .sidebar {
     width: 230px;
   }
 }
 
-
-/* =========================================================
-   MOBILE
-========================================================= */
 
 @media (max-width: 760px) {
   .sidebar {
@@ -515,4 +414,142 @@
 .sidebar-bottom:empty,
 .sidebar-bottom-box:empty {
   display: none !important;
+}
+
+@media (max-width: 760px) {
+
+  .sidebar {
+    width: 230px !important;
+    min-width: 230px !important;
+    max-width: 230px !important;
+
+    left: -230px !important;
+
+    transition: left 0.25s ease;
+  }
+
+  .sidebar.sidebar-mobile-open {
+    left: 0 !important;
+  }
+
+  .sidebar .nav-item {
+    min-height: 44px;
+  }
+
+}
+
+.sidebar-user-email,
+.sidebar-user-info,
+.sidebar-profile-email,
+.user-email {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+
+  color: #94a3b8 !important;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user-details,
+.sidebar-user-text,
+.sidebar-profile-info {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.sidebar-user {
+  background: #1e293b;
+  border: 0;
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 12px;
+
+  background: #1e293b;
+  border-radius: 10px;
+}
+
+.sidebar-user-info {
+  min-width: 0;
+  flex: 1;
+
+  background: transparent !important;
+}
+
+.sidebar-user-info strong {
+  display: block;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  color: #ffffff;
+  font-size: 10px;
+}
+
+.sidebar-user-info span {
+  display: block;
+  margin-top: 3px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  background: transparent !important;
+
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+.sidebar-user-info,
+.sidebar-user-details,
+.sidebar-user-text,
+.sidebar-profile-info {
+  min-width: 0;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.sidebar-user-info strong,
+.sidebar-user-details strong,
+.sidebar-user-text strong,
+.sidebar-profile-info strong {
+  display: block;
+  overflow: hidden;
+
+  color: #f8fafc !important;
+  background: transparent !important;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user-info span,
+.sidebar-user-details span,
+.sidebar-user-text span,
+.sidebar-profile-info span,
+.sidebar-user-info small,
+.sidebar-user-details small,
+.sidebar-user-text small,
+.sidebar-profile-info small {
+  display: block;
+  overflow: hidden;
+
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+
+  color: #94a3b8 !important;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

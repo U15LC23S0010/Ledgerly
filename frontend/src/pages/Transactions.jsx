@@ -1582,7 +1582,7 @@ export default function Transactions() {
 
             <div className="transactions-table-header">
 
-              <div className="transaction-select-all">
+              <div className="select-all">
                 <button
                   type="button"
                   title={
@@ -1635,50 +1635,35 @@ export default function Transactions() {
 
             </div>
 
-            {/* BULK ACTION */}
+           {/* BULK ACTIONS */}
 
-            {selectedTransactions.length >
-              0 && (
-              <div className="transactions-bulk-bar">
+{selectedTransactions.length > 0 && (
+  <div className="transactions-bulk-actions">
+    <div className="transactions-bulk-left">
+      <span className="transactions-bulk-count">
+        {selectedTransactions.length} transaction
+        {selectedTransactions.length === 1 ? "" : "s"} selected
+      </span>
+    </div>
 
-                <div>
-                  <strong>
-                    {
-                      selectedTransactions.length
-                    }
-                  </strong>
+    <div className="transactions-bulk-right">
+      <button
+        type="button"
+        className="transactions-bulk-delete danger"
+        onClick={handleBulkDelete}
+        disabled={bulkDeleting}
+      >
+        <Trash2 size={14} />
 
-                  <span>
-                    {" "}
-                    transaction
-                    {selectedTransactions.length ===
-                    1
-                      ? ""
-                      : "s"}{" "}
-                    selected
-                  </span>
-                </div>
+        {bulkDeleting
+          ? "Deleting..."
+          : "Delete selected"}
+      </button>
+    </div>
+  </div>
+)}
 
-                <button
-                  type="button"
-                  className="transactions-bulk-delete-button"
-                  onClick={
-                    handleBulkDelete
-                  }
-                  disabled={
-                    bulkDeleting
-                  }
-                >
-                  <Trash2 size={16} />
-
-                  {bulkDeleting
-                    ? "Deleting..."
-                    : "Delete selected"}
-                </button>
-
-              </div>
-            )}
-
+            
             {/* ROWS */}
 
             {filteredTransactions.map(
@@ -1705,7 +1690,7 @@ export default function Transactions() {
 
                     {/* SELECT */}
 
-                    <div className="transaction-select">
+                    <div className="transaction-checkbox">
 
                       <button
                         type="button"
