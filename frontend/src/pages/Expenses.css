@@ -6,10 +6,6 @@
   background: #f8fafc;
 }
 
-/* =========================================
-   HEADER
-========================================= */
-
 .expenses-header {
   display: flex;
   align-items: center;
@@ -96,10 +92,6 @@
   background: #f8fafc;
 }
 
-/* =========================================
-   MESSAGES
-========================================= */
-
 .expense-message {
   display: flex;
   align-items: center;
@@ -131,9 +123,6 @@
   border: 1px solid #fecaca;
 }
 
-/* =========================================
-   SUMMARY
-========================================= */
 
 .expense-summary {
   display: grid;
@@ -165,10 +154,6 @@
   color: #111827;
   font-size: 20px;
 }
-
-/* =========================================
-   TOOLBAR
-========================================= */
 
 .expenses-toolbar {
   display: flex;
@@ -268,10 +253,6 @@
   font-size: 11px;
 }
 
-/* =========================================
-   FILTERS
-========================================= */
-
 .filters-panel {
   display: flex;
   align-items: flex-end;
@@ -348,10 +329,6 @@
   font-size: 11px;
 }
 
-/* =========================================
-   TABLE CARD
-========================================= */
-
 .expenses-card {
   overflow: hidden;
 
@@ -413,10 +390,6 @@
   border-bottom: none;
 }
 
-/* =========================================
-   EXPENSE NAME
-========================================= */
-
 .expense-name {
   display: flex;
   align-items: center;
@@ -476,10 +449,6 @@
   font-size: 11px;
 }
 
-/* =========================================
-   ACTIONS
-========================================= */
-
 .row-actions {
   display: flex;
   gap: 6px;
@@ -521,10 +490,6 @@
   background: #fee2e2;
 }
 
-/* =========================================
-   LOADING
-========================================= */
-
 .expenses-loading {
   min-height: 380px;
 
@@ -553,10 +518,6 @@
 .expense-spinner {
   animation: expenseSpin 1s linear infinite;
 }
-
-/* =========================================
-   EMPTY
-========================================= */
 
 .expenses-empty {
   min-height: 380px;
@@ -603,9 +564,6 @@
   line-height: 1.6;
 }
 
-/* =========================================
-   PAGINATION
-========================================= */
 
 .pagination {
   display: flex;
@@ -654,9 +612,6 @@
   font-weight: 600;
 }
 
-/* =========================================
-   MODAL
-========================================= */
 
 .expense-modal-overlay {
   position: fixed;
@@ -748,10 +703,6 @@
   background: #e5e7eb;
 }
 
-/* =========================================
-   FORM
-========================================= */
-
 .expense-form {
   padding: 21px 24px 24px;
 }
@@ -836,9 +787,6 @@
   box-shadow: none !important;
 }
 
-/* =========================================
-   FORM ACTIONS
-========================================= */
 
 .form-actions {
   display: flex;
@@ -894,19 +842,12 @@
   cursor: not-allowed;
 }
 
-/* =========================================
-   ANIMATION
-========================================= */
 
 @keyframes expenseSpin {
   to {
     transform: rotate(360deg);
   }
 }
-
-/* =========================================
-   RESPONSIVE — TABLET
-========================================= */
 
 @media (max-width: 1100px) {
   .expenses-page {
@@ -923,9 +864,6 @@
   }
 }
 
-/* =========================================
-   RESPONSIVE — SMALL TABLET
-========================================= */
 
 @media (max-width: 900px) {
   .expenses-page {
@@ -980,10 +918,6 @@
   }
 }
 
-/* =========================================
-   RESPONSIVE — TABLET / LARGE MOBILE
-========================================= */
-
 @media (max-width: 700px) {
   .expenses-page {
     padding: 18px 16px;
@@ -1017,7 +951,7 @@
     flex: none;
   }
 
-  /* Summary cards */
+  
   .expense-summary {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -1031,7 +965,7 @@
     font-size: 19px;
   }
 
-  /* Toolbar */
+  
   .expenses-toolbar {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1050,7 +984,7 @@
     min-width: 0;
   }
 
-  /* Filters */
+  
   .filters-panel {
     flex-direction: column;
     align-items: stretch;
@@ -1068,7 +1002,7 @@
     justify-content: center;
   }
 
-  /* Table */
+  
   .expenses-card {
     border-radius: 12px;
   }
@@ -1090,7 +1024,6 @@
     padding: 13px 14px;
   }
 
-  /* Modal */
   .expense-modal-overlay {
     padding: 12px;
   }
@@ -1109,9 +1042,6 @@
   }
 }
 
-/* =========================================
-   RESPONSIVE — MOBILE
-========================================= */
 
 @media (max-width: 500px) {
   .expenses-page {
@@ -1145,7 +1075,7 @@
     line-height: 1.4;
   }
 
-  /* Summary */
+  
   .expense-summary {
     margin-bottom: 14px;
   }
@@ -1163,7 +1093,7 @@
     font-size: 18px;
   }
 
-  /* Toolbar */
+  
   .expenses-toolbar {
     grid-template-columns: 1fr 1fr;
   }
@@ -1180,7 +1110,7 @@
     font-size: 10px;
   }
 
-  /* Filters */
+
   .filters-panel {
     padding: 12px;
     border-radius: 11px;
@@ -1234,7 +1164,7 @@
     height: 30px;
   }
 
-  /* Pagination */
+
   .pagination {
     gap: 9px;
   }
@@ -1244,7 +1174,7 @@
     padding: 0 9px;
   }
 
-  /* Modal */
+  
   .expense-modal-overlay {
     padding: 8px;
   }
@@ -1285,9 +1215,6 @@
   }
 }
 
-/* =========================================
-   RESPONSIVE — VERY SMALL PHONES
-========================================= */
 
 @media (max-width: 380px) {
   .expenses-page {
@@ -1345,4 +1272,51 @@
   .submit-expense-btn {
     width: 100%;
   }
+}
+
+@media (max-width: 760px) {
+
+  .expenses-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    padding: 16px 12px !important;
+
+    overflow-x: hidden !important;
+  }
+
+  .expenses-header {
+    width: 100%;
+
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .expenses-toolbar {
+    width: 100%;
+
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .expenses-search {
+    width: 100% !important;
+  }
+
+  .expenses-filters {
+    width: 100%;
+
+    grid-template-columns: 1fr !important;
+  }
+
+  .expenses-table {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    overflow-x: auto;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
 }

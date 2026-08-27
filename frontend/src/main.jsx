@@ -5,6 +5,8 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import ThemeProvider from "./components/ThemeProvider.jsx";
 
+import "./responsive.css";
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>

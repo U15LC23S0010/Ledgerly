@@ -1,4 +1,4 @@
-/* =========================================================
+   /* =========================================================
    ANALYTICS PAGE
    ========================================================= */
 
@@ -8,11 +8,6 @@
   padding: 28px;
   box-sizing: border-box;
 }
-
-
-/* =========================================================
-   HEADER
-   ========================================================= */
 
 .analytics-header {
   display: flex;
@@ -34,11 +29,6 @@
   color: #6b7280;
   font-size: 14px;
 }
-
-
-/* =========================================================
-   REFRESH
-   ========================================================= */
 
 .refresh-btn {
   display: inline-flex;
@@ -66,11 +56,6 @@
   background: #f9fafb;
   border-color: #d1d5db;
 }
-
-
-/* =========================================================
-   SUMMARY
-   ========================================================= */
 
 .analytics-summary-grid {
   display: grid;
@@ -154,11 +139,6 @@
   font-weight: 700;
 }
 
-
-/* =========================================================
-   CHART CARD
-   ========================================================= */
-
 .analytics-chart-card {
   width: 100%;
 
@@ -176,11 +156,6 @@
 
   margin-bottom: 24px;
 }
-
-
-/* =========================================================
-   CHART HEADER
-   ========================================================= */
 
 .chart-header {
   display: flex;
@@ -208,11 +183,6 @@
 
   font-size: 13px;
 }
-
-
-/* =========================================================
-   SELECTOR
-   ========================================================= */
 
 .chart-selector {
   display: flex;
@@ -264,11 +234,6 @@
     0 1px 5px rgba(0, 0, 0, 0.12);
 }
 
-
-/* =========================================================
-   CHART CONTENT
-   ========================================================= */
-
 .chart-content {
   width: 100%;
   min-height: 380px;
@@ -277,11 +242,6 @@
   align-items: center;
   justify-content: center;
 }
-
-
-/* =========================================================
-   EMPTY
-   ========================================================= */
 
 .empty-chart {
   width: 100%;
@@ -305,11 +265,6 @@
 
   font-size: 14px;
 }
-
-
-/* =========================================================
-   PIE CHART
-   ========================================================= */
 
 .pie-chart-wrapper {
   width: 100%;
@@ -382,11 +337,6 @@
   font-weight: 700;
 }
 
-
-/* =========================================================
-   PIE LEGEND
-   ========================================================= */
-
 .pie-legend {
   width: 360px;
   max-height: 280px;
@@ -452,11 +402,6 @@
 
   text-align: right;
 }
-
-
-/* =========================================================
-   BAR CHART
-   ========================================================= */
 
 .bar-chart {
   width: 100%;
@@ -536,11 +481,6 @@
   transition: width 0.5s ease;
 }
 
-
-/* =========================================================
-   LINE CHART
-   ========================================================= */
-
 .line-chart-wrapper {
   width: 100%;
 
@@ -562,11 +502,6 @@
   overflow: visible;
 }
 
-
-/* =========================================================
-   LINE CHART GRID
-   ========================================================= */
-
 .chart-grid-line {
   stroke: #e5e7eb;
   stroke-width: 1;
@@ -585,11 +520,6 @@
 
   text-anchor: start;
 }
-
-
-/* =========================================================
-   LINE
-   ========================================================= */
 
 .line-area {
   fill: rgba(79, 70, 229, 0.08);
@@ -618,11 +548,6 @@
   fill: #4f46e5;
 }
 
-
-/* =========================================================
-   LINE LABELS
-   ========================================================= */
-
 .line-labels {
   width: calc(100% - 95px);
 
@@ -649,10 +574,6 @@
   white-space: nowrap;
 }
 
-
-/* =========================================================
-   TABLE
-   ========================================================= */
 
 .analytics-table-card {
   width: 100%;
@@ -758,11 +679,6 @@
   background: #4f46e5;
 }
 
-
-/* =========================================================
-   LOADING
-   ========================================================= */
-
 .analytics-loading {
   min-height: 400px;
 
@@ -797,10 +713,6 @@
   }
 }
 
-
-/* =========================================================
-   ERROR
-   ========================================================= */
 
 .analytics-error {
   min-height: 400px;
@@ -838,11 +750,6 @@
   font-size: 14px;
 }
 
-
-/* =========================================================
-   TABLET
-   ========================================================= */
-
 @media (max-width: 1100px) {
 
   .analytics-summary-grid {
@@ -867,11 +774,6 @@
     width: 320px;
   }
 }
-
-
-/* =========================================================
-   MOBILE
-   ========================================================= */
 
 @media (max-width: 768px) {
 
@@ -959,11 +861,6 @@
   }
 }
 
-
-/* =========================================================
-   SMALL MOBILE
-   ========================================================= */
-
 @media (max-width: 480px) {
 
   .analytics-page {
@@ -1020,4 +917,243 @@
   .bar-label strong {
     font-size: 12px;
   }
+}
+
+@media (max-width: 800px) {
+
+  .analytics-page {
+    padding: 24px;
+  }
+
+  .analytics-header {
+    gap: 16px;
+  }
+
+  .analytics-header h1 {
+    font-size: 26px;
+  }
+
+  .analytics-summary {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .analytics-card {
+    min-width: 0;
+  }
+
+  .analytics-card-header {
+    padding: 18px;
+  }
+
+  .analytics-card-body {
+    padding: 18px;
+  }
+
+  .analytics-grid {
+    gap: 16px;
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .analytics-page {
+    padding: 16px;
+  }
+
+
+  .analytics-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .analytics-header h1 {
+    font-size: 22px;
+  }
+
+  .analytics-header p {
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+
+  .analytics-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .analytics-summary-card {
+    min-width: 0;
+    padding: 14px;
+  }
+
+  .analytics-summary-icon {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+
+  .analytics-summary-card span {
+    font-size: 9px;
+  }
+
+  .analytics-summary-card strong {
+    font-size: 17px;
+  }
+
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .analytics-card {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .analytics-card-header {
+    padding: 15px 16px;
+  }
+
+  .analytics-card-header h2 {
+    font-size: 15px;
+  }
+
+  .analytics-card-header span {
+    font-size: 8px;
+  }
+
+  .analytics-card-body {
+    padding: 16px;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+
+  .analytics-chart {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .analytics-chart-container {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .analytics-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .analytics-table {
+    min-width: 560px;
+  }
+
+  .analytics-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    width: 100%;
+
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .analytics-filters button,
+  .analytics-filters select {
+    flex-shrink: 0;
+  }
+
+  .analytics-actions {
+    gap: 7px;
+  }
+
+  .analytics-actions button {
+    min-height: 36px;
+    padding: 0 11px;
+    font-size: 11px;
+  }
+
+}
+
+
+@media (max-width: 420px) {
+
+  .analytics-page {
+    padding: 12px;
+  }
+
+  .analytics-header h1 {
+    font-size: 20px;
+  }
+
+  .analytics-summary {
+    gap: 8px;
+  }
+
+  .analytics-summary-card {
+    padding: 11px;
+  }
+
+  .analytics-summary-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .analytics-summary-card strong {
+    font-size: 15px;
+  }
+
+  .analytics-card-header {
+    padding: 13px;
+  }
+
+  .analytics-card-body {
+    padding: 13px;
+  }
+
+}
+
+@media (max-width: 760px) {
+
+  .analytics-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    padding: 16px 12px !important;
+
+    overflow-x: hidden !important;
+  }
+
+  .analytics-grid {
+    width: 100% !important;
+
+    grid-template-columns: 1fr !important;
+  }
+
+  .analytics-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .chart-container,
+  .analytics-chart {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    min-width: 0;
+  }
+
 }

@@ -1,6 +1,6 @@
-/* =========================================================
+   /* =========================================================
    TOPBAR
-========================================================= */
+   ========================================================= */
 
 .topbar {
   height: 72px;
@@ -561,10 +561,6 @@
 }
 
 
-/* =========================================================
-   ACTIONS
-========================================================= */
-
 .topbar-actions {
   display: flex;
   align-items: center;
@@ -574,10 +570,6 @@
   flex-shrink: 0;
 }
 
-
-/* =========================================================
-   QUICK ADD
-========================================================= */
 
 .quick-add {
   height: 38px;
@@ -616,11 +608,6 @@
   width: 16px;
   height: 16px;
 }
-
-
-/* =========================================================
-   NOTIFICATION
-========================================================= */
 
 .top-icon {
   width: 38px;
@@ -675,21 +662,12 @@
 }
 
 
-/* =========================================================
-   PROFILE WRAPPER
-========================================================= */
-
 .profile-wrapper {
   position: relative;
 
   display: flex;
   align-items: center;
 }
-
-
-/* =========================================================
-   PROFILE BUTTON
-========================================================= */
 
 .profile {
   min-height: 44px;
@@ -720,11 +698,6 @@
   background: #f8fafc;
   border-color: #e5e7eb;
 }
-
-
-/* =========================================================
-   PROFILE AVATAR
-========================================================= */
 
 .profile-avatar {
   width: 34px;
@@ -801,10 +774,6 @@
 }
 
 
-/* =========================================================
-   PROFILE CHEVRON
-========================================================= */
-
 .profile > svg {
   width: 16px;
   height: 16px;
@@ -821,10 +790,6 @@
   transform: rotate(180deg);
 }
 
-
-/* =========================================================
-   PROFILE DROPDOWN
-========================================================= */
 
 .profile-dropdown {
   position: absolute;
@@ -849,11 +814,6 @@
 
   box-sizing: border-box;
 }
-
-
-/* =========================================================
-   DROPDOWN HEADER
-========================================================= */
 
 .profile-dropdown-header {
   display: flex;
@@ -917,10 +877,6 @@
 }
 
 
-/* =========================================================
-   DIVIDER
-========================================================= */
-
 .dropdown-divider {
   height: 1px;
 
@@ -929,10 +885,6 @@
   background: #e5e7eb;
 }
 
-
-/* =========================================================
-   DROPDOWN ITEMS
-========================================================= */
 
 .dropdown-item {
   width: 100%;
@@ -978,11 +930,6 @@
   flex-shrink: 0;
 }
 
-
-/* =========================================================
-   LOGOUT
-========================================================= */
-
 .dropdown-item.logout-item {
   color: #dc2626;
 }
@@ -991,11 +938,6 @@
   background: #fef2f2;
   color: #b91c1c;
 }
-
-
-/* =========================================================
-   SEARCH SCROLLBAR
-========================================================= */
 
 .search-results-list::-webkit-scrollbar {
   width: 4px;
@@ -1009,11 +951,6 @@
   background: #cbd5e1;
   border-radius: 999px;
 }
-
-
-/* =========================================================
-   RESPONSIVE
-========================================================= */
 
 @media (max-width: 1100px) {
   .topbar {
@@ -1136,11 +1073,6 @@
     height: 36px;
   }
 }
-
-
-/* =========================================================
-   DARK MODE
-========================================================= */
 
 html[data-theme="dark"] .topbar {
   background: #111c2f;
@@ -1299,11 +1231,6 @@ html[data-theme="dark"] .search-clear:hover {
   color: #e2e8f0;
 }
 
-
-/* =========================================================
-   DENSITY
-========================================================= */
-
 html[data-density="compact"] .topbar {
   height: 64px;
 }
@@ -1325,7 +1252,7 @@ html[data-density="compact"] .profile {
     gap: 6px;
   }
 
-  /* Keep only Ledgerly name */
+
   .topbar-title {
     flex: 0 0 auto;
     gap: 0;
@@ -1341,7 +1268,7 @@ html[data-density="compact"] .profile {
     font-weight: 700;
   }
 
-  /* Make search take most available space */
+
   .topbar-search-wrapper {
     flex: 1 1 auto;
     width: auto;
@@ -1377,13 +1304,13 @@ html[data-density="compact"] .profile {
     display: none;
   }
 
-  /* Actions stay compact */
+  
   .topbar-actions {
     flex: 0 0 auto;
     gap: 3px;
   }
 
-  /* Smaller Quick Add */
+
   .quick-add {
     width: 32px;
     height: 32px;
@@ -1400,7 +1327,7 @@ html[data-density="compact"] .profile {
     height: 15px;
   }
 
-  /* Smaller notification */
+  
   .top-icon {
     width: 32px;
     height: 32px;
@@ -1411,7 +1338,6 @@ html[data-density="compact"] .profile {
     height: 17px;
   }
 
-  /* SMALL PROFILE */
   .profile {
     min-height: 32px;
 
@@ -1436,14 +1362,13 @@ html[data-density="compact"] .profile {
     font-size: 10px;
   }
 
-  /* Mobile dropdown */
+
   .profile-dropdown {
     width: 210px;
     right: 0;
     top: calc(100% + 6px);
   }
 
-  /* Search results fit mobile screen */
   .search-results {
     position: fixed;
 
@@ -1457,10 +1382,6 @@ html[data-density="compact"] .profile {
 }
 
 
-/* =========================================================
-   SMALL MOBILE
-========================================================= */
-
 @media (max-width: 520px) {
 
   .topbar {
@@ -1470,12 +1391,12 @@ html[data-density="compact"] .profile {
     gap: 4px;
   }
 
-  /* Slightly smaller Ledgerly title */
+
   .topbar-title span {
     font-size: 14px;
   }
 
-  /* SEARCH GETS MOST OF THE WIDTH */
+
   .topbar-search-wrapper {
     flex: 1 1 auto;
 
@@ -1498,7 +1419,6 @@ html[data-density="compact"] .profile {
     height: 15px;
   }
 
-  /* Very compact actions */
   .topbar-actions {
     gap: 2px;
   }
@@ -1519,7 +1439,6 @@ html[data-density="compact"] .profile {
     height: 16px;
   }
 
-  /* PROFILE EVEN SMALLER */
   .profile {
     width: 30px;
     height: 30px;
@@ -1536,7 +1455,6 @@ html[data-density="compact"] .profile {
     font-size: 9px;
   }
 
-  /* Dropdown remains usable */
   .profile-dropdown {
     width: 200px;
   }
@@ -1546,4 +1464,154 @@ html[data-density="compact"] .profile {
     left: 8px;
     right: 8px;
   }
+}
+
+.mobile-menu-button {
+  display: none;
+}
+
+
+@media (max-width: 760px) {
+
+  .mobile-menu-button {
+    display: flex !important;
+
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 40px;
+
+    width: 40px;
+    height: 40px;
+
+    padding: 0;
+
+    border: 0;
+    border-radius: 10px;
+
+    background: transparent;
+
+    cursor: pointer;
+  }
+
+  .mobile-menu-button svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .topbar {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    overflow: visible;
+  }
+
+  .topbar-title {
+    min-width: 0;
+    max-width: 180px;
+
+    overflow: hidden;
+  }
+
+  .topbar-title b,
+  .topbar-title strong,
+  .topbar-title span {
+    max-width: 100%;
+
+    overflow: hidden;
+
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-search-wrapper {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .topbar-search {
+    max-width: 100%;
+  }
+
+  .topbar-search input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .topbar-actions {
+    min-width: 0;
+    flex-shrink: 0;
+  }
+
+  .profile-copy {
+    display: none !important;
+  }
+
+  .profile > svg {
+    display: none;
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .mobile-menu-button {
+    width: 38px;
+    height: 38px;
+
+    flex-basis: 38px;
+  }
+
+  .topbar-title {
+    max-width: 130px;
+  }
+
+  .quick-add span {
+    display: none !important;
+  }
+
+  .quick-add {
+    width: 38px;
+    height: 38px;
+
+    padding: 0;
+
+    justify-content: center;
+  }
+
+  .top-icon {
+    width: 38px;
+    height: 38px;
+
+    padding: 0;
+  }
+
+}
+
+
+@media (max-width: 400px) {
+
+  .mobile-menu-button {
+    width: 36px;
+    height: 36px;
+
+    flex-basis: 36px;
+  }
+
+  .topbar-title {
+    max-width: 105px;
+  }
+
+  .topbar-title span {
+    display: none;
+  }
+
+  .quick-add,
+  .top-icon {
+    width: 34px;
+    height: 34px;
+  }
+
 }

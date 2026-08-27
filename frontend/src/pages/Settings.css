@@ -37,11 +37,6 @@
   --settings-radius: 16px;
 }
 
-
-/* =========================================================
-   DARK MODE
-   ========================================================= */
-
 html[data-theme="dark"] {
   color-scheme: dark;
 
@@ -77,11 +72,6 @@ html[data-theme="dark"] {
     0 14px 40px rgba(0, 0, 0, 0.35);
 }
 
-
-/* =========================================================
-   PAGE
-   ========================================================= */
-
 .settings-page {
   width: 100%;
   min-height: 100vh;
@@ -97,11 +87,6 @@ html[data-theme="dark"] {
     background 0.25s ease,
     color 0.25s ease;
 }
-
-
-/* =========================================================
-   HEADER
-   ========================================================= */
 
 .settings-header {
   display: flex;
@@ -182,11 +167,6 @@ html[data-theme="dark"] {
   color: var(--settings-muted);
 }
 
-
-/* =========================================================
-   TOP SAVE BUTTON
-   ========================================================= */
-
 .settings-save-top {
   display: inline-flex;
   align-items: center;
@@ -230,11 +210,6 @@ html[data-theme="dark"] {
 .settings-save-top:active {
   transform: translateY(0);
 }
-
-
-/* =========================================================
-   SUCCESS MESSAGE
-   ========================================================= */
 
 .settings-success {
   display: flex;
@@ -280,11 +255,6 @@ html[data-theme="dark"] {
   }
 }
 
-
-/* =========================================================
-   SETTINGS LAYOUT
-   ========================================================= */
-
 .settings-layout {
   width: 100%;
   max-width: 1100px;
@@ -297,10 +267,6 @@ html[data-theme="dark"] {
   gap: 20px;
 }
 
-
-/* =========================================================
-   SETTINGS PANEL
-   ========================================================= */
 
 .settings-panel {
   width: 100%;
@@ -332,11 +298,6 @@ html[data-theme="dark"] {
   box-shadow:
     var(--settings-shadow-hover);
 }
-
-
-/* =========================================================
-   PANEL HEADER
-   ========================================================= */
 
 .settings-panel-header {
   display: flex;
@@ -397,10 +358,6 @@ html[data-theme="dark"] {
 }
 
 
-/* =========================================================
-   FORM
-   ========================================================= */
-
 .settings-form {
   display: grid;
 
@@ -440,11 +397,6 @@ html[data-theme="dark"] {
   color:
     var(--settings-subtle);
 }
-
-
-/* =========================================================
-   INPUT ICON WRAPPER
-   ========================================================= */
 
 .settings-input-icon {
   position: relative;
@@ -516,10 +468,6 @@ html[data-theme="dark"] {
 }
 
 
-/* =========================================================
-   NORMAL SELECT
-   ========================================================= */
-
 .settings-density {
   display: flex;
   align-items: center;
@@ -565,11 +513,6 @@ html[data-theme="dark"] {
 
   cursor: pointer;
 }
-
-
-/* =========================================================
-   APPEARANCE CHOICES
-   ========================================================= */
 
 .settings-choice-section {
   width: 100%;
@@ -695,11 +638,6 @@ html[data-theme="dark"] {
     var(--settings-primary);
 }
 
-
-/* =========================================================
-   OPTIONS
-   ========================================================= */
-
 .settings-options {
   display: flex;
   flex-direction: column;
@@ -767,11 +705,6 @@ html[data-theme="dark"] {
     var(--settings-muted);
 }
 
-
-/* =========================================================
-   OPTION SELECT
-   ========================================================= */
-
 .settings-option select {
   min-width: 170px;
   height: 40px;
@@ -805,11 +738,6 @@ html[data-theme="dark"] {
     0 0 0 3px
     rgba(99, 91, 255, 0.10);
 }
-
-
-/* =========================================================
-   CUSTOM TOGGLE
-   ========================================================= */
 
 .settings-toggle {
   position: relative;
@@ -866,10 +794,6 @@ html[data-theme="dark"] {
     translateX(20px);
 }
 
-
-/* =========================================================
-   ACCOUNT CARD
-   ========================================================= */
 
 .settings-account-card {
   display: flex;
@@ -940,11 +864,6 @@ html[data-theme="dark"] {
     var(--settings-subtle);
 }
 
-
-/* =========================================================
-   SECURITY NOTE
-   ========================================================= */
-
 .settings-security-note {
   display: flex;
   align-items: flex-start;
@@ -996,11 +915,6 @@ html[data-theme="dark"] {
     var(--settings-muted);
 }
 
-
-/* =========================================================
-   DATA ACTIONS
-   ========================================================= */
-
 .settings-data-actions {
   display: flex;
 
@@ -1008,11 +922,6 @@ html[data-theme="dark"] {
 
   gap: 10px;
 }
-
-
-/* =========================================================
-   BUTTONS
-   ========================================================= */
 
 .settings-secondary-button,
 .settings-danger-button,
@@ -1130,12 +1039,6 @@ html[data-theme="dark"] {
     0 7px 18px
     rgba(99, 91, 255, 0.25);
 }
-
-
-/* =========================================================
-   HELP BOX
-   ========================================================= */
-
 .settings-help-box {
   display: flex;
   align-items: center;
@@ -1222,11 +1125,6 @@ html[data-theme="dark"] {
   color:
     var(--settings-muted);
 }
-
-
-/* =========================================================
-   ABOUT
-   ========================================================= */
 
 .settings-about {
   display: flex;
@@ -1890,4 +1788,33 @@ html[data-density="comfortable"] .settings-panel {
 
     scroll-behavior: auto !important;
   }
+}
+
+@media (max-width: 900px) {
+
+  .settings-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    overflow-x: hidden !important;
+  }
+
+  .settings-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .settings-page .settings-content,
+  .settings-page .settings-section,
+  .settings-page .settings-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
 }

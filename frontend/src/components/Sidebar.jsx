@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -18,66 +17,24 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-
 import "./Sidebar.css";
-
-/* =========================================================
-   SIDEBAR SECTIONS
-========================================================= */
 
 const sections = [
   {
     title: "WORKSPACE",
-
     items: [
-      {
-        label: "Dashboard",
-        path: "/dashboard",
-        icon: LayoutDashboard,
-      },
-
-      {
-        label: "Transactions",
-        path: "/transactions",
-        icon: ArrowLeftRight,
-      },
-
-      {
-        label: "Expenses",
-        path: "/expenses",
-        icon: ReceiptText,
-      },
-
-      {
-        label: "Auto Expense",
-        path: "/auto-expense",
-        icon: WandSparkles,
-      },
-
-      {
-        label: "Categories",
-        path: "/categories",
-        icon: Tags,
-      },
-
-      {
-        label: "Budget",
-        path: "/budget",
-        icon: WalletCards,
-      },
+      { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+      { label: "Transactions", path: "/transactions", icon: ArrowLeftRight },
+      { label: "Expenses", path: "/expenses", icon: ReceiptText },
+      { label: "Auto Expense", path: "/auto-expense", icon: WandSparkles },
+      { label: "Categories", path: "/categories", icon: Tags },
+      { label: "Budget", path: "/budget", icon: WalletCards },
     ],
   },
-
   {
     title: "ANALYZE",
-
     items: [
-      {
-        label: "Analytics",
-        path: "/analytics",
-        icon: BarChart3,
-      },
-
+      { label: "Analytics", path: "/analytics", icon: BarChart3 },
       {
         label: "AI Insights",
         path: "/insights",
@@ -86,67 +43,33 @@ const sections = [
       },
     ],
   },
-
   {
     title: "BUSINESS",
-
     items: [
-      {
-        label: "Accounts",
-        path: "/accounts",
-        icon: Landmark,
-      },
-
-      {
-        label: "Customers",
-        path: "/customers",
-        icon: Users,
-      },
-
-      {
-        label: "Vendors",
-        path: "/vendors",
-        icon: Store,
-      },
-
-      {
-        label: "Invoices",
-        path: "/invoices",
-        icon: FileText,
-      },
-
-      {
-        label: "Reports",
-        path: "/reports",
-        icon: ChartNoAxesCombined,
-      },
+      { label: "Accounts", path: "/accounts", icon: Landmark },
+      { label: "Customers", path: "/customers", icon: Users },
+      { label: "Vendors", path: "/vendors", icon: Store },
+      { label: "Invoices", path: "/invoices", icon: FileText },
+      { label: "Reports", path: "/reports", icon: ChartNoAxesCombined },
     ],
   },
 ];
 
-/* =========================================================
-   HELPER
-========================================================= */
-
 function getStoredUser() {
   try {
     const storedUser = localStorage.getItem("user");
-
-    if (!storedUser) {
-      return null;
-    }
-
-    return JSON.parse(storedUser);
+    return storedUser ? JSON.parse(storedUser) : null;
   } catch (error) {
     console.error("Unable to read stored user:", error);
     return null;
   }
 }
 
-
-export default function Sidebar() {
+export default function Sidebar({
+  mobileOpen = false,
+  setMobileOpen = () => {},
+}) {
   const navigate = useNavigate();
-
   const [user, setUser] = useState(() => getStoredUser());
 
   useEffect(() => {
@@ -154,22 +77,11 @@ export default function Sidebar() {
       setUser(getStoredUser());
     };
 
-    window.addEventListener(
-      "storage",
-      handleStorageChange
-    );
+    window.addEventListener("storage", handleStorageChange);
 
-    return () => {
-      window.removeEventListener(
-        "storage",
-        handleStorageChange
-      );
-    };
+    return () =>
+      window.removeEventListener("storage", handleStorageChange);
   }, []);
-
-  /* =========================================================
-     USER INFORMATION
-  ========================================================= */
 
   const fullName =
     user?.full_name ||
@@ -179,129 +91,97 @@ export default function Sidebar() {
     user?.email?.split("@")[0] ||
     "User";
 
-  const email =
-    user?.email ||
-    "";
+  const email = user?.email || "";
+  const role = user?.role || "Administrator";
 
-  const role =
-    user?.role ||
-    "Administrator";
+  const initials =
+    fullName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("") || "U";
 
-  const initials = fullName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) =>
-      part.charAt(0).toUpperCase()
-    )
-    .join("") || "U";
-
+  const closeMobileSidebar = () => {
+    setMobileOpen(false);
+  };
 
   const handleSettings = () => {
+    closeMobileSidebar();
     navigate("/settings");
   };
 
-  /* =========================================================
-     LOGOUT
-  ========================================================= */
-
   const handleLogout = () => {
-    localStorage.removeItem("access");
-    localStorage.removeItem("access_token");
+    [
+      "access",
+      "access_token",
+      "refresh",
+      "refresh_token",
+      "token",
+      "user",
+      "userEmail",
+    ].forEach((key) => localStorage.removeItem(key));
 
-    localStorage.removeItem("refresh");
-    localStorage.removeItem("refresh_token");
+    [
+      "ledgerly_registration",
+      "ledgerly_registration_email",
+      "ledgerly_registration_mobile",
+      "ledgerly_show_welcome",
+    ].forEach((key) => sessionStorage.removeItem(key));
 
-    localStorage.removeItem("token");
+    setUser(null);
+    closeMobileSidebar();
 
-    localStorage.removeItem("user");
-    localStorage.removeItem("userEmail");
+    navigate("/login", { replace: true });
+  };
 
-    sessionStorage.removeItem(
-      "ledgerly_registration"
-    );
-
-    sessionStorage.removeItem(
-      "ledgerly_registration_email"
-    );
-
-    sessionStorage.removeItem(
-      "ledgerly_registration_mobile"
-    );
-
-    sessionStorage.removeItem(
-      "ledgerly_show_welcome"
-    );
-
-    /*
-     * Go back to login.
-     */
-
-    navigate("/login", {
-      replace: true,
-    });
+  const handleBrandClick = () => {
+    closeMobileSidebar();
+    navigate("/dashboard");
   };
 
   return (
-    <aside className="sidebar">
-
-      {/* =====================================================
-          BRAND
-      ===================================================== */}
-
+    <aside
+      className={`sidebar ${
+        mobileOpen ? "sidebar-mobile-open" : ""
+      }`}
+      aria-label="Main sidebar"
+    >
       <button
         type="button"
         className="sidebar-brand"
-        onClick={() => navigate("/dashboard")}
+        onClick={handleBrandClick}
         aria-label="Go to Ledgerly dashboard"
       >
-
         <div className="login-logo">
-
           <img
             src="/ledgerly-30x30.png"
             alt="Ledgerly"
           />
-
         </div>
 
         <div className="brand-copy">
-
           <strong>
             Ledgerly <em></em>
           </strong>
-
-          <small>
-            SMART BOOKKEEPING
-          </small>
-
+          <small>SMART BOOKKEEPING</small>
         </div>
-
       </button>
-
-
-      {/* =====================================================
-          NAVIGATION
-      ===================================================== */}
 
       <nav
         className="sidebar-nav"
         aria-label="Main navigation"
       >
-
         {sections.map((section) => (
-
           <div
             className="nav-section"
             key={section.title}
           >
-
             <div className="nav-section-title">
               {section.title}
             </div>
 
             {section.items.map((item) => {
-
               const Icon = item.icon;
 
               return (
@@ -309,15 +189,11 @@ export default function Sidebar() {
                   key={item.path}
                   to={item.path}
                   end
+                  onClick={closeMobileSidebar}
                   className={({ isActive }) =>
-                    `nav-item ${
-                      isActive
-                        ? "active"
-                        : ""
-                    }`
+                    `nav-item ${isActive ? "active" : ""}`
                   }
                 >
-
                   <Icon className="nav-icon" />
 
                   <span className="nav-label">
@@ -329,59 +205,29 @@ export default function Sidebar() {
                       {item.badge}
                     </span>
                   )}
-
                 </NavLink>
               );
-
             })}
-
           </div>
-
         ))}
-
       </nav>
 
-
-      {/* =====================================================
-          BOTTOM AREA
-      ===================================================== */}
-
       <div className="sidebar-bottom">
-
-
-        {/* ===================================================
-            SETTINGS
-        =================================================== */}
-
         <NavLink
           to="/settings"
           end
+          onClick={closeMobileSidebar}
           className={({ isActive }) =>
             `nav-item settings-link ${
-              isActive
-                ? "active"
-                : ""
+              isActive ? "active" : ""
             }`
           }
         >
-
           <Settings className="nav-icon" />
-
-          <span className="nav-label">
-            Settings
-          </span>
-
+          <span className="nav-label">Settings</span>
         </NavLink>
 
-
-        {/* ===================================================
-            USER INFORMATION
-        =================================================== */}
-
         <div className="sidebar-user">
-
-          {/* AVATAR */}
-
           <div
             className="avatar"
             title={fullName}
@@ -389,28 +235,15 @@ export default function Sidebar() {
             {initials}
           </div>
 
-
-          {/* USER DETAILS */}
-
           <button
             type="button"
             className="user-copy"
             onClick={handleSettings}
             title="Open Settings"
           >
-
-            <strong>
-              {fullName}
-            </strong>
-
-            <span>
-              {email || role}
-            </span>
-
+            <strong>{fullName}</strong>
+            <span>{email || role}</span>
           </button>
-
-
-          {/* LOGOUT */}
 
           <button
             type="button"
@@ -419,15 +252,10 @@ export default function Sidebar() {
             title="Sign out"
             onClick={handleLogout}
           >
-
             <LogOut />
-
           </button>
-
         </div>
-
       </div>
-
     </aside>
   );
 }

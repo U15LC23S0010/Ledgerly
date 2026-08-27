@@ -10,11 +10,6 @@
   font-family: "DM Sans", Arial, sans-serif;
 }
 
-
-/* =========================================================
-   BRAND PANEL
-   ========================================================= */
-
 .login-brand {
   position: relative;
   overflow: hidden;
@@ -131,11 +126,6 @@
   font-size: 12px;
 }
 
-
-/* =========================================================
-   LOGIN PANEL
-   ========================================================= */
-
 .login-panel {
   min-height: 100vh;
 
@@ -151,11 +141,6 @@
 .login-container {
   width: min(420px, 100%);
 }
-
-
-/* =========================================================
-   MOBILE BRAND
-   ========================================================= */
 
 .mobile-brand {
   display: none;
@@ -177,10 +162,6 @@
   font-weight: 800;
 }
 
-
-/* =========================================================
-   HEADING
-   ========================================================= */
 
 .login-eyebrow {
   display: block;
@@ -211,11 +192,6 @@
   line-height: 1.65;
 }
 
-
-/* =========================================================
-   ERROR
-   ========================================================= */
-
 .login-error {
   margin-top: 22px;
   padding: 11px 13px;
@@ -229,11 +205,6 @@
   font-size: 11px;
   line-height: 1.5;
 }
-
-
-/* =========================================================
-   FORM
-   ========================================================= */
 
 .login-form {
   margin-top: 30px;
@@ -310,11 +281,6 @@
     0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
-
-/* =========================================================
-   LOGIN BUTTON
-   ========================================================= */
-
 .login-button {
   width: 100%;
   height: 47px;
@@ -368,11 +334,6 @@
   font-size: 17px;
   line-height: 1;
 }
-
-
-/* =========================================================
-   SPINNER
-   ========================================================= */
 
 .button-spinner {
   width: 14px;
@@ -551,7 +512,7 @@
     font-weight: 800;
   }
 
-  /* Heading */
+  
   .login-heading h1 {
     font-size: 28px;
     line-height: 1.2;
@@ -562,13 +523,13 @@
     line-height: 1.65;
   }
 
-  /* Error */
+
   .login-error {
     margin-top: 20px;
     font-size: 11px;
   }
 
-  /* Form */
+
   .login-form {
     margin-top: 28px;
   }
@@ -604,7 +565,7 @@
     border-radius: 9px;
   }
 
-  /* Register */
+  
   .register-prompt {
     margin-top: 24px;
     padding-top: 22px;
@@ -612,7 +573,6 @@
     font-size: 11px;
   }
 
-  /* Security */
   .login-security {
     margin-top: 28px;
     font-size: 9px;
@@ -769,4 +729,31 @@
     min-width: 30px;
     min-height: 30px;
   }
+}
+
+@media (max-width: 850px) {
+
+  .login-page {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+
+    padding: 16px !important;
+
+    overflow-x: hidden;
+  }
+
+  .login-card {
+    width: min(100%, 450px) !important;
+    max-width: 450px !important;
+    min-width: 0 !important;
+  }
+
+  .login-card input,
+  .login-card select,
+  .login-card button {
+    width: 100%;
+    max-width: 100%;
+  }
+
 }

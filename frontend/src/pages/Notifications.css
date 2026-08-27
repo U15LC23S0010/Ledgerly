@@ -113,11 +113,6 @@
   animation: notifications-spin 0.8s linear infinite;
 }
 
-
-/* =========================================================
-   SUMMARY
-   ========================================================= */
-
 .notifications-summary {
   display: flex;
   align-items: center;
@@ -173,11 +168,6 @@
   font-size: 11px;
 }
 
-
-/* =========================================================
-   MAIN PANEL
-   ========================================================= */
-
 .notifications-panel {
   padding: 22px;
 
@@ -224,10 +214,6 @@
   font-weight: 700;
 }
 
-
-/* =========================================================
-   NOTIFICATION LIST
-   ========================================================= */
 
 .notification-list {
   display: flex;
@@ -314,11 +300,6 @@
   text-decoration: underline;
 }
 
-
-/* =========================================================
-   NOTIFICATION TYPES
-   ========================================================= */
-
 .notification-item.warning {
   border-color: #fed7aa;
   background: #fffaf5;
@@ -368,11 +349,6 @@
   background: #dbeafe;
   color: #2563eb;
 }
-
-
-/* =========================================================
-   HELP
-   ========================================================= */
 
 .notifications-help {
   display: flex;
@@ -427,11 +403,6 @@
   font-size: 11px;
   line-height: 1.5;
 }
-
-
-/* =========================================================
-   LOADING / ERROR
-   ========================================================= */
 
 .notifications-loading,
 .notifications-error {
@@ -609,11 +580,6 @@
     box-sizing: border-box;
   }
 
-
-  /* -------------------------------------------------------
-     HEADER
-     ------------------------------------------------------- */
-
   .notifications-header {
     gap: 16px;
 
@@ -646,12 +612,6 @@
     line-height: 1.6;
   }
 
-
-  /* -------------------------------------------------------
-     HEADER ACTIONS
-     Keep buttons side-by-side like desktop
-     ------------------------------------------------------- */
-
   .notifications-header-actions {
     width: 100%;
 
@@ -681,11 +641,6 @@
     width: 15px;
     height: 15px;
   }
-
-
-  /* -------------------------------------------------------
-     SUMMARY
-     ------------------------------------------------------- */
 
   .notifications-summary {
     display: flex;
@@ -720,11 +675,6 @@
     font-size: 10px;
   }
 
-
-  /* -------------------------------------------------------
-     MAIN PANEL
-     ------------------------------------------------------- */
-
   .notifications-panel {
     padding: 18px;
 
@@ -755,11 +705,6 @@
 
     white-space: nowrap;
   }
-
-
-  /* -------------------------------------------------------
-     NOTIFICATION LIST
-     ------------------------------------------------------- */
 
   .notification-list {
     gap: 10px;
@@ -809,11 +754,6 @@
     font-size: 10px;
   }
 
-
-  /* -------------------------------------------------------
-     HELP
-     ------------------------------------------------------- */
-
   .notifications-help {
     display: flex;
     align-items: center;
@@ -860,10 +800,6 @@
   }
 }
 
-
-/* =========================================================
-   SMALL PHONES
-   ========================================================= */
 
 @media (max-width: 400px) {
 
@@ -1008,11 +944,6 @@
   }
 }
 
-
-/* =========================================================
-   DARK MODE
-   ========================================================= */
-
 html[data-theme="dark"] .notifications-page {
   background: #0f172a;
   color: #e5e7eb;
@@ -1125,4 +1056,16 @@ html[data-theme="dark"] .notifications-error p {
 html[data-theme="dark"] .notifications-spinner {
   border-color: #334155;
   border-top-color: #818cf8;
+}
+
+@media (max-width: 850px) {
+
+  .notifications-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    overflow-x: hidden !important;
+  }
+
 }

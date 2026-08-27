@@ -8,11 +8,6 @@
   color: #172033;
 }
 
-
-/* =========================================================
-   HEADER
-========================================================= */
-
 .reports-header {
   display: flex;
   align-items: center;
@@ -90,12 +85,6 @@
   width: 15px;
   height: 15px;
 }
-
-
-/* =========================================================
-   ERROR
-========================================================= */
-
 .reports-error {
   margin-bottom: 18px;
   padding: 12px 14px;
@@ -105,11 +94,6 @@
   color: #b42318;
   font-size: 11px;
 }
-
-
-/* =========================================================
-   SUMMARY CARDS
-========================================================= */
 
 .reports-summary {
   display: grid;
@@ -195,11 +179,6 @@
   color: #b42318 !important;
 }
 
-
-/* =========================================================
-   MAIN REPORT GRID
-========================================================= */
-
 .reports-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -239,11 +218,6 @@
   font-size: 14px;
   font-weight: 800;
 }
-
-
-/* =========================================================
-   PROFIT SUMMARY
-========================================================= */
 
 .profit-summary {
   padding: 8px 21px 18px;
@@ -294,11 +268,6 @@
 .profit-row.total strong {
   font-size: 15px;
 }
-
-
-/* =========================================================
-   ACCOUNT REPORT
-========================================================= */
 
 .account-report-list {
   padding: 5px 21px 15px;
@@ -351,11 +320,6 @@
   font-size: 10px;
   text-align: center;
 }
-
-
-/* =========================================================
-   TRANSACTION REPORT
-========================================================= */
 
 .transaction-report {
   margin-bottom: 20px;
@@ -478,11 +442,6 @@
   color: #175cd3;
 }
 
-
-/* =========================================================
-   EMPTY STATE
-========================================================= */
-
 .report-empty {
   min-height: 230px;
   display: flex;
@@ -511,11 +470,6 @@
   color: #9aa5b4;
   font-size: 10px;
 }
-
-
-/* =========================================================
-   LOADING
-========================================================= */
 
 .reports-loading {
   min-height: 500px;
@@ -1138,4 +1092,39 @@
 .reports-page svg rect[fill="#000000"],
 .reports-page svg path[fill="#000000"] {
   fill: #4f46e5 !important;
+}
+
+@media (max-width: 760px) {
+
+  .reports-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    padding: 16px 12px !important;
+
+    overflow-x: hidden !important;
+  }
+
+  .reports-toolbar {
+    width: 100%;
+
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reports-table {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    overflow-x: auto;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .report-chart {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
 }

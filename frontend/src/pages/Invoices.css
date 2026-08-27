@@ -26,11 +26,6 @@
   box-sizing: border-box;
 }
 
-
-/* =========================================================
-   HEADER
-   ========================================================= */
-
 .invoices-header {
   width: 100%;
   max-width: 1400px;
@@ -77,11 +72,6 @@
   font-size: 14px;
   line-height: 1.5;
 }
-
-
-/* =========================================================
-   BUTTONS
-   ========================================================= */
 
 .primary-button,
 .secondary-button {
@@ -151,11 +141,6 @@
   box-shadow: none;
 }
 
-
-/* =========================================================
-   ERROR MESSAGE
-   ========================================================= */
-
 .invoice-error {
   width: 100%;
   max-width: 1400px;
@@ -204,11 +189,6 @@
 .invoice-error button:hover {
   background: rgba(180, 35, 24, 0.08);
 }
-
-
-/* =========================================================
-   TOOLBAR
-   ========================================================= */
 
 .invoice-toolbar {
   width: 100%;
@@ -279,11 +259,6 @@
   font-weight: 650;
 }
 
-
-/* =========================================================
-   INVOICE TABLE PANEL
-   ========================================================= */
-
 .invoice-panel {
   width: 100%;
   max-width: 1400px;
@@ -324,11 +299,6 @@
   background: #cbd5e1;
 }
 
-
-/* =========================================================
-   TABLE GRID
-   ========================================================= */
-
 .invoice-table-head,
 .invoice-row {
   min-width: 980px;
@@ -347,11 +317,6 @@
   align-items: center;
 }
 
-
-/* =========================================================
-   TABLE HEADER
-   ========================================================= */
-
 .invoice-table-head {
   min-height: 48px;
 
@@ -368,11 +333,6 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-
-
-/* =========================================================
-   TABLE ROW
-   ========================================================= */
 
 .invoice-row {
   min-height: 72px;
@@ -403,11 +363,6 @@
   color: #101828;
   font-weight: 800;
 }
-
-
-/* =========================================================
-   STATUS BADGES
-   ========================================================= */
 
 .invoice-status {
   width: max-content;
@@ -457,11 +412,6 @@
   background: #fee2e2;
   color: #b42318;
 }
-
-
-/* =========================================================
-   ACTION BUTTONS
-   ========================================================= */
 
 .invoice-actions {
   display: flex;
@@ -535,11 +485,6 @@
   color: #b42318;
 }
 
-
-/* =========================================================
-   EMPTY STATE
-   ========================================================= */
-
 .invoice-empty {
   min-height: 430px;
 
@@ -589,11 +534,6 @@
   line-height: 1.6;
 }
 
-
-/* =========================================================
-   LOADING
-   ========================================================= */
-
 .invoice-loading {
   min-height: 70vh;
 
@@ -640,11 +580,6 @@
   }
 }
 
-
-/* =========================================================
-   CREATE INVOICE MODAL
-   ========================================================= */
-
 .invoice-modal-overlay {
   position: fixed;
   inset: 0;
@@ -682,11 +617,6 @@
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
 }
-
-
-/* =========================================================
-   MODAL HEADER
-   ========================================================= */
 
 .invoice-modal-header {
   position: sticky;
@@ -747,10 +677,6 @@
   color: #101828;
 }
 
-
-/* =========================================================
-   FORM
-   ========================================================= */
 
 .invoice-form {
   padding: 22px;
@@ -825,10 +751,6 @@
 }
 
 
-/* =========================================================
-   FORM ROW
-   ========================================================= */
-
 .form-row {
   display: grid;
 
@@ -838,10 +760,6 @@
   gap: 16px;
 }
 
-
-/* =========================================================
-   ITEMS HEADER
-   ========================================================= */
 
 .items-header {
   margin: 6px 0 10px;
@@ -882,10 +800,6 @@
   color: #1d4ed8;
 }
 
-
-/* =========================================================
-   INVOICE ITEMS
-   ========================================================= */
 
 .invoice-items-form {
   display: flex;
@@ -969,11 +883,6 @@
   cursor: not-allowed;
 }
 
-
-/* =========================================================
-   FORM SUMMARY
-   ========================================================= */
-
 .invoice-form-summary {
   width: min(360px, 100%);
 
@@ -1023,11 +932,6 @@
   color: #101828;
 }
 
-
-/* =========================================================
-   FORM ACTIONS
-   ========================================================= */
-
 .invoice-form-actions {
   margin-top: 22px;
 
@@ -1038,11 +942,6 @@
 
   gap: 10px;
 }
-
-
-/* =========================================================
-   INVOICE PREVIEW
-   ========================================================= */
 
 .invoice-preview-wrapper {
   width: min(1000px, 100%);
@@ -1061,11 +960,6 @@
   scrollbar-width: thin;
   scrollbar-color: #aeb8c6 transparent;
 }
-
-
-/* =========================================================
-   PREVIEW TOOLBAR
-   ========================================================= */
 
 .invoice-preview-toolbar {
   position: sticky;
@@ -1108,11 +1002,6 @@
   flex-wrap: wrap;
 }
 
-
-/* =========================================================
-   PRINTABLE INVOICE
-   ========================================================= */
-
 .printable-invoice {
   width: min(794px, calc(100% - 40px));
 
@@ -1129,11 +1018,6 @@
   box-shadow:
     0 8px 25px rgba(16, 24, 40, 0.1);
 }
-
-
-/* =========================================================
-   PRINTABLE HEADER
-   ========================================================= */
 
 .printable-invoice-header {
   padding-bottom: 20px;
@@ -1188,11 +1072,6 @@
   font-size: 15px;
 }
 
-
-/* =========================================================
-   CUSTOMER INFORMATION
-   ========================================================= */
-
 .printable-invoice-customer {
   margin: 28px 0 26px;
 }
@@ -1227,11 +1106,6 @@
   font-size: 11px;
   line-height: 1.45;
 }
-
-
-/* =========================================================
-   PROFESSIONAL INVOICE TABLE
-   ========================================================= */
 
 .professional-invoice-table {
   width: 100%;
@@ -1292,11 +1166,6 @@
   text-align: right;
 }
 
-
-/* =========================================================
-   INVOICE TOTAL SUMMARY
-   ========================================================= */
-
 .printable-invoice-summary {
   width: 285px;
   max-width: 100%;
@@ -1341,11 +1210,6 @@
   color: #101828;
 }
 
-
-/* =========================================================
-   NOTES
-   ========================================================= */
-
 .printable-invoice-notes {
   margin-top: 32px;
 
@@ -1370,11 +1234,6 @@
   font-size: 11px;
   line-height: 1.6;
 }
-
-
-/* =========================================================
-   INVOICE FOOTER
-   ========================================================= */
 
 .printable-invoice-footer {
   margin-top: 55px;
@@ -1571,11 +1430,6 @@
   }
 }
 
-
-/* =========================================================
-   SMALL MOBILE
-   ========================================================= */
-
 @media (max-width: 480px) {
   .invoices-page {
     padding: 14px 10px;
@@ -1646,11 +1500,6 @@
     font-size: 8px;
   }
 }
-
-
-/* =========================================================
-   PRINT
-   ========================================================= */
 
 @media print {
   html,
@@ -1864,11 +1713,6 @@
   .invoice-form-actions button {
     width: auto;
   }
-
-
-  /* -------------------------
-     PREVIEW
-  ------------------------- */
 
   .invoice-preview-wrapper {
     width: min(1000px, 100%);
@@ -2145,4 +1989,83 @@
 
     padding: 32px 36px;
   }
+}
+
+@media (max-width: 760px) {
+
+  .invoices-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    padding: 16px 12px !important;
+
+    overflow-x: hidden !important;
+  }
+
+  .invoices-header {
+    width: 100%;
+
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 14px;
+  }
+
+  .invoices-header h1 {
+    font-size: 26px;
+  }
+
+  .invoice-toolbar {
+    width: 100%;
+
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 12px;
+  }
+
+  .search-box {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .invoice-table {
+    width: 100% !important;
+    max-width: 100% !important;
+
+    overflow-x: auto;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .invoice-table-head,
+  .invoice-row {
+    min-width: 820px;
+  }
+
+  .primary-button,
+  .secondary-button {
+    width: 100%;
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .invoices-page {
+    padding: 12px 8px !important;
+  }
+
+  .invoice-table-head,
+  .invoice-row {
+    min-width: 800px;
+  }
+
+}
+
+.printable-invoice {
+  width: 794px;
+  max-width: none;
 }

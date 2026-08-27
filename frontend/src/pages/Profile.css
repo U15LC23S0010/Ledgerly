@@ -9,10 +9,6 @@
   box-sizing: border-box;
 }
 
-/* =========================================================
-   HEADER
-========================================================= */
-
 .profile-page-header {
   display: flex;
   align-items: center;
@@ -119,9 +115,6 @@
     0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-/* =========================================================
-   CARD HEADER
-========================================================= */
 
 .profile-card-header {
   display: flex;
@@ -242,10 +235,6 @@
   font-weight: 700;
 }
 
-/* =========================================================
-   INFORMATION GRID
-========================================================= */
-
 .profile-info-grid {
   display: grid;
 
@@ -318,10 +307,6 @@
 
   overflow-wrap: anywhere;
 }
-
-/* =========================================================
-   SECURITY LIST
-========================================================= */
 
 .security-list {
   display: flex;
@@ -403,10 +388,6 @@
 .password-value {
   letter-spacing: 2px;
 }
-
-/* =========================================================
-   SECURITY STATUS
-========================================================= */
 
 .security-status {
   display: inline-flex;
@@ -531,9 +512,6 @@
   color: #4d7c0f;
 }
 
-/* =========================================================
-   LOADING
-========================================================= */
 
 .profile-loading {
   max-width: 1050px;
@@ -550,10 +528,6 @@
 
   font-size: 13px;
 }
-
-/* =========================================================
-   DARK MODE
-========================================================= */
 
 [data-theme="dark"] .profile-page-header h1,
 [data-theme="dark"] .profile-card-header h2,
@@ -797,4 +771,21 @@
     font-size: 10px;
     padding: 5px 8px;
   }
+}
+
+@media (max-width: 800px) {
+
+  .profile-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    overflow-x: hidden !important;
+  }
+
+  .profile-page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
 }

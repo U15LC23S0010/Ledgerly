@@ -591,15 +591,7 @@
   cursor: not-allowed;
 }
 
-   /* =========================================================
-   RESPONSIVE — KEEP DESKTOP LAYOUT ON MOBILE
-   ========================================================= */
 @media (max-width: 1000px) {
-
-  .transactions-page {
-    min-width: 1000px;
-    padding: 28px;
-  }
 
   .transactions-summary {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -641,12 +633,6 @@
 }
 
 @media (max-width: 700px) {
-
-  .transactions-page {
-    min-width: 1000px;
-    padding: 28px;
-  }
-
   .transactions-header {
     flex-direction: row;
     align-items: flex-start;
@@ -924,4 +910,72 @@
     padding: 0 9px;
     font-size: 9px;
   }
+}
+
+@media (max-width: 760px) {
+
+  .transactions-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    overflow-x: hidden !important;
+  }
+
+  .transactions-toolbar {
+    width: 100%;
+    max-width: 100%;
+
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 12px;
+  }
+
+  .transactions-filters {
+    width: 100%;
+
+    display: grid;
+    grid-template-columns: 1fr;
+
+    gap: 10px;
+  }
+
+  .transactions-search {
+    width: 100%;
+  }
+
+  .transactions-filters select {
+    width: 100%;
+  }
+
+  .transactions-table {
+    width: 100%;
+
+    max-width: 100%;
+
+    overflow-x: auto;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .transactions-table-header,
+  .transaction-row {
+    min-width: 720px;
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .transactions-page {
+    padding: 12px 8px !important;
+  }
+
+  .transactions-table-header,
+  .transaction-row {
+    min-width: 700px;
+  }
+
 }

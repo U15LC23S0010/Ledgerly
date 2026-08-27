@@ -9,11 +9,6 @@
   color: #172033;
 }
 
-
-/* =====================================================
-   HEADER
-===================================================== */
-
 .customers-header {
   display: flex;
   align-items: flex-start;
@@ -41,11 +36,6 @@
   color: #64748b;
 }
 
-
-/* =====================================================
-   BUTTONS
-===================================================== */
-
 .customers-primary-button {
   display: inline-flex;
   align-items: center;
@@ -72,11 +62,6 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
-
-
-/* =====================================================
-   ALERTS
-===================================================== */
 
 .customers-error,
 .customers-success {
@@ -114,11 +99,6 @@
   background: transparent;
   cursor: pointer;
 }
-
-
-/* =====================================================
-   SUMMARY
-===================================================== */
 
 .customer-summary {
   display: grid;
@@ -159,22 +139,12 @@
   font-size: 22px;
 }
 
-
-/* =====================================================
-   PANEL
-===================================================== */
-
 .customers-panel {
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 13px;
   overflow: hidden;
 }
-
-
-/* =====================================================
-   TOOLBAR
-===================================================== */
 
 .customers-toolbar {
   display: flex;
@@ -209,11 +179,6 @@
   justify-content: flex-end;
   gap: 10px;
 }
-
-
-/* =====================================================
-   SEARCH
-===================================================== */
 
 .customer-search {
   display: flex;
@@ -260,11 +225,6 @@
   background: #e2e8f0;
 }
 
-
-/* =====================================================
-   BULK DELETE BUTTON
-===================================================== */
-
 .bulk-delete-button {
   display: inline-flex;
   align-items: center;
@@ -301,11 +261,6 @@
   color: #ffffff;
   font-size: 10px;
 }
-
-
-/* =====================================================
-   SELECTION BAR
-===================================================== */
 
 .customers-selection-bar {
   display: flex;
@@ -364,11 +319,6 @@
   text-decoration: underline;
 }
 
-
-/* =====================================================
-   TABLE
-===================================================== */
-
 .customers-table {
   width: 100%;
 }
@@ -423,21 +373,11 @@
   background: #eff6ff;
 }
 
-
-/* =====================================================
-   SELECT CELL
-===================================================== */
-
 .customer-select-cell {
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
-
-/* =====================================================
-   CUSTOMER
-===================================================== */
 
 .customer-name-cell {
   display: flex;
@@ -478,11 +418,6 @@
   font-size: 11px;
 }
 
-
-/* =====================================================
-   CONTACT
-===================================================== */
-
 .customer-contact {
   display: flex;
   flex-direction: column;
@@ -514,11 +449,6 @@
   font-size: 12px;
 }
 
-
-/* =====================================================
-   ADDRESS
-===================================================== */
-
 .customer-address {
   display: flex;
   align-items: flex-start;
@@ -538,11 +468,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-
-/* =====================================================
-   ACTIONS
-===================================================== */
 
 .customer-actions {
   display: flex;
@@ -579,11 +504,6 @@
   border-color: #fecaca;
 }
 
-
-/* =====================================================
-   LOADING
-===================================================== */
-
 .customers-loading {
   min-height: 260px;
   display: flex;
@@ -608,10 +528,6 @@
   }
 }
 
-
-/* =====================================================
-   EMPTY
-===================================================== */
 
 .customers-empty {
   padding: 60px 20px;
@@ -639,11 +555,6 @@
   color: #64748b;
 }
 
-
-/* =====================================================
-   MODAL OVERLAY
-===================================================== */
-
 .customer-modal-overlay {
   position: fixed;
   inset: 0;
@@ -656,10 +567,6 @@
 }
 
 
-/* =====================================================
-   MODAL
-===================================================== */
-
 .customer-modal {
   width: min(620px, 100%);
   max-height: calc(100vh - 48px);
@@ -671,11 +578,6 @@
     0 25px 70px rgba(15, 23, 42, 0.25);
   overflow: hidden;
 }
-
-
-/* =====================================================
-   MODAL HEADER
-===================================================== */
 
 .customer-modal-header {
   flex: 0 0 auto;
@@ -722,11 +624,6 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-
-
-/* =====================================================
-   FORM
-===================================================== */
 
 .customer-form {
   flex: 1 1 auto;
@@ -783,11 +680,6 @@
   gap: 15px;
 }
 
-
-/* =====================================================
-   FORM ERROR
-===================================================== */
-
 .customer-form-error {
   display: flex;
   align-items: center;
@@ -816,10 +708,6 @@
 }
 
 
-/* =====================================================
-   FORM FOOTER
-===================================================== */
-
 .customer-form-actions {
   display: flex;
   align-items: center;
@@ -829,11 +717,6 @@
   margin-top: 8px;
   border-top: 1px solid #e5e7eb;
 }
-
-
-/* =====================================================
-   IMPORTANT BUTTON POSITION FIX
-===================================================== */
 
 .customer-form-actions button {
   position: static !important;
@@ -877,10 +760,6 @@
   cursor: not-allowed;
 }
 
-
-/* =====================================================
-   RESPONSIVE
-===================================================== */
 
 @media (max-width: 1100px) {
 
@@ -1007,16 +886,12 @@
 
 }
 
-/* =========================================================
-   DARK MODE
-========================================================= */
-
 html[data-theme="dark"] .customers-page {
   background: #0f172a;
   color: #f8fafc;
 }
 
-/* Header */
+
 html[data-theme="dark"] .customers-header h1,
 html[data-theme="dark"] .customers-toolbar h2,
 html[data-theme="dark"] .customer-summary-card strong,
@@ -1038,7 +913,7 @@ html[data-theme="dark"] .customer-table-header {
   color: #94a3b8;
 }
 
-/* Summary cards */
+
 html[data-theme="dark"] .customer-summary-card {
   background: #111c2f;
   border-color: #263449;
@@ -1049,18 +924,17 @@ html[data-theme="dark"] .summary-icon {
   color: #818cf8;
 }
 
-/* Main panel */
+
 html[data-theme="dark"] .customers-panel {
   background: #111c2f;
   border-color: #263449;
 }
 
-/* Toolbar */
 html[data-theme="dark"] .customers-toolbar {
   border-color: #263449;
 }
 
-/* Search */
+
 html[data-theme="dark"] .customer-search {
   background: #111c2f;
   border-color: #334155;
@@ -1084,7 +958,7 @@ html[data-theme="dark"] .search-clear:hover {
   background: #263449;
 }
 
-/* Selection bar */
+
 html[data-theme="dark"] .customers-selection-bar {
   background: #162338;
   border-color: #263449;
@@ -1098,7 +972,7 @@ html[data-theme="dark"] .selection-info span {
   color: #cbd5e1;
 }
 
-/* Table */
+
 html[data-theme="dark"] .customer-table-header {
   background: #162338;
   border-color: #263449;
@@ -1117,7 +991,7 @@ html[data-theme="dark"] .customer-row-selected:hover {
   background: #172554;
 }
 
-/* Customer avatar */
+
 html[data-theme="dark"] .customer-avatar {
   background: #1e293b;
   color: #818cf8;
@@ -1143,7 +1017,7 @@ html[data-theme="dark"] .customer-actions button.delete:hover {
   border-color: #7f1d1d;
 }
 
-/* Bulk delete */
+
 html[data-theme="dark"] .bulk-delete-button {
   background: #450a0a;
   border-color: #7f1d1d;
@@ -1155,7 +1029,7 @@ html[data-theme="dark"] .bulk-delete-button:hover {
   border-color: #991b1b;
 }
 
-/* Empty state */
+
 html[data-theme="dark"] .customers-empty h3 {
   color: #e2e8f0;
 }
@@ -1169,7 +1043,7 @@ html[data-theme="dark"] .empty-icon {
   color: #818cf8;
 }
 
-/* Modal */
+
 html[data-theme="dark"] .customer-modal {
   background: #111c2f;
 }
@@ -1188,7 +1062,6 @@ html[data-theme="dark"] .customer-modal-header > button:hover {
   background: #162338;
 }
 
-/* Form */
 html[data-theme="dark"] .customer-form-group label {
   color: #cbd5e1;
 }
@@ -1211,14 +1084,14 @@ html[data-theme="dark"] .customer-form-group textarea:focus {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
-/* Form error */
+
 html[data-theme="dark"] .customer-form-error {
   background: #450a0a;
   border-color: #7f1d1d;
   color: #fca5a5;
 }
 
-/* Form footer */
+
 html[data-theme="dark"] .customer-form-actions {
   border-color: #263449;
 }
@@ -1242,10 +1115,6 @@ html[data-theme="dark"] .customer-save-button:hover {
   background: #4338ca !important;
 }
 
-
-/* =========================================================
-   DENSITY
-========================================================= */
 
 html[data-density="compact"] .customers-page {
   padding: 20px;
@@ -1284,11 +1153,6 @@ html[data-density="compact"] .customer-form-group {
   margin-bottom: 14px;
 }
 
-
-/* =========================================================
-   ACCESSIBILITY
-========================================================= */
-
 .customers-primary-button:focus-visible,
 .bulk-delete-button:focus-visible,
 .search-clear:focus-visible,
@@ -1302,11 +1166,6 @@ html[data-density="compact"] .customer-form-group {
   outline-offset: 2px;
 }
 
-
-/* =========================================================
-   MOBILE DARK MODE
-========================================================= */
-
 @media (max-width: 600px) {
   html[data-theme="dark"] .customers-page {
     background: #0f172a;
@@ -1315,4 +1174,31 @@ html[data-density="compact"] .customer-form-group {
   html[data-theme="dark"] .customer-modal-overlay {
     background: rgba(2, 6, 23, 0.75);
   }
+}
+
+
+@media (max-width: 900px) {
+
+  .customers-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+
+    overflow-x: hidden !important;
+  }
+
+  .customers-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .customers-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .customers-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
 }
