@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
 
 import Sidebar from "./Sidebar";
@@ -6,24 +7,36 @@ import Topbar from "./Topbar";
 import "./Layout.css";
 
 export default function Layout() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
     <div className="app-layout">
 
-      {/* LEFT SIDEBAR */}
-      <Sidebar />
+      <Sidebar
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+      />
 
-      {/* RIGHT SIDE */}
       <div className="app-main">
 
-        {/* TOP NAVIGATION */}
-        <Topbar />
+        <Topbar
+          onMenuClick={() => setMobileOpen(true)}
+        />
 
-        {/* CURRENT PAGE */}
+      
         <main className="app-content">
           <Outlet />
         </main>
 
       </div>
+
+      {mobileOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
     </div>
   );
