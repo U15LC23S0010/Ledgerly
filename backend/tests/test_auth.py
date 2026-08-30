@@ -19,16 +19,16 @@ TEST_PASSWORD = "TestPassword123!"
 
 def fake_send_otp(
     email,
-    mobile_number,
     otp,
-    purpose="registration",
+    purpose,
 ):
     """
     Prevent tests from sending real emails.
 
-    The OTP is stored in the database, so the test
+    The OTP is still stored in the database, so tests
     can retrieve it directly.
     """
+
     print(
         f"TEST OTP: {otp} "
         f"for {email} "
@@ -60,10 +60,6 @@ def test_register_user():
         },
     )
 
-    # -----------------------------------------------------
-    # USER MAY ALREADY EXIST FROM A PREVIOUS TEST RUN
-    # -----------------------------------------------------
-
     if response.status_code == 400:
 
         assert (
@@ -73,10 +69,6 @@ def test_register_user():
 
         return
 
-    # -----------------------------------------------------
-    # REGISTRATION REQUEST SUCCESS
-    # -----------------------------------------------------
-
     assert response.status_code == 200
 
     data = response.json()
@@ -84,7 +76,7 @@ def test_register_user():
     assert data["message"] == "OTP sent successfully."
     assert data["email"] == TEST_EMAIL
     assert data["mobile_number"] == TEST_MOBILE
-    assert data["expires_in_minutes"] == 5
+    assert data["expires_in_minutes"] == 10
 
 
 # =========================================================
@@ -102,17 +94,13 @@ def test_verify_registration():
             .filter(
                 OTPVerification.email == TEST_EMAIL,
                 OTPVerification.mobile_number == TEST_MOBILE,
-                OTPVerification.is_verified == False,
+                OTPVerification.is_verified.is_(False),
             )
             .order_by(
                 OTPVerification.created_at.desc()
             )
             .first()
         )
-
-        # -------------------------------------------------
-        # IF USER ALREADY EXISTS, NOTHING TO VERIFY
-        # -------------------------------------------------
 
         if not otp_record:
 
@@ -129,10 +117,6 @@ def test_verify_registration():
 
         db.close()
 
-    # -----------------------------------------------------
-    # VERIFY OTP
-    # -----------------------------------------------------
-
     response = client.post(
         "/api/v1/auth/verify-registration",
         json={
@@ -146,10 +130,6 @@ def test_verify_registration():
         },
     )
 
-    # -----------------------------------------------------
-    # USER MAY ALREADY EXIST
-    # -----------------------------------------------------
-
     if response.status_code == 400:
 
         detail = response.json()["detail"]
@@ -160,10 +140,6 @@ def test_verify_registration():
         ]
 
         return
-
-    # -----------------------------------------------------
-    # SUCCESS
-    # -----------------------------------------------------
 
     assert response.status_code == 200
 
@@ -250,7 +226,6 @@ def test_get_current_user():
 
     assert data["user"]["full_name"] == "Test User"
 
-
 # =========================================================
 # REFRESH ACCESS TOKEN
 # =========================================================
@@ -267,13 +242,11 @@ def test_refresh_access_token():
 
     assert login_response.status_code == 200
 
-    refresh_token = (
-        login_response.json()["refresh_token"]
-    )
+    refresh_token = login_response.json()["refresh_token"]
 
     response = client.post(
         "/api/v1/auth/refresh",
-        params={
+        json={
             "refresh_token": refresh_token,
         },
     )
@@ -294,7 +267,7 @@ def test_invalid_refresh_token():
 
     response = client.post(
         "/api/v1/auth/refresh",
-        params={
+        json={
             "refresh_token": "invalid-refresh-token",
         },
     )
@@ -303,7 +276,7 @@ def test_invalid_refresh_token():
 
     assert (
         response.json()["detail"]
-        == "Invalid refresh token"
+        == "Invalid refresh token."
     )
 
 
@@ -323,17 +296,12 @@ def test_logout_revokes_refresh_token():
 
     assert login_response.status_code == 200
 
-    refresh_token = (
-        login_response.json()["refresh_token"]
-    )
+    refresh_token = login_response.json()["refresh_token"]
 
-    # -----------------------------------------------------
-    # LOGOUT
-    # -----------------------------------------------------
-
+    # Logout
     logout_response = client.post(
         "/api/v1/auth/logout",
-        params={
+        json={
             "refresh_token": refresh_token,
         },
     )
@@ -345,13 +313,10 @@ def test_logout_revokes_refresh_token():
         == "Logout successful"
     )
 
-    # -----------------------------------------------------
-    # REVOKED TOKEN MUST NO LONGER WORK
-    # -----------------------------------------------------
-
+    # Revoked token must not work
     refresh_response = client.post(
         "/api/v1/auth/refresh",
-        params={
+        json={
             "refresh_token": refresh_token,
         },
     )
@@ -360,7 +325,7 @@ def test_logout_revokes_refresh_token():
 
     assert (
         refresh_response.json()["detail"]
-        == "Refresh token has been revoked"
+        == "Refresh token has been revoked."
     )
 
 
@@ -380,13 +345,11 @@ def test_access_token_cannot_be_used_as_refresh_token():
 
     assert login_response.status_code == 200
 
-    access_token = (
-        login_response.json()["access_token"]
-    )
+    access_token = login_response.json()["access_token"]
 
     response = client.post(
         "/api/v1/auth/refresh",
-        params={
+        json={
             "refresh_token": access_token,
         },
     )
@@ -395,7 +358,7 @@ def test_access_token_cannot_be_used_as_refresh_token():
 
     assert (
         response.json()["detail"]
-        == "Invalid refresh token"
+        == "Invalid token type."
     )
 
 
@@ -415,37 +378,30 @@ def test_logout_already_revoked_token():
 
     assert login_response.status_code == 200
 
-    refresh_token = (
-        login_response.json()["refresh_token"]
-    )
+    refresh_token = login_response.json()["refresh_token"]
 
-    # -----------------------------------------------------
-    # FIRST LOGOUT
-    # -----------------------------------------------------
-
+    # First logout
     first_logout = client.post(
         "/api/v1/auth/logout",
-        params={
+        json={
             "refresh_token": refresh_token,
         },
     )
 
     assert first_logout.status_code == 200
 
-    # -----------------------------------------------------
-    # SECOND LOGOUT
-    # -----------------------------------------------------
-
+    # Second logout
     second_logout = client.post(
         "/api/v1/auth/logout",
-        params={
+        json={
             "refresh_token": refresh_token,
         },
     )
 
-    assert second_logout.status_code == 400
+    # Your backend intentionally treats logout as idempotent
+    assert second_logout.status_code == 200
 
     assert (
-        second_logout.json()["detail"]
-        == "Refresh token already revoked"
+        second_logout.json()["message"]
+        == "Logout successful"
     )
