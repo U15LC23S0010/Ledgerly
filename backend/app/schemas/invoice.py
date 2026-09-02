@@ -3,11 +3,6 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
-# =========================================================
-# INVOICE ITEM
-# =========================================================
-
 class InvoiceItemCreate(BaseModel):
     description: str
     quantity: float = Field(gt=0)
@@ -24,10 +19,6 @@ class InvoiceItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# =========================================================
-# CREATE INVOICE
-# =========================================================
-
 class InvoiceCreate(BaseModel):
     customer_id: int
 
@@ -42,17 +33,9 @@ class InvoiceCreate(BaseModel):
     items: List[InvoiceItemCreate]
 
 
-# =========================================================
-# UPDATE INVOICE STATUS
-# =========================================================
-
 class InvoiceStatusUpdate(BaseModel):
     status: str
 
-
-# =========================================================
-# INVOICE RESPONSE
-# =========================================================
 
 class InvoiceResponse(BaseModel):
     id: int

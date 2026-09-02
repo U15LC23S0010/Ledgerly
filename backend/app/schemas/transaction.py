@@ -3,10 +3,6 @@ from datetime import date
 from pydantic import BaseModel, ConfigDict, Field
 
 
-# =========================================================
-# TRANSACTION CREATE
-# =========================================================
-
 class TransactionCreate(BaseModel):
     description: str = Field(
         ...,
@@ -31,11 +27,6 @@ class TransactionCreate(BaseModel):
         default=None,
         gt=0,
     )
-
-
-# =========================================================
-# TRANSACTION RESPONSE
-# =========================================================
 
 class TransactionResponse(BaseModel):
     id: int

@@ -1,9 +1,5 @@
 import api from "./api";
 
-// =========================================================
-// GET ALL VENDORS
-// =========================================================
-
 export const getVendors = () => {
   return api.get("/vendors/");
 };

@@ -18,7 +18,7 @@ export default function GenericPage({
 
           <div>
             <span className="generic-eyebrow">
-              LEDGERFLOW WORKSPACE
+              LEDGERLY WORKSPACE
             </span>
 
             <h1>{title}</h1>
@@ -88,7 +88,7 @@ export default function GenericPage({
             <h3>No {title.toLowerCase()} yet</h3>
 
             <p>
-              Start adding information to your LedgerFlow
+              Start adding information to your Ledgerly
               workspace. Your records will appear here.
             </p>
 

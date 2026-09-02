@@ -1,4 +1,4 @@
-                            Ledgerly
+  Ledgerly
 
 Smart bookkeeping for a clearer financial future.
 
@@ -12,15 +12,14 @@ The project was built using React, FastAPI, PostgreSQL, SQLAlchemy, and Alembic,
 Live Demo links below:
 
 Frontend:
-https://ledgerly-six-ruddy.vercel.app
+https://ledgerly-xlyp.vercel.app/
 
 Backend API:
-https://ledgerly-1v9c.onrender.com
+https://ledgerly-swart-seven.vercel.app/
 
 Ledgerly is currently deployed using:
 
-Vercel – React frontend
-Render – FastAPI backend
+Vercel – React backend and frontend
 Neon – PostgreSQL database
 GitHub – Source code and version control
 
@@ -342,7 +341,6 @@ Database
 Deployment
 
 - Vercel
-- Render
 - Neon
 - GitHub
 

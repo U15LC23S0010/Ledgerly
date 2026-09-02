@@ -1,11 +1,5 @@
 import api from "./api";
 
-/*
-=========================================================
-GET EXPENSES
-Supports pagination, filtering, search, etc.
-=========================================================
-*/
 
 export const getExpenses = (params = {}) => {
   return api.get("/expenses/", {
@@ -13,11 +7,6 @@ export const getExpenses = (params = {}) => {
   });
 };
 
-/*
-=========================================================
-SEARCH EXPENSES
-=========================================================
-*/
 
 export const searchExpenses = (
   keyword,

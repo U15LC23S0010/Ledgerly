@@ -59,18 +59,8 @@ export default function Budget() {
   const [success, setSuccess] =
     useState("");
 
-  /*
-   * IMPORTANT:
-   * Currency comes from Settings.
-   */
   const [currency, setCurrency] =
     useState(getCurrency());
-
-  /*
-   * =====================================================
-   * CURRENCY LISTENER
-   * =====================================================
-   */
 
   useEffect(() => {
     const updateCurrency = () => {
@@ -110,11 +100,6 @@ export default function Budget() {
     };
   }, []);
 
-  /*
-   * =====================================================
-   * LOAD BUDGET HISTORY
-   * =====================================================
-   */
 
   const loadBudgetHistory = async () => {
     setLoading(true);
@@ -160,21 +145,11 @@ export default function Budget() {
     }
   };
 
-  /*
-   * =====================================================
-   * LOAD ON PAGE OPEN
-   * =====================================================
-   */
 
   useEffect(() => {
     loadBudgetHistory();
   }, []);
 
-  /*
-   * =====================================================
-   * SELECTED BUDGET
-   * =====================================================
-   */
 
   const selectedBudget = useMemo(() => {
     return history.find(

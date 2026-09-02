@@ -413,7 +413,7 @@ export default function Guide() {
 
     // Remove the old key if it exists.
     localStorage.removeItem(
-      "ledgerflow_guide_completed"
+      "ledgerly_guide_completed"
     );
 
     navigate("/dashboard", {

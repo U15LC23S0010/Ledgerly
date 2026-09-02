@@ -27,23 +27,9 @@ import {
 
 import "./Settings.css";
 
-/* =========================================================
-   STORAGE KEYS
-========================================================= */
-
 const SETTINGS_KEY = "ledgerly_settings";
 const CURRENCY_KEY = "ledgerly_currency";
 const DATE_FORMAT_KEY = "ledgerly_date_format";
-
-/* =========================================================
-   DEFAULT SETTINGS
-
-   IMPORTANT:
-   businessName is intentionally empty.
-
-   The actual business name comes from the user's
-   registration/account information.
-========================================================= */
 
 const DEFAULT_SETTINGS = {
   businessName: "",
@@ -103,9 +89,6 @@ function getStoredUser() {
       return null;
     }
 
-    /*
-      Supports different registration/backend field names.
-    */
 
     return parsedUser;
   } catch (error) {
@@ -147,12 +130,6 @@ function getRegisteredBusinessName(user) {
     ? businessName.trim()
     : "";
 }
-
-/* =========================================================
-   GET REGISTERED USER NAME
-
-   This is only used internally if needed later.
-========================================================= */
 
 function getUserName(user) {
   if (!user) {
@@ -218,17 +195,6 @@ function normalizeSettings(
   )
     ? settings.dateFormat
     : DEFAULT_SETTINGS.dateFormat;
-
-  /*
-    BUSINESS NAME PRIORITY
-
-    1. Registered business name
-    2. Existing settings business name
-    3. Empty string
-
-    This prevents "Ledgerly" from appearing for
-    every registered user.
-  */
 
   const existingBusinessName =
     typeof settings.businessName === "string"
@@ -333,19 +299,6 @@ export default function Settings() {
       };
     }
 
-    /* -------------------------------------------------------
-       IMPORTANT
-
-       Registered business name always wins.
-
-       Therefore an old setting like:
-
-       businessName: "Ledgerly"
-
-       will be replaced with the business name
-       entered during registration.
-    ------------------------------------------------------- */
-
     if (registeredBusinessName) {
       loadedSettings = {
         ...loadedSettings,
@@ -357,17 +310,10 @@ export default function Settings() {
     setSettings(loadedSettings);
   }, []);
 
-  /* =======================================================
-     APPLY GLOBAL SETTINGS
-  ======================================================= */
-
   useEffect(() => {
     const root =
       document.documentElement;
 
-    /* -------------------------------------------------------
-       THEME
-    ------------------------------------------------------- */
 
     let theme =
       settings.appearance;
@@ -543,14 +489,6 @@ export default function Settings() {
       event.preventDefault();
     }
 
-    /*
-      Get the current registered business name
-      again before saving.
-
-      This guarantees that the registration
-      business name is retained.
-    */
-
     const currentUser =
       getStoredUser();
 
@@ -646,13 +584,6 @@ export default function Settings() {
     if (!confirmed) {
       return;
     }
-
-    /*
-      IMPORTANT:
-
-      Reset preferences but DO NOT replace the
-      registered business name with "Ledgerly".
-    */
 
     const currentUser =
       getStoredUser();
@@ -764,11 +695,6 @@ export default function Settings() {
     localStorage.removeItem(
       DATE_FORMAT_KEY
     );
-
-    /*
-      Keep registered business name even when
-      clearing preferences.
-    */
 
     const currentUser =
       getStoredUser();

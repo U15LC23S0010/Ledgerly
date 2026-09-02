@@ -25,10 +25,6 @@ import {
 import api from "../api/api";
 import "./Reports.css";
 
-/* =========================================================
-   SETTINGS
-   ========================================================= */
-
 const SETTINGS_KEY = "ledgerly_settings";
 const CURRENCY_KEY = "ledgerly_currency";
 
@@ -40,27 +36,6 @@ const VALID_CURRENCIES = [
   "EUR",
   "GBP",
 ];
-
-/* =========================================================
-   CURRENCY CONFIGURATION
-   ========================================================= */
-
-/*
- * Ledgerly stores financial values in INR.
- *
- * These rates represent:
- *
- * 1 INR = X target currency
- *
- * Update these rates whenever you want to use
- * different exchange rates.
- *
- * Current example rates:
- *
- * INR -> USD
- * INR -> EUR
- * INR -> GBP
- */
 
 const CURRENCY_RATES = {
   INR: 1,
@@ -97,9 +72,6 @@ const CURRENCY_SYMBOLS = {
 
 function getStoredCurrency() {
   try {
-    /* -----------------------------------------------
-       FIRST: COMPLETE SETTINGS OBJECT
-       ----------------------------------------------- */
 
     const storedSettings =
       localStorage.getItem(SETTINGS_KEY);
@@ -116,10 +88,6 @@ function getStoredCurrency() {
         return parsedSettings.currency;
       }
     }
-
-    /* -----------------------------------------------
-       SECOND: DEDICATED CURRENCY KEY
-       ----------------------------------------------- */
 
     const storedCurrency =
       localStorage.getItem(CURRENCY_KEY);
@@ -138,10 +106,6 @@ function getStoredCurrency() {
 
   return DEFAULT_CURRENCY;
 }
-
-/* =========================================================
-   CONVERT INR TO SELECTED CURRENCY
-   ========================================================= */
 
 function convertFromINR(
   value,
@@ -216,10 +180,6 @@ export default function Reports() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-
-  /*
-   * Currency selected from Settings.
-   */
   const [currency, setCurrency] = useState(
     getStoredCurrency()
   );
@@ -321,10 +281,6 @@ export default function Reports() {
      ======================================================= */
 
   useEffect(() => {
-    /* -----------------------------------------------
-       SETTINGS CURRENCY EVENT
-       ----------------------------------------------- */
-
     const handleCurrencyChange = (
       event
     ) => {
@@ -422,9 +378,6 @@ export default function Reports() {
       handleVisibilityChange
     );
 
-    /* -----------------------------------------------
-       CLEANUP
-       ----------------------------------------------- */
 
     return () => {
       window.removeEventListener(
@@ -449,9 +402,6 @@ export default function Reports() {
     };
   }, []);
 
-  /* =======================================================
-     MONEY
-     ======================================================= */
 
   function money(value) {
     return formatMoney(
@@ -459,10 +409,6 @@ export default function Reports() {
       currency
     );
   }
-
-  /* =======================================================
-     DATE
-     ======================================================= */
 
   function formatDate(value) {
     if (!value) {
@@ -495,10 +441,6 @@ export default function Reports() {
      ======================================================= */
 
   const reportData = useMemo(() => {
-    /* -----------------------------------------------
-       INCOME
-       ----------------------------------------------- */
-
     const income =
       transactions
         .filter((transaction) => {
@@ -576,10 +518,6 @@ export default function Reports() {
           0
         );
 
-    /* -----------------------------------------------
-       NET RESULT
-       ----------------------------------------------- */
-
     const netResult =
       income -
       totalExpenses;
@@ -591,10 +529,6 @@ export default function Reports() {
       netResult,
     };
   }, [transactions]);
-
-  /* =======================================================
-     CHART DATA
-     ======================================================= */
 
   const chartData =
     useMemo(() => {
@@ -673,16 +607,8 @@ export default function Reports() {
     );
   }
 
-  /* =======================================================
-     PAGE
-     ======================================================= */
-
   return (
     <div className="reports-page">
-
-      {/* =================================================
-          HEADER
-          ================================================= */}
 
       <div className="reports-header">
 
@@ -722,9 +648,6 @@ export default function Reports() {
 
       </div>
 
-      {/* =================================================
-          ERROR
-          ================================================= */}
 
       {error && (
         <div className="reports-error">
@@ -859,15 +782,7 @@ export default function Reports() {
 
       </section>
 
-      {/* =================================================
-          REPORT GRID
-          ================================================= */}
-
       <div className="reports-grid">
-
-        {/* =================================================
-            PROFIT & LOSS
-            ================================================= */}
 
         <section className="reports-panel">
 
@@ -962,10 +877,6 @@ export default function Reports() {
 
         </section>
 
-        {/* =================================================
-            CHART
-            ================================================= */}
-
         <section className="reports-panel reports-chart-panel">
 
           <div className="reports-panel-header">
@@ -1058,10 +969,6 @@ export default function Reports() {
           </div>
 
         </section>
-
-        {/* =================================================
-            ACCOUNT BALANCES
-            ================================================= */}
 
         <section className="reports-panel">
 

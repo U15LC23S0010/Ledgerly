@@ -35,25 +35,8 @@ export default function Invoices() {
   const [showInvoice, setShowInvoice] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
-  /*
-   * Currency selected from Settings.
-   *
-   * IMPORTANT:
-   * Invoice amounts are still stored/sent to the backend
-   * in the application's base currency (INR).
-   *
-   * Currency conversion here is for DISPLAY only.
-   */
   const [currency, setCurrency] = useState("INR");
 
-  /*
-   * Date format selected from Settings.
-   *
-   * Supported:
-   * DD/MM/YYYY
-   * MM/DD/YYYY
-   * YYYY-MM-DD
-   */
   const [dateFormat, setDateFormat] =
     useState("DD/MM/YYYY");
 
@@ -440,14 +423,6 @@ export default function Invoices() {
   }
 
   function getDateFormatFromStorage() {
-    /*
-     * Primary Settings storage used by Ledgerly.
-     *
-     * ledgerly_settings = {
-     *   ...
-     *   dateFormat: "DD/MM/YYYY"
-     * }
-     */
     try {
       const raw =
         localStorage.getItem(
@@ -481,9 +456,6 @@ export default function Invoices() {
       );
     }
 
-    /*
-     * Compatibility with existing date-format storage.
-     */
     try {
       const direct =
         localStorage.getItem(
@@ -502,9 +474,6 @@ export default function Invoices() {
       );
     }
 
-    /*
-     * Root HTML data attribute compatibility.
-     */
     try {
       const rootFormat =
         document.documentElement.getAttribute(
@@ -717,15 +686,7 @@ useEffect(() => {
       }
     };
 
-    /*
-     * Settings event.
-     *
-     * Supports:
-     * ledgerly-settings-updated
-     *
-     * detail can contain:
-     * { dateFormat: "MM/DD/YYYY" }
-     */
+
     const handleSettingsUpdated = (
       event
     ) => {
@@ -759,9 +720,6 @@ useEffect(() => {
       }
     };
 
-    /*
-     * Direct date-format event.
-     */
     const handleDateFormatChange = (
       event
     ) => {
@@ -819,12 +777,6 @@ useEffect(() => {
       handleDateFormatChange
     );
 
-    /*
-     * Same-tab fallback.
-     *
-     * localStorage storage events do not fire in the same
-     * tab that changed localStorage.
-     */
     const interval = setInterval(() => {
       const currentCurrency =
         getCurrencyFromStorage();
@@ -1526,14 +1478,6 @@ useEffect(() => {
       return "—";
     }
 
-    /*
-     * Invoice dates from the backend are expected to be
-     * YYYY-MM-DD.
-     *
-     * We intentionally parse the date manually instead of
-     * using new Date(value), preventing timezone-related
-     * one-day shifts.
-     */
     const match = String(value)
       .trim()
       .match(
@@ -2036,7 +1980,7 @@ td:nth-child(3) {
 
   <div>
     <div class="muted">
-      LEDGERFLOW AI
+      LEDGERLY
     </div>
 
     <h1>
@@ -2307,7 +2251,7 @@ ${escapeHtml(
 
           <p>
             Connecting to your
-            LedgerFlow workspace.
+            Ledgerly workspace.
           </p>
 
         </div>
@@ -3303,7 +3247,7 @@ ${escapeHtml(
                   <div className="invoice-company">
 
                     <div className="invoice-company-name">
-                      LEDGERFLOW AI
+                      LEDGERLY
                     </div>
 
                     <h1>

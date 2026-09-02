@@ -9,10 +9,6 @@ TEST_EMAIL = "pytest_user_001@example.com"
 TEST_PASSWORD = "TestPassword123!"
 
 
-# =========================================================
-# AUTH HELPERS
-# =========================================================
-
 def get_access_token():
     response = client.post(
         "/api/v1/auth/login",
@@ -57,10 +53,6 @@ def get_account_id():
         if isinstance(data, dict)
         else data
     )
-
-    # -----------------------------------------------------
-    # If account already exists, use it
-    # -----------------------------------------------------
 
     if len(accounts) > 0:
         return accounts[0]["id"]

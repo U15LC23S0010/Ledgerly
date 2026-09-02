@@ -2,9 +2,6 @@ import re
 from datetime import date, timedelta
 from app.utils.date_utils import get_today
 
-# =========================================================
-# CATEGORY KEYWORDS
-# =========================================================
 
 CATEGORY_KEYWORDS = {
     "Food": [
@@ -169,10 +166,6 @@ CATEGORY_KEYWORDS = {
 }
 
 
-# =========================================================
-# FIND AMOUNT
-# =========================================================
-
 def extract_amount(text: str) -> float:
     """
     Extract amount from natural language.
@@ -228,11 +221,6 @@ def extract_amount(text: str) -> float:
         "Could not find an amount in the expense text."
     )
 
-
-# =========================================================
-# FIND CATEGORY
-# =========================================================
-
 def extract_category(text: str) -> str:
     """
     Detect expense category using keyword matching.
@@ -263,10 +251,6 @@ def extract_category(text: str) -> str:
         key=category_scores.get
     )
 
-
-# =========================================================
-# FIND DATE
-# =========================================================
 
 def extract_date(text: str) -> date:
     """
@@ -344,10 +328,6 @@ def extract_date(text: str) -> date:
     return today
 
 
-# =========================================================
-# CLEAN TITLE
-# =========================================================
-
 def clean_title(text: str) -> str:
     """
     Convert natural language into a clean expense title.
@@ -372,10 +352,6 @@ def clean_title(text: str) -> str:
 
     title = text.strip()
 
-    # -----------------------------------------------------
-    # Remove amount
-    # -----------------------------------------------------
-
     title = re.sub(
         r"(?:₹|rs\.?|inr)\s*[\d,]+(?:\.\d+)?",
         "",
@@ -390,16 +366,11 @@ def clean_title(text: str) -> str:
         flags=re.IGNORECASE
     )
 
-    # Remove standalone numeric amount.
     title = re.sub(
         r"\b\d+(?:\.\d+)?\b",
         "",
         title
     )
-
-    # -----------------------------------------------------
-    # Remove dates
-    # -----------------------------------------------------
 
     title = re.sub(
         r"\b(day before yesterday|yesterday|tomorrow|today)\b",
@@ -426,9 +397,6 @@ def clean_title(text: str) -> str:
         title
     )
 
-    # -----------------------------------------------------
-    # Remove sentence prefixes
-    # -----------------------------------------------------
 
     title = re.sub(
         r"^\s*(i\s+)?spent\s+",
@@ -465,10 +433,6 @@ def clean_title(text: str) -> str:
         flags=re.IGNORECASE
     )
 
-    # -----------------------------------------------------
-    # Remove connectors
-    # -----------------------------------------------------
-
     title = re.sub(
         r"^\s*(for|on|at)\s+",
         "",
@@ -483,10 +447,6 @@ def clean_title(text: str) -> str:
         flags=re.IGNORECASE
     )
 
-    # -----------------------------------------------------
-    # Remove unnecessary words
-    # -----------------------------------------------------
-
     title = re.sub(
         r"\b(an|a|the)\b",
         "",
@@ -494,9 +454,6 @@ def clean_title(text: str) -> str:
         flags=re.IGNORECASE
     )
 
-    # -----------------------------------------------------
-    # Clean spaces and punctuation
-    # -----------------------------------------------------
 
     title = re.sub(
         r"\s+",
@@ -516,10 +473,6 @@ def clean_title(text: str) -> str:
     return title[:255].strip().capitalize()
 
 
-# =========================================================
-# CONFIDENCE CALCULATION
-# =========================================================
-
 def calculate_confidence(
     text: str,
     amount,
@@ -537,19 +490,15 @@ def calculate_confidence(
 
     confidence = 0.0
 
-    # Amount successfully detected
     if amount is not None and amount > 0:
         confidence += 0.35
 
-    # Known category
     if category and category != "Other":
         confidence += 0.30
 
-    # Date successfully determined
     if expense_date is not None:
         confidence += 0.20
 
-    # Meaningful title
     if title and title != "Expense":
         confidence += 0.15
 
@@ -557,11 +506,6 @@ def calculate_confidence(
         min(confidence, 1.0),
         2
     )
-
-
-# =========================================================
-# MAIN PARSER
-# =========================================================
 
 def parse_expense_text(text: str):
     """

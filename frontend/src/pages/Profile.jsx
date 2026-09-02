@@ -13,10 +13,6 @@ import {
 import api from "../api/api";
 import "./Profile.css";
 
-/* =========================================================
-   SAFE USER FROM LOCAL STORAGE
-========================================================= */
-
 function getStoredUser() {
   try {
     const storedUser = localStorage.getItem("user");
@@ -32,9 +28,6 @@ function getStoredUser() {
   }
 }
 
-/* =========================================================
-   GET FULL NAME
-========================================================= */
 
 function getFullName(user) {
   if (!user) {
@@ -67,10 +60,6 @@ function getFullName(user) {
   return "Ledgerly User";
 }
 
-/* =========================================================
-   GET INITIALS
-========================================================= */
-
 function getInitials(user) {
   const name = getFullName(user);
 
@@ -85,10 +74,6 @@ function getInitials(user) {
 
   return initials || "U";
 }
-
-/* =========================================================
-   GET ACCOUNT TYPE
-========================================================= */
 
 function getAccountType(user) {
   if (!user) {
@@ -296,10 +281,6 @@ export default function Profile() {
           </span>
         </div>
       )}
-
-      {/* =================================================
-          PROFILE CONTENT
-      ================================================= */}
 
       <div className="profile-content">
 

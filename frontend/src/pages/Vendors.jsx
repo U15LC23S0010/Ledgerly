@@ -27,10 +27,6 @@ import "./Vendors.css";
 
 export default function Vendors() {
 
-  // =====================================================
-  // STATE
-  // =====================================================
-
   const [vendors, setVendors] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -107,8 +103,7 @@ export default function Vendors() {
         : [];
 
       setVendors(data);
-
-      // Remove selections that no longer exist
+      
       setSelectedIds((previous) =>
         previous.filter((id) =>
           data.some(
