@@ -198,74 +198,78 @@ def dashboard(
     # MONTHLY SPENDING TREND
     # =====================================================
 
+    # =====================================================
+    # MONTHLY SPENDING TREND - OPTIMIZED
+    # =====================================================
+
+    trend_start_date = selected_date - relativedelta(months=5)
+
+    trend_start, _ = get_month_range(
+        trend_start_date.year,
+        trend_start_date.month,
+    )
+
+    trend_rows = (
+        db.query(
+            func.date_trunc(
+                "month",
+                Transaction.date,
+            ).label("trend_month"),
+            func.coalesce(
+                func.sum(
+                    Transaction.amount
+                ).filter(
+                    Transaction.transaction_type == "income"
+                ),
+                0,
+            ).label("income"),
+            func.coalesce(
+                func.sum(
+                    Transaction.amount
+                ).filter(
+                    Transaction.transaction_type == "expense"
+                ),
+                0,
+            ).label("expenses"),
+        )
+        .filter(
+            Transaction.user_id == user_id,
+            Transaction.date >= trend_start,
+            Transaction.date < next_month,
+            Transaction.transaction_type.in_(
+                ["income", "expense"]
+            ),
+        )
+        .group_by(
+            func.date_trunc(
+                "month",
+                Transaction.date,
+            )
+        )
+        .all()
+    )
+
+    trend_by_month = {
+        row.trend_month.strftime("%Y-%m"): row
+        for row in trend_rows
+    }
+
     monthly_trend = []
 
     for i in range(5, -1, -1):
+        trend_month = selected_date - relativedelta(months=i)
+        month_key = trend_month.strftime("%Y-%m")
+        row = trend_by_month.get(month_key)
 
-        trend_month = selected_date - relativedelta(
-            months=i
-        )
-
-        trend_start, trend_end = get_month_range(
-            trend_month.year,
-            trend_month.month,
-        )
-
-        trend_income = (
-            db.query(
-                func.coalesce(
-                    func.sum(Transaction.amount),
-                    0,
-                )
-            )
-            .filter(
-                Transaction.user_id == user_id,
-                Transaction.transaction_type == "income",
-                Transaction.date >= trend_start,
-                Transaction.date < trend_end,
-            )
-            .scalar()
-            or 0
-        )
-
-        trend_expenses = (
-            db.query(
-                func.coalesce(
-                    func.sum(Transaction.amount),
-                    0,
-                )
-            )
-            .filter(
-                Transaction.user_id == user_id,
-                Transaction.transaction_type == "expense",
-                Transaction.date >= trend_start,
-                Transaction.date < trend_end,
-            )
-            .scalar()
-            or 0
-        )
-
-        trend_income = float(trend_income)
-        trend_expenses = float(trend_expenses)
+        trend_income = float(row.income or 0) if row else 0.0
+        trend_expenses = float(row.expenses or 0) if row else 0.0
 
         monthly_trend.append(
             {
-                "month": (
-                    f"{trend_start.year}-"
-                    f"{trend_start.month:02d}"
-                ),
-                "income": round(
-                    trend_income,
-                    2,
-                ),
-                "expenses": round(
-                    trend_expenses,
-                    2,
-                ),
-                "net": round(
-                    trend_income - trend_expenses,
-                    2,
-                ),
+                "month": month_key,
+                "income": round(trend_income, 2),
+                "expenses": round(trend_expenses, 2),
+                "net": round(trend_income - trend_expenses, 2),
             }
         )
 

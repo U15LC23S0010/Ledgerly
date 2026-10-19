@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
+import FinancialCopilot from "../components/FinancialCopilot";
 
 import "./AppLayout.css";
 
@@ -11,14 +12,12 @@ export default function AppLayout() {
 
   return (
     <div className="app-layout">
-
       <Sidebar
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
       />
 
       <div className="app-main">
-
         <Topbar
           onMenuClick={() => setMobileOpen(true)}
         />
@@ -26,7 +25,6 @@ export default function AppLayout() {
         <main className="app-content">
           <Outlet />
         </main>
-
       </div>
 
       {mobileOpen && (
@@ -37,6 +35,7 @@ export default function AppLayout() {
         />
       )}
 
+      <FinancialCopilot />
     </div>
   );
 }

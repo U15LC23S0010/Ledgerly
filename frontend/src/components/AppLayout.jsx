@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
+import FinancialCopilot from "../components/FinancialCopilot";
 import { Outlet } from "react-router-dom";
 import "./AppLayout.css";
 
@@ -32,6 +33,8 @@ export default function AppLayout() {
           <Outlet />
         </main>
       </div>
+
+      <FinancialCopilot />
     </div>
   );
 }

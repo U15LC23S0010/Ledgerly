@@ -15,16 +15,14 @@ import {
   Wallet,
 } from "lucide-react";
 
-import { getInsights } from "../api/insightsApi";
+import { getInsights, generateAIInsights } from "../api/insightsApi";
 import "./Insights.css";
-
 
 // =========================================================
 // GLOBAL SETTINGS
 // =========================================================
 
 const SETTINGS_KEY = "ledgerly_settings";
-
 
 // =========================================================
 // CURRENCY CONFIGURATION
@@ -56,7 +54,6 @@ const CURRENCY_CONFIG = {
   },
 };
 
-
 // =========================================================
 // DATE FORMAT CONFIGURATION
 // =========================================================
@@ -67,24 +64,31 @@ const DATE_FORMATS = {
   "YYYY-MM-DD": true,
 };
 
-
 export default function Insights() {
-
   // =======================================================
-  // STATE
+  // REGULAR INSIGHTS STATE
   // =======================================================
 
   const [data, setData] = useState(null);
-
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState("");
 
+  // =======================================================
+  // GEMINI AI STATE
+  // Kept separate so the Gemini request does not block or
+  // overwrite the regular Ledgerly insights request.
+  // =======================================================
+
+  const [geminiData, setGeminiData] = useState(null);
+  const [geminiLoading, setGeminiLoading] = useState(false);
+  const [geminiError, setGeminiError] = useState("");
+
+  // =======================================================
+  // GLOBAL DISPLAY SETTINGS
+  // =======================================================
+
   const [currency, setCurrency] = useState("INR");
-
-  const [dateFormat, setDateFormat] =
-    useState("DD/MM/YYYY");
-
+  const [dateFormat, setDateFormat] = useState("DD/MM/YYYY");
 
   // =======================================================
   // LOAD GLOBAL SETTINGS
@@ -92,23 +96,15 @@ export default function Insights() {
 
   const loadSettings = () => {
     try {
-
-      const stored =
-        localStorage.getItem(SETTINGS_KEY);
+      const stored = localStorage.getItem(SETTINGS_KEY);
 
       if (!stored) {
-
         setCurrency("INR");
-
         setDateFormat("DD/MM/YYYY");
-
         return;
       }
 
-
-      const parsed =
-        JSON.parse(stored);
-
+      const parsed = JSON.parse(stored);
 
       // -----------------------------------------------
       // Currency
@@ -120,7 +116,6 @@ export default function Insights() {
           : "INR"
       );
 
-
       // -----------------------------------------------
       // Date format
       // -----------------------------------------------
@@ -130,35 +125,22 @@ export default function Insights() {
           ? parsed.dateFormat
           : "DD/MM/YYYY"
       );
-
     } catch (err) {
-
-      console.error(
-        "Insights settings error:",
-        err
-      );
-
+      console.error("Insights settings error:", err);
       setCurrency("INR");
-
       setDateFormat("DD/MM/YYYY");
     }
   };
-
 
   // =======================================================
   // INITIAL SETTINGS LOAD
   // =======================================================
 
   useEffect(() => {
-
     loadSettings();
 
-
     const handleSettingsUpdate = (event) => {
-
-      const updated =
-        event.detail || {};
-
+      const updated = event.detail || {};
 
       // -----------------------------------------------
       // Currency
@@ -169,7 +151,6 @@ export default function Insights() {
           ? updated.currency
           : "INR"
       );
-
 
       // -----------------------------------------------
       // Date format
@@ -182,398 +163,258 @@ export default function Insights() {
       );
     };
 
-
     window.addEventListener(
       "ledgerly-settings-updated",
       handleSettingsUpdate
     );
 
-
     return () => {
-
       window.removeEventListener(
         "ledgerly-settings-updated",
         handleSettingsUpdate
       );
     };
-
   }, []);
-
 
   // =======================================================
   // FORMAT CURRENCY
   // =======================================================
 
   function formatCurrency(value) {
-
-    const amount =
-      Number(value || 0);
-
+    const amount = Number(value || 0);
 
     const config =
-      CURRENCY_CONFIG[currency] ||
-      CURRENCY_CONFIG.INR;
-
+      CURRENCY_CONFIG[currency] || CURRENCY_CONFIG.INR;
 
     // Backend stores financial values in INR.
     // Convert only for display.
+    const convertedAmount = amount * config.rate;
 
-    const convertedAmount =
-      amount * config.rate;
-
-
-    return new Intl.NumberFormat(
-      config.locale,
-      {
-        style: "currency",
-
-        currency: config.currency,
-
-        minimumFractionDigits: 0,
-
-        maximumFractionDigits: 2,
-      }
-    ).format(convertedAmount);
+    return new Intl.NumberFormat(config.locale, {
+      style: "currency",
+      currency: config.currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(convertedAmount);
   }
-
 
   // =======================================================
   // FORMAT DATE
   // =======================================================
 
   function formatDate(value) {
-
     if (!value) {
       return "—";
     }
 
+    const parsed = new Date(value);
 
-    const parsed =
-      new Date(value);
-
-
-    if (
-      Number.isNaN(
-        parsed.getTime()
-      )
-    ) {
+    if (Number.isNaN(parsed.getTime())) {
       return String(value);
     }
-
 
     // -----------------------------------------------
     // DD/MM/YYYY
     // -----------------------------------------------
 
-    if (
-      dateFormat ===
-      "DD/MM/YYYY"
-    ) {
-
+    if (dateFormat === "DD/MM/YYYY") {
       return [
-
-        String(
-          parsed.getDate()
-        ).padStart(2, "0"),
-
-        String(
-          parsed.getMonth() + 1
-        ).padStart(2, "0"),
-
+        String(parsed.getDate()).padStart(2, "0"),
+        String(parsed.getMonth() + 1).padStart(2, "0"),
         parsed.getFullYear(),
-
       ].join("/");
     }
-
 
     // -----------------------------------------------
     // MM/DD/YYYY
     // -----------------------------------------------
 
-    if (
-      dateFormat ===
-      "MM/DD/YYYY"
-    ) {
-
+    if (dateFormat === "MM/DD/YYYY") {
       return [
-
-        String(
-          parsed.getMonth() + 1
-        ).padStart(2, "0"),
-
-        String(
-          parsed.getDate()
-        ).padStart(2, "0"),
-
+        String(parsed.getMonth() + 1).padStart(2, "0"),
+        String(parsed.getDate()).padStart(2, "0"),
         parsed.getFullYear(),
-
       ].join("/");
     }
-
 
     // -----------------------------------------------
     // YYYY-MM-DD
     // -----------------------------------------------
 
-    if (
-      dateFormat ===
-      "YYYY-MM-DD"
-    ) {
-
+    if (dateFormat === "YYYY-MM-DD") {
       return [
-
         parsed.getFullYear(),
-
-        String(
-          parsed.getMonth() + 1
-        ).padStart(2, "0"),
-
-        String(
-          parsed.getDate()
-        ).padStart(2, "0"),
-
+        String(parsed.getMonth() + 1).padStart(2, "0"),
+        String(parsed.getDate()).padStart(2, "0"),
       ].join("-");
     }
-
 
     return parsed.toLocaleDateString();
   }
 
-
   // =======================================================
-  // LOAD AI INSIGHTS
+  // LOAD REGULAR FINANCIAL INSIGHTS
   // =======================================================
 
   async function generateInsights() {
-
     try {
-
       setLoading(true);
-
       setError("");
 
+      const response = await getInsights();
 
-      const response =
-        await getInsights();
-
-
-      setData(
-        response.data
-      );
-
+      setData(response.data);
     } catch (err) {
+      console.error("Insights error:", err);
 
-      console.error(
-        "Insights error:",
-        err
-      );
+      const detail = err.response?.data?.detail;
 
-
-      const detail =
-        err.response?.data?.detail;
-
-
-      if (
-        Array.isArray(detail)
-      ) {
-
+      if (Array.isArray(detail)) {
         setError(
           detail
-            .map(
-              (item) =>
-                item.msg ||
-                "Validation error"
-            )
+            .map((item) => item.msg || "Validation error")
             .join(", ")
         );
-
-      } else if (
-        typeof detail === "object" &&
-        detail !== null
-      ) {
-
+      } else if (typeof detail === "object" && detail !== null) {
         setError(
           detail.message ||
-          "Unable to generate financial insights."
+            "Unable to generate financial insights."
         );
-
       } else {
-
         setError(
           detail ||
-          err.message ||
-          "Unable to generate financial insights."
+            err.message ||
+            "Unable to generate financial insights."
         );
       }
-
     } finally {
-
       setLoading(false);
     }
   }
 
+  // =======================================================
+  // LOAD GEMINI AI INSIGHTS
+  // =======================================================
+
+  async function generateGeminiInsights() {
+    try {
+      setGeminiLoading(true);
+      setGeminiError("");
+
+      const response = await generateAIInsights();
+
+      setGeminiData(response.data);
+    } catch (err) {
+      console.error("Gemini AI error:", err);
+
+      const detail = err.response?.data?.detail;
+
+      setGeminiError(
+        (typeof detail === "string" && detail) ||
+          detail?.message ||
+          err.message ||
+          "Unable to generate Gemini AI insights."
+      );
+    } finally {
+      setGeminiLoading(false);
+    }
+  }
 
   // =======================================================
   // HEALTH SCORE CLASS
   // =======================================================
 
   function getScoreClass(score) {
-
-    const value =
-      Number(score || 0);
-
+    const value = Number(score || 0);
 
     if (value >= 85) {
       return "excellent";
     }
 
-
     if (value >= 70) {
       return "good";
     }
-
 
     if (value >= 50) {
       return "attention";
     }
 
-
     return "critical";
   }
-
 
   // =======================================================
   // TREND
   // =======================================================
 
   function getTrend() {
-
     if (!data?.summary) {
       return null;
     }
 
+    const current = Number(
+      data.summary.total_expenses || 0
+    );
 
-    const current =
-      Number(
-        data.summary.total_expenses ||
-        0
-      );
-
-
-    const previous =
-      Number(
-        data.summary.previous_month_expenses ||
-        0
-      );
-
+    const previous = Number(
+      data.summary.previous_month_expenses || 0
+    );
 
     if (previous <= 0) {
       return null;
     }
 
-
     const percentage =
-      ((current - previous) /
-        previous) *
-      100;
-
+      ((current - previous) / previous) * 100;
 
     return {
-
-      value:
-        Math.abs(
-          percentage
-        ).toFixed(1),
-
-      increase:
-        percentage > 0,
-
-      unchanged:
-        percentage === 0,
+      value: Math.abs(percentage).toFixed(1),
+      increase: percentage > 0,
+      unchanged: percentage === 0,
     };
   }
 
-
-  const trend =
-    getTrend();
-
+  const trend = getTrend();
 
   // =======================================================
   // SAFE DATA
   // =======================================================
 
-  const summary =
-    data?.summary || {};
+  const summary = data?.summary || {};
+  const health = data?.financial_health || {};
 
+  const categories = Array.isArray(data?.category_analysis)
+    ? data.category_analysis
+    : [];
 
-  const health =
-    data?.financial_health || {};
+  const topExpenses = Array.isArray(data?.top_expenses)
+    ? data.top_expenses
+    : [];
 
+  const unusualExpenses = Array.isArray(data?.unusual_expenses)
+    ? data.unusual_expenses
+    : [];
 
-  const categories =
-    Array.isArray(
-      data?.category_analysis
-    )
-      ? data.category_analysis
-      : [];
+  const aiInsights = Array.isArray(data?.ai_insights)
+    ? data.ai_insights
+    : [];
 
+  const warnings = Array.isArray(data?.warnings)
+    ? data.warnings
+    : [];
 
-  const topExpenses =
-    Array.isArray(
-      data?.top_expenses
-    )
-      ? data.top_expenses
-      : [];
+  const recommendations = Array.isArray(data?.recommendations)
+    ? data.recommendations
+    : [];
 
-
-  const unusualExpenses =
-    Array.isArray(
-      data?.unusual_expenses
-    )
-      ? data.unusual_expenses
-      : [];
-
-
-  const aiInsights =
-    Array.isArray(
-      data?.ai_insights
-    )
-      ? data.ai_insights
-      : [];
-
-
-  const warnings =
-    Array.isArray(
-      data?.warnings
-    )
-      ? data.warnings
-      : [];
-
-
-  const recommendations =
-    Array.isArray(
-      data?.recommendations
-    )
-      ? data.recommendations
-      : [];
-
-
-  const dailyAnalysis =
-    data?.daily_analysis || {};
-
-
-  const budget =
-    data?.budget_analysis || {};
-
+  const dailyAnalysis = data?.daily_analysis || {};
+  const budget = data?.budget_analysis || {};
 
   // =======================================================
   // BUDGET STATUS
   // =======================================================
 
   function getBudgetStatusText(status) {
-
     switch (status) {
-
       case "healthy":
         return "Budget is on track";
 
@@ -588,46 +429,77 @@ export default function Insights() {
     }
   }
 
+  // =======================================================
+  // GEMINI RESPONSE HELPERS
+  // =======================================================
+
+  function getGeminiInsightText() {
+    if (!geminiData) {
+      return "";
+    }
+
+    const result =
+      geminiData.ai_insights ??
+      geminiData.insights ??
+      geminiData.analysis ??
+      geminiData.message ??
+      "";
+
+    if (typeof result === "string") {
+      return result;
+    }
+
+    if (Array.isArray(result)) {
+      return result
+        .map((item) =>
+          typeof item === "string"
+            ? item
+            : item?.text || item?.message || JSON.stringify(item)
+        )
+        .join("\n\n");
+    }
+
+    if (result && typeof result === "object") {
+      return (
+        result.text ||
+        result.message ||
+        JSON.stringify(result, null, 2)
+      );
+    }
+
+    return "";
+  }
+
+  const geminiInsightText = getGeminiInsightText();
+
+  const geminiCategories = Array.isArray(geminiData?.top_categories)
+    ? geminiData.top_categories
+    : [];
 
   // =======================================================
   // PAGE
   // =======================================================
 
   return (
-
     <div className="insights-page">
-
-
       {/* =================================================
           HEADER
       ================================================= */}
 
       <div className="insights-header">
-
         <div className="insights-heading">
-
           <div className="insights-heading-icon">
-
             <Sparkles size={25} />
-
           </div>
-
 
           <div>
-
-            <h1>
-              AI Insights
-            </h1>
+            <h1>AI Insights</h1>
 
             <p>
-              Intelligent analysis of your
-              financial activity.
+              Intelligent analysis of your financial activity.
             </p>
-
           </div>
-
         </div>
-
 
         <button
           type="button"
@@ -635,1268 +507,868 @@ export default function Insights() {
           onClick={generateInsights}
           disabled={loading}
         >
-
           {loading ? (
-
             <>
-
-              <RefreshCw
-                size={17}
-                className="spin"
-              />
-
+              <RefreshCw size={17} className="spin" />
               Analyzing...
-
             </>
-
           ) : (
-
             <>
-
               <Sparkles size={17} />
-
-              {data
-                ? "Refresh Insights"
-                : "Generate Insights"}
-
+              {data ? "Refresh Insights" : "Generate Insights"}
             </>
-
           )}
-
         </button>
-
       </div>
-
 
       {/* =================================================
           INITIAL STATE
       ================================================= */}
 
-      {!data &&
-        !loading &&
-        !error && (
-
-          <div className="welcome-card">
-
-            <div className="welcome-icon">
-
-              <Sparkles size={34} />
-
-            </div>
-
-
-            <h2>
-              Turn your financial data
-              into useful insights
-            </h2>
-
-
-            <p>
-              Ledgerly AI analyzes your
-              spending patterns, categories,
-              budget usage, unusual transactions,
-              and month-to-month changes to help
-              you understand your finances better.
-            </p>
-
-
-            <button
-              type="button"
-              className="welcome-btn"
-              onClick={generateInsights}
-            >
-
-              <Sparkles size={17} />
-
-              Analyze My Finances
-
-            </button>
-
+      {!data && !loading && !error && (
+        <div className="welcome-card">
+          <div className="welcome-icon">
+            <Sparkles size={34} />
           </div>
-        )}
-
-
-      {/* =================================================
-          LOADING
-      ================================================= */}
-
-      {loading && (
-
-        <div className="loading-card">
-
-          <div className="loading-orb">
-
-            <Sparkles size={30} />
-
-          </div>
-
 
           <h2>
-            Analyzing your finances
+            Turn your financial data into useful insights
           </h2>
 
-
           <p>
-            Ledgerly AI is reviewing your
-            transactions, spending patterns,
-            budget usage and categories.
+            Ledgerly AI analyzes your spending patterns,
+            categories, budget usage, unusual transactions,
+            and month-to-month changes to help you understand
+            your finances better.
           </p>
 
-
-          <div className="analysis-steps">
-
-            <div className="analysis-step active">
-
-              <Activity size={16} />
-
-              Analyzing transactions
-
-            </div>
-
-
-            <div className="analysis-step active">
-
-              <BarChart3 size={16} />
-
-              Comparing spending
-
-            </div>
-
-
-            <div className="analysis-step active">
-
-              <Lightbulb size={16} />
-
-              Generating recommendations
-
-            </div>
-
-          </div>
-
-
-          <div className="loading-line">
-
-            <div />
-
-          </div>
-
+          <button
+            type="button"
+            className="welcome-btn"
+            onClick={generateInsights}
+          >
+            <Sparkles size={17} />
+            Analyze My Finances
+          </button>
         </div>
       )}
 
+      {/* =================================================
+          REGULAR INSIGHTS LOADING
+      ================================================= */}
+
+      {loading && (
+        <div className="loading-card">
+          <div className="loading-orb">
+            <Sparkles size={30} />
+          </div>
+
+          <h2>Analyzing your finances</h2>
+
+          <p>
+            Ledgerly AI is reviewing your transactions,
+            spending patterns, budget usage and categories.
+          </p>
+
+          <div className="analysis-steps">
+            <div className="analysis-step active">
+              <Activity size={16} />
+              Analyzing transactions
+            </div>
+
+            <div className="analysis-step active">
+              <BarChart3 size={16} />
+              Comparing spending
+            </div>
+
+            <div className="analysis-step active">
+              <Lightbulb size={16} />
+              Generating recommendations
+            </div>
+          </div>
+
+          <div className="loading-line">
+            <div />
+          </div>
+        </div>
+      )}
 
       {/* =================================================
-          ERROR
+          REGULAR INSIGHTS ERROR
       ================================================= */}
 
       {error && !loading && (
-
         <div className="error-card">
-
           <div className="error-icon">
-
             <AlertTriangle size={23} />
-
           </div>
 
-
           <div className="error-content">
+            <h3>Unable to generate insights</h3>
 
-            <h3>
-              Unable to generate insights
-            </h3>
-
-
-            <p>
-              {error}
-            </p>
-
+            <p>{error}</p>
 
             <button
               type="button"
               className="retry-btn"
               onClick={generateInsights}
             >
-
               <RefreshCw size={15} />
-
               Try Again
-
             </button>
-
           </div>
-
         </div>
       )}
 
-
       {/* =================================================
-          DASHBOARD
+          FINANCIAL DASHBOARD
       ================================================= */}
 
       {data && !loading && (
-
         <>
-
-
           {/* =============================================
               FINANCIAL HEALTH
           ============================================= */}
 
           <div className="health-card">
-
             <div className="health-left">
-
               <div className="health-icon">
-
                 <Activity size={24} />
-
               </div>
 
-
               <div>
-
                 <span className="section-label">
                   FINANCIAL HEALTH
                 </span>
 
-
-                <h2>
-                  {health.label ||
-                    "Not Available"}
-                </h2>
-
+                <h2>{health.label || "Not Available"}</h2>
 
                 <p>
-                  Based on your current
-                  spending, budget usage
+                  Based on your current spending, budget usage
                   and financial activity.
                 </p>
-
               </div>
-
             </div>
 
-
             <div className="health-score">
-
               <div
                 className={`score-circle ${getScoreClass(
                   health.score
                 )}`}
               >
-
-                <strong>
-                  {Number(
-                    health.score || 0
-                  )}
-                </strong>
-
-
-                <span>
-                  /100
-                </span>
-
+                <strong>{Number(health.score || 0)}</strong>
+                <span>/100</span>
               </div>
-
             </div>
-
           </div>
-
 
           {/* =============================================
               SUMMARY CARDS
           ============================================= */}
 
           <div className="summary-grid">
-
-
             {/* TOTAL EXPENSES */}
 
             <div className="summary-card">
-
               <div className="summary-top">
-
-                <span>
-                  Total Expenses
-                </span>
-
+                <span>Total Expenses</span>
 
                 <div className="summary-icon purple">
-
                   <Wallet size={19} />
-
                 </div>
-
               </div>
 
-
               <strong>
-
-                {formatCurrency(
-                  summary.total_expenses
-                )}
-
+                {formatCurrency(summary.total_expenses)}
               </strong>
 
-
               {trend ? (
-
                 <div
                   className={`trend ${
-                    trend.increase
-                      ? "negative"
-                      : "positive"
+                    trend.increase ? "negative" : "positive"
                   }`}
                 >
-
                   {trend.increase ? (
-
                     <TrendingUp size={14} />
-
                   ) : (
-
                     <TrendingDown size={14} />
-
                   )}
 
-
                   {trend.value}%{" "}
-
-                  {trend.increase
-                    ? "higher"
-                    : "lower"}{" "}
-
-                  than last month
-
+                  {trend.increase ? "higher" : "lower"} than
+                  last month
                 </div>
-
               ) : (
-
-                <small>
-                  No previous-month comparison
-                </small>
-
+                <small>No previous-month comparison</small>
               )}
-
             </div>
-
 
             {/* AVERAGE */}
 
             <div className="summary-card">
-
               <div className="summary-top">
-
-                <span>
-                  Average Expense
-                </span>
-
+                <span>Average Expense</span>
 
                 <div className="summary-icon blue">
-
                   <IndianRupee size={19} />
-
                 </div>
-
               </div>
 
-
               <strong>
-
-                {formatCurrency(
-                  summary.average_expense
-                )}
-
+                {formatCurrency(summary.average_expense)}
               </strong>
 
-
-              <small>
-                Per transaction
-              </small>
-
+              <small>Per transaction</small>
             </div>
-
 
             {/* LARGEST */}
 
             <div className="summary-card">
-
               <div className="summary-top">
-
-                <span>
-                  Largest Expense
-                </span>
-
+                <span>Largest Expense</span>
 
                 <div className="summary-icon orange">
-
                   <Target size={19} />
-
                 </div>
-
               </div>
 
-
               <strong>
-
-                {formatCurrency(
-                  summary.largest_expense
-                )}
-
+                {formatCurrency(summary.largest_expense)}
               </strong>
 
-
-              <small>
-                Highest transaction this month
-              </small>
-
+              <small>Highest transaction this month</small>
             </div>
-
 
             {/* TRANSACTIONS */}
 
             <div className="summary-card">
-
               <div className="summary-top">
-
-                <span>
-                  Transactions
-                </span>
-
+                <span>Transactions</span>
 
                 <div className="summary-icon green">
-
                   <BarChart3 size={19} />
-
                 </div>
-
               </div>
 
+              <strong>{summary.expense_count || 0}</strong>
 
-              <strong>
-
-                {summary.expense_count || 0}
-
-              </strong>
-
-
-              <small>
-                Recorded this month
-              </small>
-
+              <small>Recorded this month</small>
             </div>
-
           </div>
-
 
           {/* =============================================
               CATEGORY + BUDGET
           ============================================= */}
 
           <div className="main-grid">
-
-
             {/* CATEGORY */}
 
             <div className="panel category-panel">
-
               <div className="panel-header">
-
                 <div>
-
                   <span className="section-label">
                     SPENDING BREAKDOWN
                   </span>
 
-
-                  <h2>
-                    Category Analysis
-                  </h2>
-
+                  <h2>Category Analysis</h2>
                 </div>
-
 
                 <BarChart3 size={21} />
-
               </div>
 
-
               {categories.length > 0 ? (
-
                 <div className="category-list">
-
-                  {categories.map(
-                    (category, index) => (
-
-                      <div
-                        className="category-item"
-                        key={`${category.category}-${index}`}
-                      >
-
-                        <div className="category-info">
-
-                          <div className="category-name">
-
-                            {category.category}
-
-                          </div>
-
-
-                          <div className="category-amount">
-
-                            {formatCurrency(
-                              category.amount
-                            )}
-
-                          </div>
-
+                  {categories.map((category, index) => (
+                    <div
+                      className="category-item"
+                      key={`${category.category}-${index}`}
+                    >
+                      <div className="category-info">
+                        <div className="category-name">
+                          {category.category}
                         </div>
 
-
-                        <div className="category-bar">
-
-                          <div
-                            className="category-fill"
-                            style={{
-                              width: `${Math.min(
-                                Number(
-                                  category.percentage ||
-                                  0
-                                ),
-                                100
-                              )}%`,
-                            }}
-                          />
-
+                        <div className="category-amount">
+                          {formatCurrency(category.amount)}
                         </div>
-
-
-                        <div className="category-percent">
-
-                          {Number(
-                            category.percentage ||
-                            0
-                          ).toFixed(1)}
-
-                          %
-
-                        </div>
-
                       </div>
 
-                    )
-                  )}
+                      <div className="category-bar">
+                        <div
+                          className="category-fill"
+                          style={{
+                            width: `${Math.min(
+                              Number(category.percentage || 0),
+                              100
+                            )}%`,
+                          }}
+                        />
+                      </div>
 
+                      <div className="category-percent">
+                        {Number(
+                          category.percentage || 0
+                        ).toFixed(1)}
+                        %
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
               ) : (
-
                 <div className="empty-state">
-
                   No category data available yet.
-
                 </div>
-
               )}
-
             </div>
-
 
             {/* BUDGET */}
 
             <div className="panel budget-panel">
-
               <div className="panel-header">
-
                 <div>
-
-                  <span className="section-label">
-                    BUDGET
-                  </span>
-
-
-                  <h2>
-                    Budget Analysis
-                  </h2>
-
+                  <span className="section-label">BUDGET</span>
+                  <h2>Budget Analysis</h2>
                 </div>
 
-
                 <Target size={21} />
-
               </div>
 
-
               <div className="budget-status">
-
                 <span
                   className={`status-dot ${
-                    budget.status ||
-                    "not_set"
+                    budget.status || "not_set"
                   }`}
                 />
 
-
                 <span>
-
-                  {getBudgetStatusText(
-                    budget.status
-                  )}
-
+                  {getBudgetStatusText(budget.status)}
                 </span>
-
               </div>
-
 
               <div className="budget-percentage">
-
                 <strong>
-
                   {Math.round(
-                    Number(
-                      budget.used_percentage ||
-                      0
-                    )
+                    Number(budget.used_percentage || 0)
                   )}
-
                   %
-
                 </strong>
 
-
-                <span>
-                  used
-                </span>
-
+                <span>used</span>
               </div>
 
-
               <div className="budget-progress">
-
                 <div
                   style={{
                     width: `${Math.min(
-                      Number(
-                        budget.used_percentage ||
-                        0
-                      ),
+                      Number(budget.used_percentage || 0),
                       100
                     )}%`,
                   }}
                 />
-
               </div>
 
-
               {budget.remaining !== null &&
-                budget.remaining !== undefined ? (
+              budget.remaining !== undefined ? (
+                <div className="budget-remaining">
+                  <span>Remaining</span>
 
-                  <div className="budget-remaining">
-
-                    <span>
-                      Remaining
-                    </span>
-
-
-                    <strong>
-
-                      {formatCurrency(
-                        budget.remaining
-                      )}
-
-                    </strong>
-
-                  </div>
-
-                ) : (
-
-                  <div className="budget-empty">
-
-                    Set a monthly budget to receive
-                    personalized budget alerts.
-
-                  </div>
-
-                )}
-
+                  <strong>
+                    {formatCurrency(budget.remaining)}
+                  </strong>
+                </div>
+              ) : (
+                <div className="budget-empty">
+                  Set a monthly budget to receive personalized
+                  budget alerts.
+                </div>
+              )}
             </div>
-
           </div>
-
 
           {/* =============================================
               DAILY SPENDING
           ============================================= */}
 
           <div className="daily-card">
-
             <div className="daily-card-icon">
-
               <Activity size={21} />
-
             </div>
 
-
             <div className="daily-card-content">
-
               <span className="section-label">
                 SPENDING ACTIVITY
               </span>
 
-
-              <h2>
-                Daily Spending
-              </h2>
-
+              <h2>Daily Spending</h2>
 
               <p>
-                Your average spending on active
-                spending days.
+                Your average spending on active spending days.
               </p>
-
             </div>
 
-
             <div className="daily-stat">
-
               <strong>
-
                 {formatCurrency(
                   dailyAnalysis.average_daily_spending
                 )}
-
               </strong>
 
-
-              <span>
-                average / active day
-              </span>
-
+              <span>average / active day</span>
             </div>
 
-
             {dailyAnalysis.highest_spending_day && (
-
               <div className="highest-day">
-
-                <span>
-                  Highest day
-                </span>
-
+                <span>Highest day</span>
 
                 <strong>
-
                   {formatCurrency(
-                    dailyAnalysis
-                      .highest_spending_day
-                      .amount
+                    dailyAnalysis.highest_spending_day.amount
                   )}
-
                 </strong>
 
-
                 <small>
-
                   {formatDate(
-                    dailyAnalysis
-                      .highest_spending_day
-                      .date
+                    dailyAnalysis.highest_spending_day.date
                   )}
-
                 </small>
-
               </div>
-
             )}
-
           </div>
-
 
           {/* =============================================
               TOP EXPENSES + UNUSUAL
           ============================================= */}
 
           <div className="main-grid expense-analysis-grid">
-
-
             {/* TOP EXPENSES */}
 
             <div className="panel">
-
               <div className="panel-header">
-
                 <div>
-
                   <span className="section-label">
                     LARGEST TRANSACTIONS
                   </span>
 
-
-                  <h2>
-                    Top Expenses
-                  </h2>
-
+                  <h2>Top Expenses</h2>
                 </div>
-
 
                 <Wallet size={21} />
-
               </div>
 
-
               {topExpenses.length > 0 ? (
-
                 <div className="top-expense-list">
-
-                  {topExpenses.map(
-                    (expense, index) => (
-
-                      <div
-                        className="top-expense-item"
-                        key={
-                          expense.id ||
-                          index
-                        }
-                      >
-
-                        <div className="top-expense-rank">
-
-                          {index + 1}
-
-                        </div>
-
-
-                        <div className="top-expense-info">
-
-                          <strong>
-
-                            {expense.title ||
-                              "Expense"}
-
-                          </strong>
-
-
-                          <span>
-
-                            {expense.category ||
-                              "Uncategorized"}
-
-                            {" • "}
-
-                            {formatDate(
-                              expense.date
-                            )}
-
-                          </span>
-
-                        </div>
-
-
-                        <b>
-
-                          {formatCurrency(
-                            expense.amount
-                          )}
-
-                        </b>
-
+                  {topExpenses.map((expense, index) => (
+                    <div
+                      className="top-expense-item"
+                      key={expense.id || index}
+                    >
+                      <div className="top-expense-rank">
+                        {index + 1}
                       </div>
 
-                    )
-                  )}
+                      <div className="top-expense-info">
+                        <strong>
+                          {expense.title || "Expense"}
+                        </strong>
 
+                        <span>
+                          {expense.category || "Uncategorized"}
+                          {" • "}
+                          {formatDate(expense.date)}
+                        </span>
+                      </div>
+
+                      <b>{formatCurrency(expense.amount)}</b>
+                    </div>
+                  ))}
                 </div>
-
               ) : (
-
                 <div className="empty-state">
-
                   No expenses recorded this month.
-
                 </div>
-
               )}
-
             </div>
-
 
             {/* UNUSUAL EXPENSES */}
 
             <div className="panel unusual-panel">
-
               <div className="panel-header">
-
                 <div>
-
                   <span className="section-label">
                     ANOMALY DETECTION
                   </span>
 
-
-                  <h2>
-                    Unusual Spending
-                  </h2>
-
+                  <h2>Unusual Spending</h2>
                 </div>
-
 
                 <AlertTriangle size={21} />
-
               </div>
 
-
               {unusualExpenses.length > 0 ? (
-
                 <div className="unusual-list">
-
-                  {unusualExpenses.map(
-                    (expense, index) => (
-
-                      <div
-                        className="unusual-item"
-                        key={
-                          expense.id ||
-                          index
-                        }
-                      >
-
-                        <div className="unusual-icon">
-
-                          <AlertTriangle size={17} />
-
-                        </div>
-
-
-                        <div className="unusual-info">
-
-                          <strong>
-
-                            {expense.title ||
-                              "Unusual expense"}
-
-                          </strong>
-
-
-                          <span>
-
-                            {formatCurrency(
-                              expense.amount
-                            )}
-
-                            {" • "}
-
-                            {expense.multiple}x
-                            normal transaction
-
-                          </span>
-
-                        </div>
-
+                  {unusualExpenses.map((expense, index) => (
+                    <div
+                      className="unusual-item"
+                      key={expense.id || index}
+                    >
+                      <div className="unusual-icon">
+                        <AlertTriangle size={17} />
                       </div>
 
-                    )
-                  )}
+                      <div className="unusual-info">
+                        <strong>
+                          {expense.title || "Unusual expense"}
+                        </strong>
 
+                        <span>
+                          {formatCurrency(expense.amount)}
+                          {" • "}
+                          {expense.multiple}x normal transaction
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
               ) : (
-
                 <div className="no-anomaly">
-
                   <CheckCircle2 size={21} />
 
                   <div>
-
                     <strong>
                       No unusual spending detected
                     </strong>
 
-
                     <span>
-                      Your transactions look normal
-                      compared with your recent activity.
+                      Your transactions look normal compared
+                      with your recent activity.
                     </span>
-
                   </div>
-
                 </div>
-
               )}
-
             </div>
-
           </div>
 
-
           {/* =============================================
-              AI INSIGHTS
+              RULE-BASED LEDGERLY INSIGHTS
           ============================================= */}
 
           <div className="panel ai-panel">
-
             <div className="panel-header">
-
               <div className="ai-title">
-
                 <div className="ai-icon">
-
                   <Sparkles size={21} />
-
                 </div>
 
-
                 <div>
-
                   <span className="section-label">
                     LEDGERLY AI
                   </span>
 
-
-                  <h2>
-                    Financial Insights
-                  </h2>
-
+                  <h2>Financial Insights</h2>
                 </div>
-
               </div>
-
             </div>
 
-
             {aiInsights.length > 0 ? (
-
               <div className="insight-list">
-
-                {aiInsights.map(
-                  (item, index) => (
-
-                    <div
-                      className="insight-item"
-                      key={index}
-                    >
-
-                      <div className="insight-number">
-
-                        {index + 1}
-
-                      </div>
-
-
-                      <p>
-                        {item}
-                      </p>
-
+                {aiInsights.map((item, index) => (
+                  <div
+                    className="insight-item"
+                    key={index}
+                  >
+                    <div className="insight-number">
+                      {index + 1}
                     </div>
 
-                  )
-                )}
-
+                    <p>{item}</p>
+                  </div>
+                ))}
               </div>
-
             ) : (
-
               <div className="empty-state">
-
                 No insights available yet.
-
               </div>
-
             )}
-
           </div>
 
+          {/* =============================================
+              GEMINI AI INSIGHTS
+              Uses the separate POST /api/v1/insights/ai
+              endpoint and does not replace existing insights.
+          ============================================= */}
+
+          <div className="panel gemini-panel">
+            <div className="panel-header">
+              <div className="ai-title">
+                <div className="ai-icon">
+                  <Sparkles size={21} />
+                </div>
+
+                <div>
+                  <span className="section-label">
+                    GEMINI POWERED
+                  </span>
+
+                  <h2>Personalized AI Analysis</h2>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="generate-btn"
+                onClick={generateGeminiInsights}
+                disabled={geminiLoading}
+              >
+                {geminiLoading ? (
+                  <>
+                    <RefreshCw
+                      size={16}
+                      className="spin"
+                    />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} />
+                    {geminiData
+                      ? "Regenerate AI Analysis"
+                      : "Generate Gemini Analysis"}
+                  </>
+                )}
+              </button>
+            </div>
+
+            <p className="gemini-description">
+              Get an additional AI-generated explanation of your
+              recent expenses and spending categories. This is
+              separate from Ledgerly's existing financial insights.
+            </p>
+
+            {geminiLoading && (
+              <div className="gemini-loading">
+                <RefreshCw
+                  size={18}
+                  className="spin"
+                />
+                <span>
+                  Gemini is analyzing your financial data...
+                </span>
+              </div>
+            )}
+
+            {geminiError && !geminiLoading && (
+              <div className="message-item warning gemini-error">
+                <AlertTriangle size={18} />
+                <p>{geminiError}</p>
+              </div>
+            )}
+
+            {geminiData && !geminiLoading && (
+              <div className="gemini-results">
+                <div className="gemini-summary-grid">
+                  <div className="gemini-stat">
+                    <span>Total expenses</span>
+                    <strong>
+                      {formatCurrency(
+                        geminiData.total_expenses
+                      )}
+                    </strong>
+                  </div>
+
+                  <div className="gemini-stat">
+                    <span>Transactions analyzed</span>
+                    <strong>
+                      {Number(
+                        geminiData.expense_count || 0
+                      )}
+                    </strong>
+                  </div>
+
+                  {geminiData.period && (
+                    <div className="gemini-stat">
+                      <span>Period</span>
+                      <strong>{geminiData.period}</strong>
+                    </div>
+                  )}
+                </div>
+
+                {geminiCategories.length > 0 && (
+                  <div className="gemini-categories">
+                    <h3>Top spending categories</h3>
+
+                    <div className="gemini-category-list">
+                      {geminiCategories.map(
+                        (category, index) => (
+                          <div
+                            className="gemini-category-item"
+                            key={`${category.category || "category"}-${index}`}
+                          >
+                            <span>
+                              {category.category ||
+                                "Uncategorized"}
+                            </span>
+
+                            <strong>
+                              {formatCurrency(
+                                category.amount
+                              )}
+                            </strong>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {geminiInsightText ? (
+                  <div className="gemini-text">
+                    <h3>
+                      <Lightbulb size={18} />
+                      Gemini's analysis
+                    </h3>
+
+                    <div className="gemini-response-text">
+                      {geminiInsightText
+                        .split("\n")
+                        .map((line, index) => (
+                          <p key={index}>
+                            {line || "\u00a0"}
+                          </p>
+                        ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="empty-state">
+                    The Gemini endpoint returned data, but no
+                    readable AI analysis was found in its response.
+                    Check the response field name in the backend.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!geminiData &&
+              !geminiLoading &&
+              !geminiError && (
+                <div className="empty-state">
+                  Select “Generate Gemini Analysis” to request
+                  an AI-generated review of your financial activity.
+                </div>
+              )}
+          </div>
 
           {/* =============================================
               WARNINGS + RECOMMENDATIONS
           ============================================= */}
 
           <div className="bottom-grid">
-
-
             {/* WARNINGS */}
 
             <div className="panel warning-panel">
-
               <div className="panel-header">
-
                 <div>
-
                   <span className="section-label">
                     ATTENTION
                   </span>
 
-
-                  <h2>
-                    Warnings
-                  </h2>
-
+                  <h2>Warnings</h2>
                 </div>
-
 
                 <AlertTriangle size={21} />
-
               </div>
 
-
               {warnings.length > 0 ? (
-
                 <div className="message-list">
-
-                  {warnings.map(
-                    (warning, index) => (
-
-                      <div
-                        className="message-item warning"
-                        key={index}
-                      >
-
-                        <AlertTriangle size={18} />
-
-                        <p>
-                          {warning}
-                        </p>
-
-                      </div>
-
-                    )
-                  )}
-
+                  {warnings.map((warning, index) => (
+                    <div
+                      className="message-item warning"
+                      key={index}
+                    >
+                      <AlertTriangle size={18} />
+                      <p>{warning}</p>
+                    </div>
+                  ))}
                 </div>
-
               ) : (
-
                 <div className="success-message">
-
                   <CheckCircle2 size={20} />
 
                   <span>
                     No major financial warnings detected.
                   </span>
-
                 </div>
-
               )}
-
             </div>
-
 
             {/* RECOMMENDATIONS */}
 
             <div className="panel recommendation-panel">
-
               <div className="panel-header">
-
                 <div>
-
                   <span className="section-label">
                     SMART ACTIONS
                   </span>
 
-
-                  <h2>
-                    Recommendations
-                  </h2>
-
+                  <h2>Recommendations</h2>
                 </div>
 
-
                 <Lightbulb size={21} />
-
               </div>
 
-
               {recommendations.length > 0 ? (
-
                 <div className="message-list">
-
                   {recommendations.map(
                     (recommendation, index) => (
-
                       <div
                         className="message-item recommendation"
                         key={index}
                       >
-
                         <Lightbulb size={18} />
-
-                        <p>
-                          {recommendation}
-                        </p>
-
+                        <p>{recommendation}</p>
                       </div>
-
                     )
                   )}
-
                 </div>
-
               ) : (
-
                 <div className="success-message">
-
                   <CheckCircle2 size={20} />
 
                   <span>
                     Your current financial habits look good.
                   </span>
-
                 </div>
-
               )}
-
             </div>
-
           </div>
-
 
           {/* =============================================
               FOOTER
           ============================================= */}
 
           <div className="insights-footer">
-
             <div>
-
               <Sparkles size={15} />
-
               Generated by Ledgerly AI
 
-
               {data.generated_at && (
-
                 <span className="generated-time">
-
-                  •{" "}
-
-                  {formatDate(
-                    data.generated_at
-                  )}
-
+                  {" • "}
+                  {formatDate(data.generated_at)}
                 </span>
-
               )}
-
             </div>
-
 
             <button
               type="button"
               onClick={generateInsights}
               disabled={loading}
             >
-
               <RefreshCw size={14} />
-
               Refresh Analysis
-
             </button>
-
           </div>
-
         </>
-
       )}
-
     </div>
   );
 }

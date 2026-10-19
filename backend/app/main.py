@@ -17,45 +17,56 @@ from app.db.seed import seed_default_categories
 # =========================================================
 
 from app.models.user import User
+from app.models.refresh_token import RefreshToken
+from app.models.otp import OTPVerification
+
+from app.models.category import Category
 from app.models.expense import Expense
 from app.models.budget import Budget
-from app.models.category import Category
-from app.models.refresh_token import RefreshToken
 from app.models.account import Account
 from app.models.transaction import Transaction
+
 from app.models.customer import Customer
+from app.models.vendor import Vendor
 from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
-from app.models.vendor import Vendor
-from app.models.otp import OTPVerification
 
 # =========================================================
 # ROUTERS
 # =========================================================
 
 from app.api.v1.endpoints.auth import router as auth_router
-from app.api.v1.endpoints.expenses import router as expenses_router
-from app.api.v1.endpoints.analytics import router as analytics_router
 from app.api.v1.endpoints.admin import router as admin_router
-from app.api.v1.endpoints.budget import router as budget_router
-from app.api.v1.endpoints.auto_expense import router as auto_expense_router
-from app.api.v1.endpoints.dashboard import router as dashboard_router
+
 from app.api.v1.endpoints.categories import router as category_router
-from app.api.v1.endpoints.insights import router as insights_router
+from app.api.v1.endpoints.expenses import router as expenses_router
+from app.api.v1.endpoints.budget import router as budget_router
 from app.api.v1.endpoints.accounts import router as accounts_router
-from app.api.v1.endpoints.customers import router as customers_router
 from app.api.v1.endpoints.transactions import router as transactions_router
-from app.api.v1.endpoints.invoices import router as invoices_router
+
+from app.api.v1.endpoints.customers import router as customers_router
 from app.api.v1.endpoints.vendors import router as vendors_router
+from app.api.v1.endpoints.invoices import router as invoices_router
+
+from app.api.v1.endpoints.dashboard import router as dashboard_router
+from app.api.v1.endpoints.analytics import router as analytics_router
 from app.api.v1.endpoints.reports import router as reports_router
+
+from app.api.v1.endpoints.insights import router as insights_router
+from app.api.v1.endpoints.ai_insights import router as ai_insights_router
+from app.api.v1.endpoints import ai_forecast
+from app.api.v1.endpoints.auto_expense import router as auto_expense_router
+from app.api.v1.endpoints import ai_copilot
+
+# =========================================================
+# APPLICATION LIFESPAN
+# =========================================================
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Application startup and shutdown logic.
-
-    Database schema management is handled exclusively by Alembic.
-    Application startup only performs safe default-data seeding.
+    Database schema management is handled by Alembic.
+    Application startup performs safe default-data seeding.
     """
     db = SessionLocal()
 
@@ -65,6 +76,7 @@ async def lifespan(app: FastAPI):
         db.close()
 
     yield
+
 
 # =========================================================
 # CREATE FASTAPI APPLICATION
@@ -79,7 +91,7 @@ app = FastAPI(
 
 
 # =========================================================
-# CORS
+# CORS CONFIGURATION
 # =========================================================
 
 allowed_origins = [
@@ -96,6 +108,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # =========================================================
 # AUTHENTICATION APIs
 # =========================================================
@@ -108,8 +121,31 @@ app.include_router(
 
 
 # =========================================================
-# EXPENSE APIs
+# ADMIN APIs
 # =========================================================
+
+app.include_router(
+    admin_router,
+    prefix="/api/v1",
+    tags=["Admin"],
+)
+
+
+# =========================================================
+# CORE BOOKKEEPING APIs
+# =========================================================
+
+app.include_router(
+    accounts_router,
+    prefix="/api/v1",
+    tags=["Bookkeeping"],
+)
+
+app.include_router(
+    transactions_router,
+    prefix="/api/v1",
+    tags=["Transactions"],
+)
 
 app.include_router(
     expenses_router,
@@ -117,43 +153,11 @@ app.include_router(
     tags=["Expenses"],
 )
 
-
-# =========================================================
-# ANALYTICS APIs
-# =========================================================
-
-app.include_router(
-    analytics_router,
-    prefix="/api/v1/analytics",
-    tags=["Analytics"],
-)
-
-
-# =========================================================
-# BUDGET APIs
-# =========================================================
-
 app.include_router(
     budget_router,
     prefix="/api/v1",
     tags=["Budget"],
 )
-
-
-# =========================================================
-# DASHBOARD APIs
-# =========================================================
-
-app.include_router(
-    dashboard_router,
-    prefix="/api/v1/dashboard",
-    tags=["Dashboard"],
-)
-
-
-# =========================================================
-# CATEGORY APIs
-# =========================================================
 
 app.include_router(
     category_router,
@@ -163,51 +167,7 @@ app.include_router(
 
 
 # =========================================================
-# AI INSIGHTS APIs
-# =========================================================
-
-app.include_router(
-    insights_router,
-    prefix="/api/v1",
-    tags=["AI Insights"],
-)
-
-
-# =========================================================
-# AUTO EXPENSE APIs
-# =========================================================
-
-app.include_router(
-    auto_expense_router,
-    prefix="/api/v1",
-    tags=["Auto Expense"],
-)
-
-
-# =========================================================
-# ACCOUNTS APIs
-# =========================================================
-
-app.include_router(
-    accounts_router,
-    prefix="/api/v1",
-    tags=["Bookkeeping"],
-)
-
-
-# =========================================================
-# TRANSACTIONS APIs
-# =========================================================
-
-app.include_router(
-    transactions_router,
-    prefix="/api/v1",
-    tags=["Transactions"],
-)
-
-
-# =========================================================
-# CUSTOMERS APIs
+# CUSTOMERS, VENDORS AND INVOICES APIs
 # =========================================================
 
 app.include_router(
@@ -216,21 +176,11 @@ app.include_router(
     tags=["Customers"],
 )
 
-
-# =========================================================
-# VENDORS APIs
-# =========================================================
-
 app.include_router(
     vendors_router,
     prefix="/api/v1",
     tags=["Vendors"],
 )
-
-
-# =========================================================
-# INVOICES APIs
-# =========================================================
 
 app.include_router(
     invoices_router,
@@ -240,8 +190,20 @@ app.include_router(
 
 
 # =========================================================
-# REPORTS APIs
+# DASHBOARD, ANALYTICS AND REPORTS APIs
 # =========================================================
+
+app.include_router(
+    dashboard_router,
+    prefix="/api/v1/dashboard",
+    tags=["Dashboard"],
+)
+
+app.include_router(
+    analytics_router,
+    prefix="/api/v1/analytics",
+    tags=["Analytics"],
+)
 
 app.include_router(
     reports_router,
@@ -251,13 +213,42 @@ app.include_router(
 
 
 # =========================================================
-# ADMIN APIs
+# AI INSIGHTS AND FORECAST APIs
 # =========================================================
 
 app.include_router(
-    admin_router,
+    insights_router,
     prefix="/api/v1",
-    tags=["Admin"],
+    tags=["AI Insights"],
+)
+
+app.include_router(
+    ai_insights_router,
+    prefix="/api/v1/insights",
+    tags=["Gemini AI Insights"],
+)
+
+app.include_router(
+    ai_forecast.router,
+    prefix="/api/v1/insights",
+    tags=["AI Forecast"],
+)
+
+app.include_router(
+    ai_copilot.router,
+    prefix="/api/v1/insights",
+    tags=["AI Financial Copilot"],
+)
+
+
+# =========================================================
+# AUTOMATED EXPENSE APIs
+# =========================================================
+
+app.include_router(
+    auto_expense_router,
+    prefix="/api/v1",
+    tags=["Auto Expense"],
 )
 
 

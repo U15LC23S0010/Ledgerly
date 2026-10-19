@@ -11,7 +11,6 @@ function getAccessToken() {
 
 export default function ProtectedRoute() {
   const location = useLocation();
-
   const accessToken = getAccessToken();
 
   if (!accessToken) {
@@ -19,9 +18,7 @@ export default function ProtectedRoute() {
       <Navigate
         to="/login"
         replace
-        state={{
-          from: location.pathname,
-        }}
+        state={{ from: location.pathname }}
       />
     );
   }
