@@ -22,11 +22,10 @@ class Settings(BaseSettings):
     GMAIL_SMTP_PORT: int = 587
     GMAIL_SMTP_USERNAME: str
     GMAIL_SMTP_PASSWORD: str
-
     GMAIL_FROM_NAME: str = "Ledgerly"
 
-    GEMINI_API_KEY: str = ""
 
+    GEMINI_API_KEY: str = ""
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
